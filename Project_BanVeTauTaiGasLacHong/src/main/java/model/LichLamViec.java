@@ -18,8 +18,6 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "lichlamviec")
 public class LichLamViec {
-
-
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_lich_lam_viec", columnDefinition = "varchar(255)", nullable = false, unique = true)

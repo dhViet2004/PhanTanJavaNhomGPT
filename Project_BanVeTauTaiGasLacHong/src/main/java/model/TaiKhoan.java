@@ -19,7 +19,7 @@ public class TaiKhoan {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_nv", columnDefinition = "varchar(255)", nullable = false, unique = true)
-    private String id; // Mã tài khoản
+    private String maNV; // Mã tài khoản
 
     @Column(name = "password", columnDefinition = "varchar(255)", nullable = false)
     private String passWord; // Mật khẩu
@@ -28,7 +28,11 @@ public class TaiKhoan {
 //    @OneToOne
 //    @JoinColumn(name = "ma_nv", referencedColumnName = "ma_nv", unique = true)
 //    private NhanVien nhanVien;
-//
+
+//    @OneToOne
+//    @JoinColumn(name = "ma_nv", referencedColumnName = "ma_nv", unique = true, nullable = false)
+//    private NhanVien nhanVien;
+
     @OneToOne
     @JoinColumn(name = "ma_nv", unique = true)
     private NhanVien nhanVien;
