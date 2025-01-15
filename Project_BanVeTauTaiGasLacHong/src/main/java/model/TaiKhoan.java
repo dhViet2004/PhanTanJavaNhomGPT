@@ -1,0 +1,32 @@
+package model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * @Dự án: App
+ * @Class: TaiKhoan
+ * @Tạo vào ngày: 15/01/2025
+ * @Tác giả: Nguyen Huu Sang
+ */
+
+@Data
+@Entity
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Table(name = "taikhoan")
+public class TaiKhoan {
+    @Id
+    @EqualsAndHashCode.Include
+    @Column(name = "ma_nv", columnDefinition = "varchar(255)", nullable = false, unique = true)
+    private String maNV; // Mã nhân viên
+
+    @Column(name = "password", columnDefinition = "varchar(255)", nullable = false)
+    private String passWord; // Mật khẩu
+
+    // Một tài khoản chỉ thuộc về một nhân viên
+    @OneToOne
+    @JoinColumn(name = "ma_nv", referencedColumnName = "ma_nv", nullable = false)
+    private NhanVien nhanVien;
+
+}

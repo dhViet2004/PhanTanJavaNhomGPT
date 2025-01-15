@@ -7,7 +7,7 @@
     <groupId>iuh.CongDongGPT</groupId>
     <artifactId>Project_BanVeTauTaiGasLacHong</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>QuanLyHoSoKhamBenh</name>
+    <name>Project_BanVeTauTaiGasLacHong</name>
     <packaging>war</packaging>
 
     <properties>
@@ -59,6 +59,7 @@
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>

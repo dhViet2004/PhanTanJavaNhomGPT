@@ -8,6 +8,9 @@
         <class>model.LoaiToa</class>
         <class>model.TuyenTau</class>
         <class>model.Tau</class>
+        <class>model.NhanVien</class>
+        <class>model.TaiKhoan</class>
+        <class>model.LichLamViec</class>
         <properties>
             <property name="jakarta.persistence.jdbc.driver"
                       value="org.mariadb.jdbc.Driver" />
@@ -22,9 +25,11 @@
             <property name="jakarta.persistence.jdbc.dialect"
                       value="org.hibernate.dialect.MariaDBDialect" />
 
+
             <property name="hibernate.show_sql" value="true" />
             <property name="hibernate.format_sql" value="true" />
             <property name="hibernate.hbm2ddl.auto" value="update" />
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDBDialect" />
 
         </properties>
     </persistence-unit>
