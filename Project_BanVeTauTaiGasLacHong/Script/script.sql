@@ -1,1 +1,4 @@
 select * from ToaTau;
+select * from tau;
+select * from tuyentau;
+select * from loaitoa;
