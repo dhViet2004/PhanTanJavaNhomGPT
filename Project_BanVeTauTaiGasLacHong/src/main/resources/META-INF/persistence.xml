@@ -6,6 +6,8 @@
     <persistence-unit name="mariadb">
         <class>model.ToaTau</class>
         <class>model.LoaiToa</class>
+        <class>model.TuyenTau</class>
+        <class>model.Tau</class>
         <properties>
             <property name="jakarta.persistence.jdbc.driver"
                       value="org.mariadb.jdbc.Driver" />

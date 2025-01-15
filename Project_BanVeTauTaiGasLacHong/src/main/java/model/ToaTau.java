@@ -12,9 +12,8 @@ import lombok.ToString;
 public class ToaTau {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
-    @Column(name = "ma_toa", nullable = false, unique = true)
+    @Column(name = "ma_toa",columnDefinition = "varchar(255)",nullable = false, unique = true)
     private Integer maToa;
 
     @Column(name = "ten_toa", columnDefinition = "varchar(255)", unique = true, nullable = false)
@@ -26,9 +25,13 @@ public class ToaTau {
     @Column(name = "thu_tu", nullable = false)
     private int thuTu;
 
-//    // Quan hệ nhiều toa tàu thuộc về một loại toa
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "ma_loai_toa", nullable = false)
-//    @ToString.Exclude
-//    private LoaiToa loaiToa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_loai_toa", nullable = false)
+    @ToString.Include
+    private LoaiToa loaiToa;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_tau", nullable = false)
+    @ToString.Include
+    private Tau tau;
 }
