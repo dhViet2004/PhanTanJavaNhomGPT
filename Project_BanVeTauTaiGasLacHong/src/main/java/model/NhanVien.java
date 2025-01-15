@@ -47,8 +47,9 @@ public class NhanVien {
     private String avata; // Ảnh đại diện
 
     // Một nhân viên chỉ có một tài khoản
-    @OneToOne(mappedBy = "nhanVien", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "nhanVien")
     private TaiKhoan taiKhoan;
+
 
     // Một nhân viên có nhiều lịch làm việc
     @OneToMany(mappedBy = "nhanVien", cascade = CascadeType.ALL, orphanRemoval = true)
