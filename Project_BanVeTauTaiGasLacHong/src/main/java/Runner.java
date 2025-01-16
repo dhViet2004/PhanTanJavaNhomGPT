@@ -1,6 +1,11 @@
+import dao.ChoNgoiDAO;
 import datafaker.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
+import model.ChoNgoi;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public class Runner {
     public static void main(String[] args) {
@@ -12,9 +17,23 @@ public class Runner {
         TuyenTauDF.generateSampleData(em);
         TauDF.generateSampleData(em);
         ToaTauDF.generateSampleData(em);
-        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
         LoaiChoDF.generateSampleData(em);
+
+        LocalDate day = LocalDate.of(2024,5,1);
+        LocalDate day1 = LocalDate.of(2023,4,2);
+        LocalDate day2 = LocalDate.of(2022,3,3);
+        LocalDate day3 = LocalDate.of(2021,2,4);
+        LocalDate day4 = LocalDate.of(2020,1,5);
+        // phương thức tạo Lịch trình tàu với tham số là ngày cho trước (create)
+        LichTrinhTauDF.generateLichTrinhForDay(em,day);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day1);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day2);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day3);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day4);
+//        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
         LichTrinhTauDF.genarateSampleData(em);
+
+
         em.close();
 
 //        // Dùng datafaker tạo dữ liệu mẫu của lịch làm việc, nhân viên, tài khoản

@@ -16,9 +16,9 @@ public class ToaTau {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_toa",columnDefinition = "varchar(255)",nullable = false, unique = true)
-    private Integer maToa;
+    private String maToa;
 
-    @Column(name = "ten_toa", columnDefinition = "varchar(255)", unique = true, nullable = false)
+    @Column(name = "ten_toa", columnDefinition = "varchar(255)", nullable = false)
     private String tenToa;
 
     @Column(name = "so_ghe", nullable = false)
