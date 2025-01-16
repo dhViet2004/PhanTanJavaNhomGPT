@@ -34,6 +34,7 @@ public class TaiKhoan {
 //    private NhanVien nhanVien;
 
     @OneToOne
-    @JoinColumn(name = "ma_nv", unique = true)
+    @MapsId
+    @JoinColumn(name = "ma_nv")
     private NhanVien nhanVien;
 }

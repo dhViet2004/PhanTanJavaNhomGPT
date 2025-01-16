@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.Set;
+
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
@@ -24,6 +26,9 @@ public class ToaTau {
 
     @Column(name = "thu_tu", nullable = false)
     private int thuTu;
+
+    @OneToMany(mappedBy = "toaTau", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ChoNgoi> danhSachChoNgoi;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_loai_toa", nullable = false)

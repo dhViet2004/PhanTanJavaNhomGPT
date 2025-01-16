@@ -11,6 +11,16 @@
         <class>model.NhanVien</class>
         <class>model.TaiKhoan</class>
         <class>model.LichLamViec</class>
+        <class>model.VeTau</class>
+        <class>model.KhachHang</class>
+        <class>model.HoaDon</class>
+        <class>model.KhuyenMai</class>
+        <class>model.LoaiCho</class>
+        <class>model.ChoNgoi</class>
+        <class>model.LoaiHoaDon</class>
+        <class>model.LoaiKhachHang</class>
+        <class>model.LichTrinhTau</class>
+
         <properties>
             <property name="jakarta.persistence.jdbc.driver"
                       value="org.mariadb.jdbc.Driver" />

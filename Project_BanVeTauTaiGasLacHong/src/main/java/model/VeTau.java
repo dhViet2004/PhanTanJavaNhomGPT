@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Table(name = "ve_tau")
+@Table(name = "vetau")
 public class VeTau {
     @Id
     @Column(name = "ma_ve", columnDefinition = "VARCHAR(255)", unique = true, nullable = false)
@@ -37,7 +38,15 @@ public class VeTau {
     @JoinColumn(name = "lich_trinh_tau_ma_lich", referencedColumnName = "ma_lich")
     private LichTrinhTau lichTrinhTau;
 
+    @ManyToOne
+    @JoinColumn(name = "khuyen_mai_ma_km", referencedColumnName = "ma_km")
+    private KhuyenMai khuyenMai;
+
     @OneToOne
     @JoinColumn(name = "cho_ngoi_ma_cho",referencedColumnName = "ma_cho")
      private ChoNgoi choNgoi;
+
+    @ManyToMany(mappedBy = "veTaus")
+    private Set<HoaDon> hoaDons;
+
 }

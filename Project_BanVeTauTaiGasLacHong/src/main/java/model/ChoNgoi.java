@@ -12,7 +12,7 @@ import lombok.ToString;
 public class ChoNgoi {
     @Id
     @EqualsAndHashCode.Include
-    @Column(name = "ma_cho", columnDefinition = "VARCHAR(255)", nullable = false,unique = true)
+    @Column(name = "ma_cho", columnDefinition = "VARCHAR(255)", nullable = false, unique = true)
     private String maCho;
     @Column(name = "ten_cho", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String tenCho;
@@ -22,12 +22,16 @@ public class ChoNgoi {
     private double giaTien;
 
     @ManyToOne
-    @JoinColumn(name = "loaicho_maloai",referencedColumnName = "ma_loai",nullable = false)
+    @JoinColumn(name = "loaicho_maloai", referencedColumnName = "ma_loai", nullable = false)
     // ma_loai là tên trường lưu trữ giá trị khóa ngoại, với giá trị là MaLoai của LoaiCho
-  @ToString.Exclude
+    @ToString.Exclude
     private LoaiCho loaiCho;
 
-@OneToOne(mappedBy = "choNgoi")
+    @OneToOne(mappedBy = "choNgoi")
     private VeTau veTau;
 
+    @ManyToOne
+    @JoinColumn(name = "toa_tau_ma_toa", referencedColumnName = "ma_toa", nullable = false)
+    @ToString.Exclude
+    private ToaTau toaTau;
 }

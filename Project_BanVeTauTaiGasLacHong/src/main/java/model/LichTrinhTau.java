@@ -12,7 +12,7 @@ import java.util.Set;
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Table(name = "lich_trinh_tau")
+@Table(name = "lichtrinhtau")
 public class LichTrinhTau {
     @Id
     @Column(name = "ma_lich", columnDefinition = "VARCHAR(255)", nullable = false,unique = true)
@@ -23,6 +23,10 @@ public class LichTrinhTau {
     private LocalDate ngayDi;
     @Column(name = "trang_thai", columnDefinition = "NVARCHAR(50)", nullable = false)
     private String trangThai;
+
+    @ManyToOne
+    @JoinColumn(name = "tau_ma_tau", referencedColumnName = "ma_tau", nullable = false)
+    private Tau tau;
 
     @OneToMany(mappedBy = "lichTrinhTau")
     @ToString.Exclude

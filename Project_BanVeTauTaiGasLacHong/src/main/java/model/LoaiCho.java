@@ -10,7 +10,7 @@ import java.util.Set;
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Table(name = "loai_cho")
+@Table(name = "loaicho")
 public class LoaiCho {
     @Id
     @EqualsAndHashCode.Include

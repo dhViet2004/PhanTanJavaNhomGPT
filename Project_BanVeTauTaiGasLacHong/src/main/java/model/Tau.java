@@ -30,4 +30,7 @@ public class Tau {
 
     @OneToMany(mappedBy = "tau", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ToaTau> danhSachToaTau;
+
+    @OneToMany(mappedBy = "tau", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<LichTrinhTau> LichTrinhTau;
 }
