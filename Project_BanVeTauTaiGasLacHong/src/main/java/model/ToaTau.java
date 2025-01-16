@@ -32,11 +32,11 @@ public class ToaTau {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_loai_toa", nullable = false)
-    @ToString.Include
+    @ToString.Exclude
     private LoaiToa loaiToa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_tau", nullable = false)
-    @ToString.Include
+    @ToString.Exclude
     private Tau tau;
 }

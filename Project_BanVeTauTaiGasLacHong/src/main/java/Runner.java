@@ -1,25 +1,6 @@
-import datafaker.LoaiToaDF;
-import datafaker.TauDF;
-import datafaker.ToaTauDF;
-import datafaker.TuyenTauDF;
+import datafaker.*;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
-import model.*;
-import net.datafaker.Faker;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
 
 public class Runner {
     public static void main(String[] args) {
@@ -31,7 +12,9 @@ public class Runner {
         TuyenTauDF.generateSampleData(em);
         TauDF.generateSampleData(em);
         ToaTauDF.generateSampleData(em);
-
+        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
+        LoaiChoDF.generateSampleData(em);
+        LichTrinhTauDF.genarateSampleData(em);
         em.close();
 
 //        // Dùng datafaker tạo dữ liệu mẫu của lịch làm việc, nhân viên, tài khoản
@@ -105,23 +88,7 @@ public class Runner {
 //    EntityTransaction tx = em.getTransaction();
 //    Faker faker = new Faker();
 //
-//    // set dữ liệu cho LoaiCho
-//    LoaiCho lc1 = new LoaiCho();
-//    lc1.setMaLoai("LC01");
-//    lc1.setTenLoai("Ghế ngồi cứng");
-//
-//    LoaiCho lc2 = new LoaiCho();
-//    lc2.setMaLoai("LC02");
-//    lc2.setTenLoai("Ghế ngồi mềm");
-//
-//    LoaiCho lc3 = new LoaiCho();
-//    lc3.setMaLoai("LC03");
-//    lc3.setTenLoai("Giường nằm mềm");
-//
-//    tx.begin();
-//    em.persist(lc1);
-//    em.persist(lc2);
-//    em.persist(lc3);
+
 //
 //    // Tạo 10 ChoNgoi với Faker và gán chúng vào các LoaiCho
 //    for (int i = 0; i < 10; i++) {
