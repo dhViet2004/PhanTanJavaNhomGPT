@@ -1,3 +1,7 @@
+import datafaker.LoaiToaDF;
+import datafaker.TauDF;
+import datafaker.ToaTauDF;
+import datafaker.TuyenTauDF;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
@@ -19,9 +23,16 @@ import java.util.Locale;
 
 public class Runner {
     public static void main(String[] args) {
+
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
+        LoaiToaDF.generateSampleData(em);
+        TuyenTauDF.generateSampleData(em);
+        TauDF.generateSampleData(em);
+        ToaTauDF.generateSampleData(em);
+
+        em.close();
 
 //        // Dùng datafaker tạo dữ liệu mẫu của lịch làm việc, nhân viên, tài khoản
 //        EntityTransaction transaction = em.getTransaction();
