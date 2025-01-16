@@ -39,9 +39,12 @@ public class HoaDon {
     @JoinColumn(name = "ma_loai_hd", nullable = false)
     private LoaiHoaDon loaiHoaDon;
 
-    @ManyToMany
-    @JoinTable(name = "chitiet_hoadon",
-            joinColumns = @JoinColumn(name = "ma_hd"),
-            inverseJoinColumns = @JoinColumn(name = "ma_ve"))
-    private Set<VeTau> veTaus;
+//    @ManyToMany
+//    @JoinTable(name = "chitiet_hoadon",
+//            joinColumns = @JoinColumn(name = "ma_hd"),
+//            inverseJoinColumns = @JoinColumn(name = "ma_ve"))
+//    private Set<VeTau> veTaus;
+
+    @OneToMany(mappedBy = "hoaDon", fetch = FetchType.LAZY)
+    private Set<ChiTietHoaDon> chiTietHoaDons;
 }

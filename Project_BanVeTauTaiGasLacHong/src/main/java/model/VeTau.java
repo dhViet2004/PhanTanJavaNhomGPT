@@ -46,7 +46,11 @@ public class VeTau {
     @JoinColumn(name = "cho_ngoi_ma_cho",referencedColumnName = "ma_cho")
      private ChoNgoi choNgoi;
 
-    @ManyToMany(mappedBy = "veTaus")
-    private Set<HoaDon> hoaDons;
+//    @ManyToMany(mappedBy = "veTaus")
+//    private Set<HoaDon> hoaDons;
+
+    // Mối quan hệ với ChiTietHoaDon
+    @OneToMany(mappedBy = "veTau", fetch = FetchType.LAZY)
+    private Set<ChiTietHoaDon> chiTietHoaDons;
 
 }
