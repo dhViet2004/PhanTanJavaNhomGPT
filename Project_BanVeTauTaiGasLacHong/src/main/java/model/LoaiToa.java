@@ -11,8 +11,15 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "LoaiToa")
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "LoaiToa.findAll",
+                query = "select * from loaitoa",
+                resultClass = LoaiToa.class),
+        @NamedNativeQuery(name = "LoaiToa.findByID",
+                query = "select * from loaitoa where ma_loai_toa like :maLoaiToa",
+                resultClass = LoaiToa.class)
+})
 public class LoaiToa {
-
     @Id
     @Column(name = "ma_loai_toa", columnDefinition = "varchar(255)", nullable = false)
     @EqualsAndHashCode.Include
@@ -22,5 +29,6 @@ public class LoaiToa {
     private String tenLoai;
 
     @OneToMany(mappedBy = "loaiToa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<ToaTau> danhSachToaTau;
 }

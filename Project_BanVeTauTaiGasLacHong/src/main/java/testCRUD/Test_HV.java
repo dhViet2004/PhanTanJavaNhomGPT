@@ -1,10 +1,14 @@
 package testCRUD;
 
+import dao.LoaiToaTauDAO;
 import dao.TuyenTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
+import model.LoaiToa;
 import model.TuyenTau;
 import net.datafaker.Faker;
+
+import java.util.List;
 
 public class Test_HV {
     public static void main(String[] args) {
@@ -42,6 +46,38 @@ public class Test_HV {
 //        <-------DELETE--------->
 //        boolean resultDelete = tuyenTauDAO.delete("TT1111");
 //        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
+
+//            <--------CRUD LoaiToa --------->
+//        LoaiToaTauDAO loaiToaTauDAO = new LoaiToaTauDAO(em);
+//        List<LoaiToa> loaiToaList = null;
+//        loaiToaList = loaiToaTauDAO.getListLoaiToa();
+//        loaiToaList.forEach(loaiToa -> {System.out.println(loaiToa);});
+//
+//        LoaiToa loaiToa = loaiToaTauDAO.getLoaiToaById("LT9");
+//        System.out.println(loaiToa);
+//            <------Save-------->
+//        LoaiToa newLoaiToa = new LoaiToa();
+//        newLoaiToa.setMaLoai("LT1111");
+//        newLoaiToa.setTenLoai("Loại toa "+ faker.commerce().productName());
+//        System.out.println(newLoaiToa);
+//        boolean resultLoaiToa = loaiToaTauDAO.save(newLoaiToa);
+//        System.out.println(resultLoaiToa ? "Thêm " + newLoaiToa + "Thành công" : "Thêm thất bại");
+
+//        <---------UPDATE-------->
+//        LoaiToa returnloaiToa = loaiToaTauDAO.getLoaiToaById("LT1111");
+//        System.out.println(returnloaiToa);
+//        returnloaiToa.setTenLoai("Loại toa "+faker.commerce().productName());
+//        System.out.println(returnloaiToa);
+//        boolean resultUpdate = loaiToaTauDAO.update(returnloaiToa);
+//        System.out.println(resultUpdate ? "Update thành công" : "Update thất bại");
+
+//            <--------DELETE------->
+//        String maLoaiToa = "LT1111";
+//        boolean resultDelete = loaiToaTauDAO.deleteById(maLoaiToa);
+//        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
+
+
+
 
 
         em.close();
