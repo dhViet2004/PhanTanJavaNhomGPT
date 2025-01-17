@@ -14,7 +14,8 @@ public class ToaTauDF {
 
     public static void generateSampleData(EntityManager em) {
         // lấy danh sách các tàu
-        List<Tau> tauList = TauDAO.getAllList();
+        TauDAO tauDAO = new TauDAO(em);
+        List<Tau> tauList = tauDAO.getAllListT();
         // Khởi tạo Faker
         Faker faker = new Faker();
         EntityTransaction transaction = em.getTransaction();

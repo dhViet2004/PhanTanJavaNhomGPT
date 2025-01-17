@@ -1,10 +1,12 @@
 package testCRUD;
 
 import dao.LoaiToaTauDAO;
+import dao.TauDAO;
 import dao.TuyenTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 import model.LoaiToa;
+import model.Tau;
 import model.TuyenTau;
 import net.datafaker.Faker;
 
@@ -76,7 +78,9 @@ public class Test_HV {
 //        boolean resultDelete = loaiToaTauDAO.deleteById(maLoaiToa);
 //        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
 
-
+        TauDAO tauDAO = new TauDAO(em);
+        List<Tau> taus = tauDAO.getAllListT();
+        taus.forEach(tau->{System.out.println(tau);});
 
 
 

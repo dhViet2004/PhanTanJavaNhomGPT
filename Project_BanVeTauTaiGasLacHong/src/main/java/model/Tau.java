@@ -11,6 +11,10 @@ import java.util.Set;
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "tau")
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "Tau.findById",
+            query = "select * from tau where ma_tau like :id")
+})
 public class Tau {
     @Id
     @EqualsAndHashCode.Include
@@ -24,13 +28,15 @@ public class Tau {
     private int soToa;
     // Số toa
     @ManyToOne(fetch = FetchType.LAZY)
-    @ToString.Include
+    @ToString.Exclude
     @JoinColumn(name = "ma_tuyen", nullable = false)
     private TuyenTau tuyenTau; // Đối tượng TuyenTau
 
     @OneToMany(mappedBy = "tau", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<ToaTau> danhSachToaTau;
 
     @OneToMany(mappedBy = "tau", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<LichTrinhTau> LichTrinhTau;
 }

@@ -1,16 +1,19 @@
 package dao;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
+import lombok.AllArgsConstructor;
 import model.LoaiCho;
 import model.Tau;
 
 import java.util.List;
-
+@AllArgsConstructor
 public class TauDAO {
-    public static List<Tau> getAllList() {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
+    private EntityManager em;
+
+    public List<Tau> getAllListT() {
         EntityTransaction tx = em.getTransaction();
         List<Tau> list = null;
         tx.begin();
@@ -19,8 +22,13 @@ public class TauDAO {
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách Tau");
+            tx.rollback();
         }
         return list;
+    }
+
+    public Tau getById(String id) {
+        EntityTransaction tr = em.getTransaction();
+        return em.find(Tau.class, id);
     }
 }
