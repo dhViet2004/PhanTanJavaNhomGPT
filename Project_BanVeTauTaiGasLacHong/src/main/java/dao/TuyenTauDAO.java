@@ -5,9 +5,21 @@ import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.TuyenTau;
 
+import java.util.List;
+
 @AllArgsConstructor
 public class TuyenTauDAO {
     private EntityManager em;
+
+    public List<TuyenTau> listTuyenTauBySoGhe(int form, int to){
+        String query = "select tt from TuyenTau tt "+
+                "where so_ghe between :form and :to";
+        return em.createQuery(query)
+                .setParameter("form", form)
+                .setParameter("to", to)
+                .getResultList();
+    }
+
     public  boolean save(TuyenTau tuyenTau){
         EntityTransaction tr = em.getTransaction();
         try {
@@ -35,4 +47,5 @@ public class TuyenTauDAO {
         }
         return false;
     }
+
 }

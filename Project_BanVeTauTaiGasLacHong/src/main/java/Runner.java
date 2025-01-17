@@ -1,3 +1,4 @@
+import dao.TuyenTauDAO;
 import datafaker.LoaiToaDF;
 import datafaker.TauDF;
 import datafaker.ToaTauDF;
@@ -27,10 +28,13 @@ public class Runner {
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
-        LoaiToaDF.generateSampleData(em);
-        TuyenTauDF.generateSampleData(em);
-        TauDF.generateSampleData(em);
-        ToaTauDF.generateSampleData(em);
+
+
+//        <-------HOANG VIET-------->
+//        LoaiToaDF.generateSampleData(em);
+//        TuyenTauDF.generateSampleData(em);
+//        TauDF.generateSampleData(em);
+//        ToaTauDF.generateSampleData(em);
 
         em.close();
 
