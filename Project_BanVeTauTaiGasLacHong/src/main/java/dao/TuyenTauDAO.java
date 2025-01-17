@@ -7,19 +7,16 @@ import model.TuyenTau;
 
 import java.util.List;
 
+
 @AllArgsConstructor
 public class TuyenTauDAO {
     private EntityManager em;
-
-    public List<TuyenTau> listTuyenTauBySoGhe(int form, int to){
-        String query = "select tt from TuyenTau tt "+
-                "where so_ghe between :form and :to";
-        return em.createQuery(query)
-                .setParameter("form", form)
-                .setParameter("to", to)
+    public List<TuyenTau> getListTuyenTau(String gaDi, String gaDen) {
+        return em.createNamedQuery("TuyenTau.findByGaDiGaDen", TuyenTau.class)
+                .setParameter("gaDi", gaDi)
+                .setParameter("gaDen",gaDen)
                 .getResultList();
     }
-
     public  boolean save(TuyenTau tuyenTau){
         EntityTransaction tr = em.getTransaction();
         try {

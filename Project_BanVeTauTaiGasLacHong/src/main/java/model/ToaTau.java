@@ -11,14 +11,15 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "ToaTau")
+
 public class ToaTau {
 
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_toa",columnDefinition = "varchar(255)",nullable = false, unique = true)
-    private Integer maToa;
+    private String maToa;
 
-    @Column(name = "ten_toa", columnDefinition = "varchar(255)", unique = true, nullable = false)
+    @Column(name = "ten_toa", columnDefinition = "varchar(255)", nullable = false)
     private String tenToa;
 
     @Column(name = "so_ghe", nullable = false)
@@ -28,15 +29,16 @@ public class ToaTau {
     private int thuTu;
 
     @OneToMany(mappedBy = "toaTau", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<ChoNgoi> danhSachChoNgoi;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_loai_toa", nullable = false)
-    @ToString.Include
+    @ToString.Exclude
     private LoaiToa loaiToa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_tau", nullable = false)
-    @ToString.Include
+    @ToString.Exclude
     private Tau tau;
 }

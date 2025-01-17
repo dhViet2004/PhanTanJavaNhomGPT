@@ -1,26 +1,10 @@
-import dao.TuyenTauDAO;
-import datafaker.LoaiToaDF;
-import datafaker.TauDF;
-import datafaker.ToaTauDF;
-import datafaker.TuyenTauDF;
+import datafaker.*;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
-import model.*;
-import net.datafaker.Faker;
+import model.ChoNgoi;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 
 public class Runner {
     public static void main(String[] args) {
@@ -28,13 +12,26 @@ public class Runner {
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
+        LoaiToaDF.generateSampleData(em);
+        TuyenTauDF.generateSampleData(em);
+        TauDF.generateSampleData(em);
+        ToaTauDF.generateSampleData(em);
+        LoaiChoDF.generateSampleData(em);
 
+        LocalDate day = LocalDate.of(2024,5,1);
+        LocalDate day1 = LocalDate.of(2023,4,2);
+        LocalDate day2 = LocalDate.of(2022,3,3);
+        LocalDate day3 = LocalDate.of(2021,2,4);
+        LocalDate day4 = LocalDate.of(2020,1,5);
+        // phương thức tạo Lịch trình tàu với tham số là ngày cho trước (create)
+        LichTrinhTauDF.generateLichTrinhForDay(em,day);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day1);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day2);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day3);
+        LichTrinhTauDF.generateLichTrinhForDay(em,day4);
+//        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
+        LichTrinhTauDF.genarateSampleData(em);
 
-//        <-------HOANG VIET-------->
-//        LoaiToaDF.generateSampleData(em);
-//        TuyenTauDF.generateSampleData(em);
-//        TauDF.generateSampleData(em);
-//        ToaTauDF.generateSampleData(em);
 
         em.close();
 
@@ -109,23 +106,7 @@ public class Runner {
 //    EntityTransaction tx = em.getTransaction();
 //    Faker faker = new Faker();
 //
-//    // set dữ liệu cho LoaiCho
-//    LoaiCho lc1 = new LoaiCho();
-//    lc1.setMaLoai("LC01");
-//    lc1.setTenLoai("Ghế ngồi cứng");
-//
-//    LoaiCho lc2 = new LoaiCho();
-//    lc2.setMaLoai("LC02");
-//    lc2.setTenLoai("Ghế ngồi mềm");
-//
-//    LoaiCho lc3 = new LoaiCho();
-//    lc3.setMaLoai("LC03");
-//    lc3.setTenLoai("Giường nằm mềm");
-//
-//    tx.begin();
-//    em.persist(lc1);
-//    em.persist(lc2);
-//    em.persist(lc3);
+
 //
 //    // Tạo 10 ChoNgoi với Faker và gán chúng vào các LoaiCho
 //    for (int i = 0; i < 10; i++) {

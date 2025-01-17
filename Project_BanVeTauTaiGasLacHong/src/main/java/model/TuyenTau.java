@@ -11,6 +11,11 @@ import java.util.Set;
 @Entity
 @Table(name = "tuyentau")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "TuyenTau.findByGaDiGaDen",
+                            query = "select * from tuyentau where ga_di = :gaDi and ga_den = :gaDen",
+        resultClass = TuyenTau.class)
+})
 public class TuyenTau {
     @Id
     @Column(name = "ma_tuyen", columnDefinition = "varchar(255)",unique = true, nullable = false)
@@ -32,5 +37,6 @@ public class TuyenTau {
     @EqualsAndHashCode.Exclude
     private String diaDiemDen;
     @OneToMany(mappedBy = "tuyenTau", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Set<Tau> danhSachTau;
 }
