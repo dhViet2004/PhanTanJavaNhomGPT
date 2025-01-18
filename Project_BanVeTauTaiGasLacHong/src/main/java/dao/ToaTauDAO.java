@@ -38,4 +38,51 @@ public class ToaTauDAO {
         }
         return listToaTau;
     }
+
+    public ToaTau getToaTauById(String id) {
+        return em.find(ToaTau.class, id);
+    }
+
+    public boolean save(ToaTau toaTau) {
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+            em.persist(toaTau);
+            tx.commit();
+            return true;
+        }catch (Exception e) {
+            e.printStackTrace();
+            tx.rollback();
+        }
+        return false;
+    }
+
+    public boolean update(ToaTau toaTau) {
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+            em.merge(toaTau);
+            tx.commit();
+            return true;
+        }catch (Exception e) {
+            e.printStackTrace();
+            tx.rollback();
+        }
+        return false;
+    }
+
+    public boolean delete(String id) {
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+            ToaTau toaTau = em.find(ToaTau.class, id);
+            em.remove(toaTau);
+            tx.commit();
+            return true;
+        }catch (Exception e) {
+            e.printStackTrace();
+            tx.rollback();
+        }
+        return false;
+    }
 }

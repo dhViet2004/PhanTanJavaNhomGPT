@@ -116,14 +116,40 @@ public class Test_HV {
 //        System.out.println(resultDeleteTau ? "Xoa thanh cong" : "Xoa that bai");
 
 //        <-------CRUD ToaTau-------->
-        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
-        List<ToaTau> toaTauList = toaTauDAO.getlistToaTau();
-        toaTauList.forEach(toaTau->{System.out.println(toaTau);});
+//        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
+//        List<ToaTau> toaTauList = toaTauDAO.getlistToaTau();
+//        toaTauList.forEach(toaTau->{System.out.println(toaTau);});
 
 
+//        <----------SAVE----------->
+//        ToaTau newToaTau = new ToaTau();
+//        newToaTau.setMaToa("TT1111");
+//        newToaTau.setTenToa("Toa " + "1111"); // Tên toa là "Toa {i}"
+//        newToaTau.setSoGhe(faker.number().numberBetween(20, 100)); // Số ghế từ 20 đến 100
+//        newToaTau.setThuTu(faker.number().numberBetween(1, 10)); // Thứ tự toa từ 1 đến 10
+//
+//        // Liên kết với một LoaiToa ngẫu nhiên
+//        LoaiToaTauDAO loaiTauDAO = new LoaiToaTauDAO(em);
+//        List<LoaiToa> loaiToaList = loaiTauDAO.getListLoaiToa();
+//        LoaiToa randomLoaiToa = loaiToaList.get(faker.number().numberBetween(0, loaiToaList.size()));
+//        newToaTau.setLoaiToa(randomLoaiToa);
+//
+//        Tau tau = taus.get(faker.number().numberBetween(0, taus.size()));
+//        newToaTau.setTau(tau);
+//
+//        System.out.println(newToaTau);
+//        boolean resultSaveTT = toaTauDAO.save(newToaTau);
+//        System.out.println(resultSaveTT ? "Them thanh cong" : "Them that bai");
+//        <------UPDATE-------->
+//        ToaTau returnToaTau = toaTauDAO.getToaTauById("TT1111");
+//        System.out.println(returnToaTau);
+//        returnToaTau.setTenToa("Toa " + "2222");
+//        boolean resultUpdateTT = toaTauDAO.update(returnToaTau);
+//        System.out.println(resultUpdateTT ? "Update thanh cong" : "Update that bai");
 
-
-
+//        <---------DELETE---------->
+//        boolean resultDeleteTT = toaTauDAO.delete("TT1111");
+//        System.out.println(resultDeleteTT ? "Xoa thanh cong" : "Xoa that bai");
 
 
         em.close();
