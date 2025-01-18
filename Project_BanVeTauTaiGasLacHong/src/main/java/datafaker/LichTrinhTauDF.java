@@ -27,7 +27,8 @@ public class LichTrinhTauDF {
     public static void generateLichTrinhForDay(EntityManager em, LocalDate day) {
         Faker faker = new Faker();
         EntityTransaction tx = em.getTransaction();
-        List<ToaTau> listToaTau = ToaTauDAO.getlistToaTau();
+        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
+        List<ToaTau> listToaTau = toaTauDAO.getlistToaTau();
         if (listToaTau == null || listToaTau.size() == 0) {
             System.err.println("Chưa có ToaTau trong CSDL");
             return;
@@ -152,7 +153,7 @@ public class LichTrinhTauDF {
         EntityTransaction tx = em.getTransaction();
         Faker faker = new Faker();
         LoaiChoDAO loaiChoDAO = new LoaiChoDAO();
-        ToaTauDAO toaTauDAO = new ToaTauDAO();
+        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
         LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAO();
 
         // Lấy danh sách ToaTau và LoaiCho từ cơ sở dữ liệu

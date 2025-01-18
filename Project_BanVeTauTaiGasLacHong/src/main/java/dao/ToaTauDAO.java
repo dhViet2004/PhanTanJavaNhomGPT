@@ -3,20 +3,16 @@ package dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import model.ToaTau;
 import model.TuyenTau;
 
 import java.util.List;
-
+@AllArgsConstructor
 public class ToaTauDAO {
     private EntityManager em ;
 
-    public ToaTauDAO(EntityManager em) {
-        this.em = em;
-    }
-    public ToaTauDAO() {
-    }
 
     public List<ToaTau> listToaTauBySoGhe(int form, int to){
         String query = "select tt from ToaTau tt "+
@@ -27,9 +23,8 @@ public class ToaTauDAO {
                 .getResultList();
     }
 
-    public static List<ToaTau> getlistToaTau() {
+    public List<ToaTau> getlistToaTau() {
         List<ToaTau> listToaTau = null;
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         try {

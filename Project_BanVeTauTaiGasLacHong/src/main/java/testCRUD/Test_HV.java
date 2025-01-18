@@ -2,11 +2,13 @@ package testCRUD;
 
 import dao.LoaiToaTauDAO;
 import dao.TauDAO;
+import dao.ToaTauDAO;
 import dao.TuyenTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 import model.LoaiToa;
 import model.Tau;
+import model.ToaTau;
 import model.TuyenTau;
 import net.datafaker.Faker;
 
@@ -79,12 +81,12 @@ public class Test_HV {
 ////        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
 
 //        <-------CRUD Tau------>
-        TauDAO tauDAO = new TauDAO(em);
-        TuyenTauDAO tuyenTauDAO = new TuyenTauDAO(em);
-        List<TuyenTau> tuyenTauList = tuyenTauDAO.getListTuyenTau();
-
-        List<Tau> taus = tauDAO.getAllListT();
-        taus.forEach(tau->{System.out.println(tau);});
+//        TauDAO tauDAO = new TauDAO(em);
+//        TuyenTauDAO tuyenTauDAO = new TuyenTauDAO(em);
+//        List<TuyenTau> tuyenTauList = tuyenTauDAO.getListTuyenTau();
+//
+//        List<Tau> taus = tauDAO.getAllListT();
+//        taus.forEach(tau->{System.out.println(tau);});
 
 //        Tau tau = tauDAO.getById("T1");
 //        System.out.println(tau);
@@ -113,6 +115,10 @@ public class Test_HV {
 //        boolean resultDeleteTau = tauDAO.delete(maTuyen);
 //        System.out.println(resultDeleteTau ? "Xoa thanh cong" : "Xoa that bai");
 
+//        <-------CRUD ToaTau-------->
+        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
+        List<ToaTau> toaTauList = toaTauDAO.getlistToaTau();
+        toaTauList.forEach(toaTau->{System.out.println(toaTau);});
 
 
 

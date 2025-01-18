@@ -39,6 +39,5 @@ public class ToaTau {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_tau", nullable = false)
-    @ToString.Exclude
     private Tau tau;
 }
