@@ -17,6 +17,17 @@ import java.time.LocalDateTime;
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "lichlamviec")
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "LichLamViec.findByMaLichLamViec",
+                query = "select * from lichlamviec where ma_lich_lam_viec = :maLichLamViec",
+                resultClass = LichLamViec.class),
+        @NamedNativeQuery(name = "LichLamViec.findByMaNV",
+                query = "select * from lichlamviec where ma_nv = :maNV",
+                resultClass = LichLamViec.class),
+        @NamedNativeQuery(name = "LichLamViec.findAll",
+                query = "select * from lichlamviec",
+                resultClass = LichLamViec.class)
+})
 public class LichLamViec {
     @Id
     @EqualsAndHashCode.Include
@@ -35,6 +46,7 @@ public class LichLamViec {
     // Một lịch làm việc chỉ thuộc về một nhân viên
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_nv", nullable = false)
+    @ToString.Exclude
     private NhanVien nhanVien;
 
 

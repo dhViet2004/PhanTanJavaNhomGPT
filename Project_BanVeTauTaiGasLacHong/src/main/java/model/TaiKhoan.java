@@ -3,6 +3,7 @@ package model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  * @Dự án: App
@@ -36,5 +37,6 @@ public class TaiKhoan {
     @OneToOne
     @MapsId
     @JoinColumn(name = "ma_nv")
+    @ToString.Exclude
     private NhanVien nhanVien;
 }
