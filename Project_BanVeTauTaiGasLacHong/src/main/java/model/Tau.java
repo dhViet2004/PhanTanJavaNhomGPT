@@ -11,10 +11,6 @@ import java.util.Set;
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "tau")
-@NamedNativeQueries({
-        @NamedNativeQuery(name = "Tau.findById",
-            query = "select * from tau where ma_tau like :id")
-})
 public class Tau {
     @Id
     @EqualsAndHashCode.Include

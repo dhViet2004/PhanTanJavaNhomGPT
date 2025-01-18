@@ -14,6 +14,9 @@ import java.util.Set;
 @NamedNativeQueries({
         @NamedNativeQuery(name = "TuyenTau.findByGaDiGaDen",
                             query = "select * from tuyentau where ga_di = :gaDi and ga_den = :gaDen",
+        resultClass = TuyenTau.class),
+        @NamedNativeQuery(name = "TuyenTau.findAll",
+                            query = "select * from tuyentau",
         resultClass = TuyenTau.class)
 })
 public class TuyenTau {

@@ -18,6 +18,10 @@ public class TuyenTauDAO {
                 .getResultList();
     }
 
+    public List<TuyenTau> getListTuyenTau(){
+        return em.createNamedQuery("TuyenTau.findAll", TuyenTau.class).getResultList();
+    }
+
     public TuyenTau getTuyenTauById(String id) {
         return em.find(TuyenTau.class, id);
     }

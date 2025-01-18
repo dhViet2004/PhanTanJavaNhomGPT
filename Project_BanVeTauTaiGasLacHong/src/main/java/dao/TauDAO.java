@@ -31,4 +31,48 @@ public class TauDAO {
         EntityTransaction tr = em.getTransaction();
         return em.find(Tau.class, id);
     }
+
+    public boolean save(Tau t) {
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            em.persist(t);
+            tr.commit();
+            return true;
+        }catch(Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
+    public boolean update(Tau t) {
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            em.merge(t);
+            tr.commit();
+            return true;
+        }catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
+    public boolean delete(String id) {
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            Tau t = em.find(Tau.class,id);
+            em.remove(t);
+            tr.commit();
+            return true;
+        }catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
 }

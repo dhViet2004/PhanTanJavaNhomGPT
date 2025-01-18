@@ -76,11 +76,47 @@ public class Test_HV {
 //            <--------DELETE------->
 //        String maLoaiToa = "LT1111";
 //        boolean resultDelete = loaiToaTauDAO.deleteById(maLoaiToa);
-//        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
+////        System.out.println(resultDelete ? "Xóa thành công" : "Xóa thất bại");
 
+//        <-------CRUD Tau------>
         TauDAO tauDAO = new TauDAO(em);
+        TuyenTauDAO tuyenTauDAO = new TuyenTauDAO(em);
+        List<TuyenTau> tuyenTauList = tuyenTauDAO.getListTuyenTau();
+
         List<Tau> taus = tauDAO.getAllListT();
         taus.forEach(tau->{System.out.println(tau);});
+
+//        Tau tau = tauDAO.getById("T1");
+//        System.out.println(tau);
+//        <--------SAVE------->
+//        Tau newTau = new Tau();
+//        newTau.setMaTau("T1111");
+//        newTau.setTenTau("Tàu " + faker.name().lastName());
+//        newTau.setSoToa(faker.number().numberBetween(5, 20));
+//
+//        // Liên kết với một TuyenTau ngẫu nhiên
+//        TuyenTau randomTuyenTau = tuyenTauList.get(faker.number().numberBetween(0, tuyenTauList.size()));
+//        newTau.setTuyenTau(randomTuyenTau);
+//        System.out.println(newTau);
+//        boolean resultSaveTau = tauDAO.save(newTau);
+//        System.out.println(resultSaveTau ? "Them thanh cong " : "Them that bai");
+
+//        <---------UPDATE--------->
+//        Tau returnTau = tauDAO.getById("T1111");
+//        System.out.println(returnTau);
+//        returnTau.setTenTau("Tàu " + faker.name().lastName());
+//        returnTau.setSoToa(faker.number().numberBetween(5, 20));
+//        boolean resultUpdateTau =  tauDAO.update(returnTau);
+////        System.out.println(resultUpdateTau ? returnTau : "Update that bai");
+//        <-------DELETE--------->
+//        String maTuyen = "T1111";
+//        boolean resultDeleteTau = tauDAO.delete(maTuyen);
+//        System.out.println(resultDeleteTau ? "Xoa thanh cong" : "Xoa that bai");
+
+
+
+
+
 
 
 
