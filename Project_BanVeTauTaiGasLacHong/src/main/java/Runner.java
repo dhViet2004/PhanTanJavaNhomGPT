@@ -2,6 +2,7 @@ import datafaker.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 import model.ChoNgoi;
+import model.KhachHang;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,11 +13,15 @@ public class Runner {
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
+        KhuyenMaiDF.generateAndPrintSampleData(em);
         LoaiToaDF.generateSampleData(em);
         TuyenTauDF.generateSampleData(em);
         TauDF.generateSampleData(em);
         ToaTauDF.generateSampleData(em);
         LoaiChoDF.generateSampleData(em);
+
+        KhachHangDF khachHangDF = new KhachHangDF();
+        khachHangDF.generateAndPrintSampleData();
 
         LocalDate day = LocalDate.of(2024,5,1);
         LocalDate day1 = LocalDate.of(2023,4,2);
