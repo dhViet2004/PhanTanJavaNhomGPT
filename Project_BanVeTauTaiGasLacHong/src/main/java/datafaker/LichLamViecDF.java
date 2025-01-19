@@ -21,7 +21,6 @@ public class LichLamViecDF {
         EntityTransaction transaction = em.getTransaction();
 
         Faker faker = new Faker();
-
         for(int i = 0; i < 10; i++)
         {
 
