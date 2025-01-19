@@ -1,14 +1,16 @@
 package model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.Set;
 
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-
+@Data
 public class KhachHang {
     @Id
     @EqualsAndHashCode.Include
@@ -34,7 +36,7 @@ public class KhachHang {
     @ManyToOne
     @JoinColumn(name = "ma_loai_khach_hang", nullable = false)
     private LoaiKhachHang loaiKhachHang;
-
+    @ToString.Exclude
     @OneToMany(mappedBy = "khachHang")
     private Set<HoaDon> hoaDons;
 }

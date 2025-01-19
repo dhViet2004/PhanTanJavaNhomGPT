@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.util.Set;
 
@@ -20,6 +21,8 @@ public class LoaiKhachHang {
     private String maLoaiKhachHang;
     @Column(name = "ten_loai_khach_hang", columnDefinition = "varchar(255)", nullable = false)
     private String tenLoaiKhachHang;
+
+    @ToString.Exclude
     @OneToMany(mappedBy = "loaiKhachHang")
     private Set<KhachHang> khachHangs;
 
