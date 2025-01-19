@@ -23,6 +23,15 @@ public class Runner {
         KhachHangDF khachHangDF = new KhachHangDF();
         khachHangDF.generateAndPrintSampleData();
 
+        LoaiHoaDonDF faker = new LoaiHoaDonDF();
+        faker.generateAndSaveLoaiHoaDons(em);
+
+        HoaDonDF hoaDonFaker = new HoaDonDF(em);
+        hoaDonFaker.generateHoaDonData(50); // Tạo 20 hóa đơn
+
+        ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
+        chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
+
         LocalDate day = LocalDate.of(2024,5,1);
         LocalDate day1 = LocalDate.of(2023,4,2);
         LocalDate day2 = LocalDate.of(2022,3,3);

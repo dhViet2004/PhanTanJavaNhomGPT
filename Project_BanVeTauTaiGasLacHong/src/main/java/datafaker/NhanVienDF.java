@@ -50,8 +50,8 @@ public class NhanVienDF {
             nhanVien.setTaiKhoan(taiKhoan);
 
             // Lưu nhân viên và tài khoản
-//            em.persist(nhanVien);
-//            em.persist(taiKhoan);
+            em.persist(nhanVien);
+            em.persist(taiKhoan);
             System.out.println(nhanVien);
             System.out.println(taiKhoan);
 
