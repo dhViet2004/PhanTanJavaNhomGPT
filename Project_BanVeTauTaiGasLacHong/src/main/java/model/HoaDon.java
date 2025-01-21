@@ -4,6 +4,7 @@ package model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,14 +28,17 @@ public class HoaDon {
     @Column(name = "tong_tien", columnDefinition = "double", nullable = false)
     private double tongTien;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_khach_hang", nullable = false)
     private KhachHang khachHang;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_nhan_vien", nullable = false)
     private NhanVien nv;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_loai_hd", nullable = false)
     private LoaiHoaDon loaiHoaDon;

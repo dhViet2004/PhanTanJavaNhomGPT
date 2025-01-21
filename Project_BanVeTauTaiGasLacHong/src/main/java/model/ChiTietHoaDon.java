@@ -2,6 +2,7 @@ package model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 @Entity
@@ -11,11 +12,13 @@ public class ChiTietHoaDon {
     @EmbeddedId
     private ChiTietHoaDonId id;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("maHD")  // Maps maHD in the composite key
     @JoinColumn(name = "ma_hd", referencedColumnName = "ma_hd", nullable = false)
     private HoaDon hoaDon;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("maVe")  // Maps maVe in the composite key
     @JoinColumn(name = "ma_ve", referencedColumnName = "ma_ve", nullable = false)
