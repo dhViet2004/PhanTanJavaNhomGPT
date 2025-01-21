@@ -3,35 +3,35 @@ package dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
-import model.LichTrinhTau;
+import model.VeTau;
 
 import java.util.List;
 
-public class LichTrinhTauDAO {
-    public List<LichTrinhTau> getAllList() {
+public class VeTauDAO {
+    public List<VeTau> getAllList() {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
         EntityTransaction tx = em.getTransaction();
-        List<LichTrinhTau> list = null;
+        List<VeTau> list = null;
         tx.begin();
         try {
-            list = em.createQuery("select ltt from LichTrinhTau ltt", LichTrinhTau.class).getResultList();
+            list = em.createQuery("select vt from VeTau vt", VeTau.class).getResultList();
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách LichTrinhTau");
+            System.err.println("Lỗi khi lấy danh sách VeTau");
         }
         return list;
     }
 
-    public LichTrinhTau getById(String id) {
+    public VeTau getById(String id) {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
         EntityTransaction tr = em.getTransaction();
-        return em.find(LichTrinhTau.class, id);
+        return em.find(VeTau.class, id);
     }
 
-    public boolean save(LichTrinhTau t) {
+    public boolean save(VeTau t) {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
         EntityTransaction tr = em.getTransaction();
@@ -47,7 +47,7 @@ public class LichTrinhTauDAO {
         return false;
     }
 
-    public boolean update(LichTrinhTau t) {
+    public boolean update(VeTau t) {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
         EntityTransaction tr = em.getTransaction();
@@ -69,7 +69,7 @@ public class LichTrinhTauDAO {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            LichTrinhTau t = em.find(LichTrinhTau.class, id);
+            VeTau t = em.find(VeTau.class, id);
             em.remove(t);
             tr.commit();
             return true;

@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
 import model.ChoNgoi;
+import model.LichTrinhTau;
 import model.LoaiCho;
 
 import java.util.ArrayList;
@@ -25,4 +26,59 @@ public class ChoNgoiDAO {
         return list;
     }
 
+    public ChoNgoi getById(String id) {
+        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
+                .createEntityManager();
+        EntityTransaction tr = em.getTransaction();
+        return em.find(ChoNgoi.class, id);
+    }
+
+    public boolean save(ChoNgoi t) {
+        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
+                .createEntityManager();
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            em.persist(t);
+            tr.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
+    public boolean update(ChoNgoi t) {
+        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
+                .createEntityManager();
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            em.merge(t);
+            tr.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
+    public boolean delete(String id) {
+        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
+                .createEntityManager();
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            ChoNgoi t = em.find(ChoNgoi.class, id);
+            em.remove(t);
+            tr.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
 }
