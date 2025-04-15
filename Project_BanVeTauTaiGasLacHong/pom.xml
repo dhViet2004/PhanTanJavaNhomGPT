@@ -8,7 +8,7 @@
     <artifactId>Project_BanVeTauTaiGasLacHong</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Project_BanVeTauTaiGasLacHong</name>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
