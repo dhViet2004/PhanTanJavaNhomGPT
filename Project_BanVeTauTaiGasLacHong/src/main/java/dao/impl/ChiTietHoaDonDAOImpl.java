@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.ChiTietHoaDon;
 import model.ChiTietHoaDonId;
+import util.JPAUtil;
 
 import java.util.List;
 
@@ -11,8 +12,8 @@ public class ChiTietHoaDonDAOImpl {
 
     private EntityManager em;
 
-    public ChiTietHoaDonDAOImpl(EntityManager em) {
-        this.em = em;
+    public ChiTietHoaDonDAOImpl() {
+        this.em = JPAUtil.getEntityManager();
     }
 
     // Create: Thêm chi tiết hóa đơn

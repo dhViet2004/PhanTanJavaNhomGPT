@@ -4,12 +4,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.ToaTau;
+import util.JPAUtil;
 
 import java.util.List;
 @AllArgsConstructor
 public class ToaTauDAOImpl {
     private EntityManager em ;
-
+    public ToaTauDAOImpl(){
+        this.em = JPAUtil.getEntityManager();
+    }
 
     public List<ToaTau> listToaTauBySoGhe(int form, int to){
         String query = "select tt from ToaTau tt "+

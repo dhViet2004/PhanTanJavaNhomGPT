@@ -5,6 +5,7 @@ import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.NhanVien;
 import model.TaiKhoan;
+import util.JPAUtil;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
@@ -15,7 +16,9 @@ import model.TaiKhoan;
 @AllArgsConstructor
 public class NhanVienDAOImpl {
     private EntityManager em;
-
+    public NhanVienDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
     public NhanVien getnhanvienById(String id) {
         EntityTransaction tr = em.getTransaction();
         return em.find(NhanVien.class, id);

@@ -3,14 +3,15 @@ package dao.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.ChoNgoi;
+import util.JPAUtil;
 
 import java.util.List;
 
 public class ChoNgoiDAOImpl {
     private EntityManager em;
 
-    public ChoNgoiDAOImpl(EntityManager em) {
-        this.em = em;
+    public ChoNgoiDAOImpl() {
+        this.em = JPAUtil.getEntityManager();
     }
 
     public List<ChoNgoi> getAllList() {

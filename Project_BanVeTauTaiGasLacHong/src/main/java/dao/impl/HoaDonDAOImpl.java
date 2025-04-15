@@ -3,6 +3,7 @@ package dao.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.HoaDon;
+import util.JPAUtil;
 
 import java.util.List;
 
@@ -10,8 +11,8 @@ public class HoaDonDAOImpl {
 
     private EntityManager em;
 
-    public HoaDonDAOImpl(EntityManager em) {
-        this.em = em;
+    public HoaDonDAOImpl() {
+        this.em = JPAUtil.getEntityManager();
     }
 
     // Create: Thêm hóa đơn mới

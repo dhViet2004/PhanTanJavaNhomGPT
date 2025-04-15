@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.TaiKhoan;
+import util.JPAUtil;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
@@ -15,7 +16,9 @@ import model.TaiKhoan;
 @AllArgsConstructor
 public class TaiKhoanDAOImpl {
     private EntityManager em;
-
+    public TaiKhoanDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
     public TaiKhoan getTaiKhoanById(String id) {
         return em.find(TaiKhoan.class, id);
     }

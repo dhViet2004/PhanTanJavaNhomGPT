@@ -4,11 +4,12 @@ import jakarta.persistence.Persistence;
 import model.ChoNgoi;
 import model.KhachHang;
 
+import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.util.List;
 
 public class Runner {
-    public static void main(String[] args) {
+    public static void main(String[] args)throws RemoteException {
 
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")

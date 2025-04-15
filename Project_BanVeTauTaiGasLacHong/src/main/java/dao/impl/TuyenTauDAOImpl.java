@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.TuyenTau;
+import util.JPAUtil;
 
 import java.util.List;
 
@@ -11,6 +12,11 @@ import java.util.List;
 @AllArgsConstructor
 public class TuyenTauDAOImpl {
     private EntityManager em;
+
+    public TuyenTauDAOImpl() {
+        this.em = JPAUtil.getEntityManager();
+    }
+
     public List<TuyenTau> getListTuyenTauByGaDiGaDen(String gaDi, String gaDen) {
         return em.createNamedQuery("TuyenTau.findByGaDiGaDen", TuyenTau.class)
                 .setParameter(1, gaDi)

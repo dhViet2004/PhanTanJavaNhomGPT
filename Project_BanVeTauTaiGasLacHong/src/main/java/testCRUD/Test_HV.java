@@ -7,13 +7,14 @@ import jakarta.persistence.Persistence;
 import model.LichTrinhTau;
 import net.datafaker.Faker;
 
+import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.util.List;
 
 public class Test_HV {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws RemoteException {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
-        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl(em);
+        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
 
         List<LichTrinhTau> list = lichTrinhTauDAO.getAllList();
         list.forEach(lichTrinhTau -> {

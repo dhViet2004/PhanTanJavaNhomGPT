@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.KhuyenMai;
+import util.JPAUtil;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,7 +13,9 @@ import java.util.List;
 public class KhuyenMaiDAOImpl {
 
     private EntityManager em;
-
+    public KhuyenMaiDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
     // Lấy danh sách tất cả các khuyến mãi
     public List<KhuyenMai> findAll() {
         String query = "select km from KhuyenMai km";

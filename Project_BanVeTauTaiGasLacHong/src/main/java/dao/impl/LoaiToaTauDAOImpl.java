@@ -4,12 +4,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.LoaiToa;
+import util.JPAUtil;
 
 import java.util.List;
 @AllArgsConstructor
 public class LoaiToaTauDAOImpl {
     private EntityManager em;
-
+    public LoaiToaTauDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
     public List<LoaiToa> getListLoaiToa(){
         return em.createNamedQuery("LoaiToa.findAll", LoaiToa.class)
                 .getResultList();

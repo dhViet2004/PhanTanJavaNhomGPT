@@ -20,7 +20,7 @@ public class HoaDonDAOTest {
         EntityManager em = emf.createEntityManager();
 
         // Tạo instance của HoaDonDAO
-        HoaDonDAOImpl hoaDonDAOImpl = new HoaDonDAOImpl(em);
+        HoaDonDAOImpl hoaDonDAOImpl = new HoaDonDAOImpl();
 
         // 1. Thêm hóa đơn mới
         System.out.println("=== Thêm hóa đơn mới ===");

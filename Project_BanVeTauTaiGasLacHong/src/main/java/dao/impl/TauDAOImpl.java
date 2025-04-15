@@ -4,12 +4,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.Tau;
+import util.JPAUtil;
 
 import java.util.List;
 @AllArgsConstructor
 public class TauDAOImpl {
     private EntityManager em;
-
+    public TauDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
     public List<Tau> getAllListT() {
         EntityTransaction tx = em.getTransaction();
         List<Tau> list = null;

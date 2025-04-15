@@ -15,7 +15,7 @@ public class ChiTietHoaDonDAOTest {
         EntityManager em = emf.createEntityManager();
 
         // Tạo instance của ChiTietHoaDonDAO
-        ChiTietHoaDonDAOImpl chiTietHoaDonDAOImpl = new ChiTietHoaDonDAOImpl(em);
+        ChiTietHoaDonDAOImpl chiTietHoaDonDAOImpl = new ChiTietHoaDonDAOImpl();
 
         // 1. Test thêm chi tiết hóa đơn
         ChiTietHoaDonId id = new ChiTietHoaDonId(); // Mã hóa đơn và mã vé giả định

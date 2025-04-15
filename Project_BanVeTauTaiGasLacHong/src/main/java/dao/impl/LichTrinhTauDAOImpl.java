@@ -5,17 +5,22 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.LichTrinhTau;
+import util.JPAUtil;
 
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-@AllArgsConstructor
-public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
-    private EntityManager em;
 
+public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrinhTauDAO  {
+    private EntityManager em;
+    public LichTrinhTauDAOImpl() throws RemoteException {
+        this.em = JPAUtil.getEntityManager();;
+    }
     @Override
-    public List<LichTrinhTau> getAllList() {
+    public List<LichTrinhTau> getAllList() throws RemoteException{
         EntityTransaction tx = em.getTransaction();
         List<LichTrinhTau> list = null;
         try {
@@ -31,12 +36,12 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public LichTrinhTau getById(String id) {
+    public LichTrinhTau getById(String id) throws RemoteException{
         return em.find(LichTrinhTau.class, id);
     }
 
     @Override
-    public boolean save(LichTrinhTau t) {
+    public boolean save(LichTrinhTau t) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -51,7 +56,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public boolean update(LichTrinhTau t) {
+    public boolean update(LichTrinhTau t) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -66,7 +71,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public boolean delete(LichTrinhTau lichTrinhTau) {
+    public boolean delete(LichTrinhTau lichTrinhTau) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -83,7 +88,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
         return false;
     }
 
-    public boolean delete(String id) {
+    public boolean delete(String id) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -101,7 +106,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public List<LichTrinhTau> getListLichTrinhTauByDate(LocalDate date) {
+    public List<LichTrinhTau> getListLichTrinhTauByDate(LocalDate date) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         List<LichTrinhTau> list = null;
         try {
@@ -122,7 +127,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDi(LocalDate date, String gaDi) {
+    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDi(LocalDate date, String gaDi) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         List<LichTrinhTau> list = null;
         try {
@@ -144,7 +149,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDen(LocalDate date, String gaDi, String gaDen) {
+    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDen(LocalDate date, String gaDi, String gaDen)throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         List<LichTrinhTau> list = null;
         try {
@@ -167,7 +172,7 @@ public class LichTrinhTauDAOImpl implements LichTrinhTauDAO {
     }
 
     @Override
-    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(LocalDate date, String gaDi, String gaDen, String gioDi) {
+    public List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(LocalDate date, String gaDi, String gaDen, String gioDi) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         List<LichTrinhTau> list = null;
         try {

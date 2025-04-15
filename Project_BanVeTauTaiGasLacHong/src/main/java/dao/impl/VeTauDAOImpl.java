@@ -3,14 +3,15 @@ package dao.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.VeTau;
+import util.JPAUtil;
 
 import java.util.List;
 
 public class VeTauDAOImpl {
     private EntityManager em;
 
-    public VeTauDAOImpl(EntityManager em) {
-        this.em = em;
+    public VeTauDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
     }
 
     public List<VeTau> getAllList() {

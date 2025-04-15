@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.KhachHang;
+import util.JPAUtil;
 
 import java.util.List;
 
@@ -11,6 +12,9 @@ import java.util.List;
 public class KhachHangDAOImpl {
 
     private EntityManager em;
+    public KhachHangDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
+    }
 
     // Lấy danh sách khách hàng theo tên
     public List<KhachHang> listKhachHangsByName(String name) {

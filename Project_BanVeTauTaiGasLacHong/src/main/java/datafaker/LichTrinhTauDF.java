@@ -9,6 +9,7 @@ import model.*;
 import net.datafaker.Faker;
 import org.hibernate.Hibernate;
 
+import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -149,12 +150,12 @@ public class LichTrinhTauDF {
         return maTau + dateTimePart + "-" + "-" + countPart + maLichTrinh;
     }
 
-    public static void genarateSampleData(EntityManager em) {
+    public static void genarateSampleData(EntityManager em) throws RemoteException {
         EntityTransaction tx = em.getTransaction();
         Faker faker = new Faker();
-        LoaiChoDAOImpl loaiChoDAOImpl = new LoaiChoDAOImpl(em);
+        LoaiChoDAOImpl loaiChoDAOImpl = new LoaiChoDAOImpl();
         ToaTauDAOImpl toaTauDAOImpl = new ToaTauDAOImpl(em);
-        LichTrinhTauDAOImpl lichTrinhTauDAOImpl = new LichTrinhTauDAOImpl(em);
+        LichTrinhTauDAOImpl lichTrinhTauDAOImpl = new LichTrinhTauDAOImpl();
 
         // Lấy danh sách ToaTau và LoaiCho từ cơ sở dữ liệu
         List<ToaTau> listToaTau = toaTauDAOImpl.getlistToaTau();

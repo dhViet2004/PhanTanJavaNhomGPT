@@ -3,14 +3,15 @@ package dao.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.LoaiCho;
+import util.JPAUtil;
 
 import java.util.List;
 
 public class LoaiChoDAOImpl {
     private EntityManager em;
 
-    public LoaiChoDAOImpl(EntityManager em) {
-        this.em = em;
+    public LoaiChoDAOImpl() {
+        this.em = JPAUtil.getEntityManager();;
     }
 
     public List<LoaiCho> getAllList() {

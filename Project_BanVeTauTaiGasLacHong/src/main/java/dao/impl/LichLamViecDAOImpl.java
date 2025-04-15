@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.LichLamViec;
+import util.JPAUtil;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
@@ -15,6 +16,9 @@ import model.LichLamViec;
 public class LichLamViecDAOImpl {
     private EntityManager em;
 
+    public LichLamViecDAOImpl(){
+        this.em = JPAUtil.getEntityManager();
+    }
     public LichLamViec getLichLamViecById(String id) {
         return em.find(LichLamViec.class, id);
     }
