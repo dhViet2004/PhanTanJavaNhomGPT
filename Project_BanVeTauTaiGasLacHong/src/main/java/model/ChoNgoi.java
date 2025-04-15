@@ -5,11 +5,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "cho_ngoi")
-public class ChoNgoi {
+public class ChoNgoi implements Serializable {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_cho", columnDefinition = "VARCHAR(255)", nullable = false, unique = true)

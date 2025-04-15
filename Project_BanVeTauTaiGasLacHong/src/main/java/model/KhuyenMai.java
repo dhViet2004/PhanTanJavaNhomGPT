@@ -3,6 +3,7 @@ package model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Set;
@@ -10,7 +11,7 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "khuyenmai")
-public class KhuyenMai {
+public class KhuyenMai implements Serializable {
     @Id
     @Column(name = "ma_km", columnDefinition = "VARCHAR(255)", nullable = false,unique = true)
     private String maKM;

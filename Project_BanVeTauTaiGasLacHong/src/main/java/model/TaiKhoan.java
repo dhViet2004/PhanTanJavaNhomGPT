@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 /**
  * @Dự án: App
  * @Class: TaiKhoan
@@ -16,7 +18,7 @@ import lombok.ToString;
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "taikhoan")
-public class TaiKhoan {
+public class TaiKhoan implements Serializable {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_nv", columnDefinition = "varchar(255)", nullable = false, unique = true)

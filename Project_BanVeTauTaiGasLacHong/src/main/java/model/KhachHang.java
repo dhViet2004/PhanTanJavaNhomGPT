@@ -5,13 +5,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Set;
 
 @Entity
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Data
-public class KhachHang {
+public class KhachHang implements Serializable {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_khach_hang", columnDefinition = "varchar(255)", nullable = false, unique = true)

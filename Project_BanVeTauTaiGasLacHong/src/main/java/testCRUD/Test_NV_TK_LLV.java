@@ -1,15 +1,8 @@
 package testCRUD;
 
-import dao.LichLamViecDAO;
-import dao.NhanVienDAO;
-import dao.TaiKhoanDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
-import model.LichLamViec;
-import model.NhanVien;
 import net.datafaker.Faker;
-
-import java.time.ZoneId;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong

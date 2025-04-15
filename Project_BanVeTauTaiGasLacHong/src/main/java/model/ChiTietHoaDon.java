@@ -4,10 +4,12 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @Data
 @Entity
 @Table(name = "chitiet_hoadon")
-public class ChiTietHoaDon {
+public class ChiTietHoaDon implements Serializable {
 
     @EmbeddedId
     private ChiTietHoaDonId id;

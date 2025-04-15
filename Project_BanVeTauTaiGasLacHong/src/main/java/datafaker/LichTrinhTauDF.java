@@ -1,8 +1,8 @@
 package datafaker;
 
-import dao.LichTrinhTauDAO;
-import dao.LoaiChoDAO;
-import dao.ToaTauDAO;
+import dao.impl.LichTrinhTauDAOImpl;
+import dao.impl.LoaiChoDAOImpl;
+import dao.impl.ToaTauDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.*;
@@ -27,8 +27,8 @@ public class LichTrinhTauDF {
     public static void generateLichTrinhForDay(EntityManager em, LocalDate day) {
         Faker faker = new Faker();
         EntityTransaction tx = em.getTransaction();
-        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
-        List<ToaTau> listToaTau = toaTauDAO.getlistToaTau();
+        ToaTauDAOImpl toaTauDAOImpl = new ToaTauDAOImpl(em);
+        List<ToaTau> listToaTau = toaTauDAOImpl.getlistToaTau();
         if (listToaTau == null || listToaTau.size() == 0) {
             System.err.println("Chưa có ToaTau trong CSDL");
             return;
@@ -152,15 +152,15 @@ public class LichTrinhTauDF {
     public static void genarateSampleData(EntityManager em) {
         EntityTransaction tx = em.getTransaction();
         Faker faker = new Faker();
-        LoaiChoDAO loaiChoDAO = new LoaiChoDAO();
-        ToaTauDAO toaTauDAO = new ToaTauDAO(em);
-        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAO();
+        LoaiChoDAOImpl loaiChoDAOImpl = new LoaiChoDAOImpl(em);
+        ToaTauDAOImpl toaTauDAOImpl = new ToaTauDAOImpl(em);
+        LichTrinhTauDAOImpl lichTrinhTauDAOImpl = new LichTrinhTauDAOImpl(em);
 
         // Lấy danh sách ToaTau và LoaiCho từ cơ sở dữ liệu
-        List<ToaTau> listToaTau = toaTauDAO.getlistToaTau();
+        List<ToaTau> listToaTau = toaTauDAOImpl.getlistToaTau();
         System.err.println("Lấy danh sách Toatau thành công");
-        List<LoaiCho> listLoaiCho = loaiChoDAO.getAllList();
-        List<LichTrinhTau> listLichTrinhTau  = lichTrinhTauDAO.getAllList();
+        List<LoaiCho> listLoaiCho = loaiChoDAOImpl.getAllList();
+        List<LichTrinhTau> listLichTrinhTau  = lichTrinhTauDAOImpl.getAllList();
         if (listToaTau == null || listToaTau.size() == 0) {
             System.err.println("Chưa có ToaTau trong CSDL");
             return;

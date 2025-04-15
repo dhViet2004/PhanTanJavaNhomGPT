@@ -1,29 +1,30 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
-import model.LichLamViec;
+import model.TaiKhoan;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
- * @Class: LichLamViecDAO
+ * @Class: TaiKhoanDAO
  * @Tạo vào ngày: 18/01/2025
  * @Tác giả: Nguyen Huu Sang
  */
+
 @AllArgsConstructor
-public class LichLamViecDAO {
+public class TaiKhoanDAOImpl {
     private EntityManager em;
 
-    public LichLamViec getLichLamViecById(String id) {
-        return em.find(LichLamViec.class, id);
+    public TaiKhoan getTaiKhoanById(String id) {
+        return em.find(TaiKhoan.class, id);
     }
 
-    public boolean save(LichLamViec llv) {
-        EntityTransaction tr = em.getTransaction();
+    public boolean save (TaiKhoan tk) {
+        EntityTransaction tr =  em.getTransaction();
         try {
             tr.begin();
-            em.persist(llv);
+            em.persist(tk);
             tr.commit();
             return true;
         } catch (Exception e) {
@@ -32,12 +33,31 @@ public class LichLamViecDAO {
         }
         return false;
     }
-
-    public boolean update(LichLamViec llv) {
+// update password với maNV
+    public boolean updatePassword (String maNV, String passWord) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            em.merge(llv);
+            TaiKhoan tk = em.find(TaiKhoan.class, maNV);
+            if (tk != null){
+                tk.setPassWord(passWord);
+                em.merge(tk);
+                tr.commit();
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            tr.rollback();
+        }
+        return false;
+    }
+
+    public  boolean delete (String id) {
+        EntityTransaction tr = em.getTransaction();
+        try {
+            tr.begin();
+            TaiKhoan tk = em.find(TaiKhoan.class, id);
+            em.remove(tk);
             tr.commit();
             return true;
         } catch (Exception e) {
@@ -46,20 +66,4 @@ public class LichLamViecDAO {
         }
         return false;
     }
-
-    public boolean delete(String id) {
-        EntityTransaction tr = em.getTransaction();
-        try {
-            tr.begin();
-            LichLamViec llv = em.find(LichLamViec.class, id);
-            em.remove(llv);
-            tr.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            tr.rollback();
-        }
-        return false;
-    }
-
 }

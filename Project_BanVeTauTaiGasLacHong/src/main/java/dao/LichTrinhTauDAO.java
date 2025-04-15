@@ -1,82 +1,18 @@
 package dao;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.Persistence;
 import model.LichTrinhTau;
 
+import java.time.LocalDate;
 import java.util.List;
 
-public class LichTrinhTauDAO {
-    public List<LichTrinhTau> getAllList() {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        List<LichTrinhTau> list = null;
-        tx.begin();
-        try {
-            list = em.createQuery("select ltt from LichTrinhTau ltt", LichTrinhTau.class).getResultList();
-            tx.commit();
-        } catch (Exception e) {
-            tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách LichTrinhTau");
-        }
-        return list;
-    }
-
-    public LichTrinhTau getById(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tr = em.getTransaction();
-        return em.find(LichTrinhTau.class, id);
-    }
-
-    public boolean save(LichTrinhTau t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tr = em.getTransaction();
-        try {
-            tr.begin();
-            em.persist(t);
-            tr.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            tr.rollback();
-        }
-        return false;
-    }
-
-    public boolean update(LichTrinhTau t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tr = em.getTransaction();
-        try {
-            tr.begin();
-            em.merge(t);
-            tr.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            tr.rollback();
-        }
-        return false;
-    }
-
-    public boolean delete(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tr = em.getTransaction();
-        try {
-            tr.begin();
-            LichTrinhTau t = em.find(LichTrinhTau.class, id);
-            em.remove(t);
-            tr.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            tr.rollback();
-        }
-        return false;
-    }
+public interface LichTrinhTauDAO {
+    List<LichTrinhTau> getAllList();
+    LichTrinhTau getById(String id);
+    boolean save(LichTrinhTau lichTrinhTau);
+    boolean update(LichTrinhTau lichTrinhTau);
+    boolean delete(LichTrinhTau lichTrinhTau);
+    List<LichTrinhTau> getListLichTrinhTauByDate(LocalDate date);
+    List<LichTrinhTau> getListLichTrinhTauByDateAndGaDi(LocalDate date, String gaDi);
+    List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDen(LocalDate date, String gaDi, String gaDen);
+    List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(LocalDate date, String gaDi, String gaDen, String gioDi);
 }

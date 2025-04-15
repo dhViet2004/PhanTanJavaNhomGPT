@@ -1,62 +1,56 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.Persistence;
-import model.VeTau;
+import lombok.AllArgsConstructor;
+import model.Tau;
 
 import java.util.List;
+@AllArgsConstructor
+public class TauDAOImpl {
+    private EntityManager em;
 
-public class VeTauDAO {
-    public List<VeTau> getAllList() {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
+    public List<Tau> getAllListT() {
         EntityTransaction tx = em.getTransaction();
-        List<VeTau> list = null;
+        List<Tau> list = null;
         tx.begin();
         try {
-            list = em.createQuery("select vt from VeTau vt", VeTau.class).getResultList();
+            list = em.createQuery("select t from Tau t", Tau.class).getResultList();
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách VeTau");
+            tx.rollback();
         }
         return list;
     }
 
-    public VeTau getById(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
+    public Tau getById(String id) {
         EntityTransaction tr = em.getTransaction();
-        return em.find(VeTau.class, id);
+        return em.find(Tau.class, id);
     }
 
-    public boolean save(VeTau t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
+    public boolean save(Tau t) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
             em.persist(t);
             tr.commit();
             return true;
-        } catch (Exception e) {
+        }catch(Exception e) {
             e.printStackTrace();
             tr.rollback();
         }
         return false;
     }
 
-    public boolean update(VeTau t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
+    public boolean update(Tau t) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
             em.merge(t);
             tr.commit();
             return true;
-        } catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
             tr.rollback();
         }
@@ -64,19 +58,18 @@ public class VeTauDAO {
     }
 
     public boolean delete(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            VeTau t = em.find(VeTau.class, id);
+            Tau t = em.find(Tau.class,id);
             em.remove(t);
             tr.commit();
             return true;
-        } catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
             tr.rollback();
         }
         return false;
     }
+
 }

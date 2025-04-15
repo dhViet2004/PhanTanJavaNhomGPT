@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Set;
 
 @Data
@@ -12,7 +13,7 @@ import java.util.Set;
 @Entity
 @Table(name = "ToaTau")
 
-public class ToaTau {
+public class ToaTau implements Serializable {
 
     @Id
     @EqualsAndHashCode.Include

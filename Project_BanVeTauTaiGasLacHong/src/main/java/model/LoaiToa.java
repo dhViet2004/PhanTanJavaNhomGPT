@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Set;
 
 @Data
@@ -19,7 +20,7 @@ import java.util.Set;
                 query = "select * from loaitoa where ma_loai_toa like :maLoaiToa",
                 resultClass = LoaiToa.class)
 })
-public class LoaiToa {
+public class LoaiToa implements Serializable {
     @Id
     @Column(name = "ma_loai_toa", columnDefinition = "varchar(255)", nullable = false)
     @EqualsAndHashCode.Include

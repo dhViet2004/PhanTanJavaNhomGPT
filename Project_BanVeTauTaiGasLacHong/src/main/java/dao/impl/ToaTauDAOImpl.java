@@ -1,16 +1,13 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.Persistence;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import model.ToaTau;
-import model.TuyenTau;
 
 import java.util.List;
 @AllArgsConstructor
-public class ToaTauDAO {
+public class ToaTauDAOImpl {
     private EntityManager em ;
 
 

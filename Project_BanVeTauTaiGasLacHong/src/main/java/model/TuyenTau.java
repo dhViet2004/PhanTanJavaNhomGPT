@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Set;
 
 @Data
@@ -13,13 +14,13 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NamedNativeQueries({
         @NamedNativeQuery(name = "TuyenTau.findByGaDiGaDen",
-                            query = "select * from tuyentau where ga_di = :gaDi and ga_den = :gaDen",
+                query = "select * from tuyentau where ga_di = ?1 and ga_den = ?2",
         resultClass = TuyenTau.class),
         @NamedNativeQuery(name = "TuyenTau.findAll",
                             query = "select * from tuyentau",
         resultClass = TuyenTau.class)
 })
-public class TuyenTau {
+public class TuyenTau implements Serializable {
     @Id
     @Column(name = "ma_tuyen", columnDefinition = "varchar(255)",unique = true, nullable = false)
     @EqualsAndHashCode.Include

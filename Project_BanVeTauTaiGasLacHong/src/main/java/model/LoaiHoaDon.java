@@ -5,13 +5,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serializable;
 import java.util.Set;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "loaihoadon")
-public class LoaiHoaDon {
+public class LoaiHoaDon implements Serializable {
     @Id
     @Column(name = "ma_loai_hd", columnDefinition = "varchar(255)", nullable = false, unique = true)
     @EqualsAndHashCode.Include

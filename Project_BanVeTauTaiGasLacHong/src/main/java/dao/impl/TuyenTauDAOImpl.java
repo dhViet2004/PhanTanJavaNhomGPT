@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -9,12 +9,12 @@ import java.util.List;
 
 
 @AllArgsConstructor
-public class TuyenTauDAO {
+public class TuyenTauDAOImpl {
     private EntityManager em;
     public List<TuyenTau> getListTuyenTauByGaDiGaDen(String gaDi, String gaDen) {
         return em.createNamedQuery("TuyenTau.findByGaDiGaDen", TuyenTau.class)
-                .setParameter("gaDi", gaDi)
-                .setParameter("gaDen",gaDen)
+                .setParameter(1, gaDi)
+                .setParameter(2, gaDen)
                 .getResultList();
     }
 

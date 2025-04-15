@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
@@ -13,7 +14,7 @@ import java.util.Set;
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "lichtrinhtau")
-public class LichTrinhTau {
+public class LichTrinhTau implements Serializable {
     @Id
     @Column(name = "ma_lich", columnDefinition = "VARCHAR(255)", nullable = false,unique = true)
     private  String maLich;

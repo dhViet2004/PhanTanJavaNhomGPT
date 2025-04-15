@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -6,11 +6,11 @@ import model.HoaDon;
 
 import java.util.List;
 
-public class HoaDonDAO {
+public class HoaDonDAOImpl {
 
     private EntityManager em;
 
-    public HoaDonDAO(EntityManager em) {
+    public HoaDonDAOImpl(EntityManager em) {
         this.em = em;
     }
 

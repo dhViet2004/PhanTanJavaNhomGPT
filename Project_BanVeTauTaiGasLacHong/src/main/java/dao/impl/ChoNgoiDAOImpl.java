@@ -1,41 +1,38 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.Persistence;
 import model.ChoNgoi;
-import model.LichTrinhTau;
-import model.LoaiCho;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class ChoNgoiDAO {
-    public static List<ChoNgoi> getAllList() {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
+public class ChoNgoiDAOImpl {
+    private EntityManager em;
+
+    public ChoNgoiDAOImpl(EntityManager em) {
+        this.em = em;
+    }
+
+    public List<ChoNgoi> getAllList() {
         EntityTransaction tx = em.getTransaction();
         List<ChoNgoi> list = null;
-        tx.begin();
         try {
-            list = em.createQuery("select cn from ChoNgoi cn", ChoNgoi.class).getResultList();
+            tx.begin();
+            list = em.createQuery("SELECT cn FROM ChoNgoi cn", ChoNgoi.class).getResultList();
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách LoaiCho");
+            System.err.println("Lỗi khi lấy danh sách ChoNgoi");
+            e.printStackTrace();
         }
         return list;
     }
 
     public ChoNgoi getById(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
-        EntityTransaction tr = em.getTransaction();
         return em.find(ChoNgoi.class, id);
     }
 
     public boolean save(ChoNgoi t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -50,8 +47,6 @@ public class ChoNgoiDAO {
     }
 
     public boolean update(ChoNgoi t) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -66,13 +61,13 @@ public class ChoNgoiDAO {
     }
 
     public boolean delete(String id) {
-        EntityManager em = Persistence.createEntityManagerFactory("mariadb")
-                .createEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
             ChoNgoi t = em.find(ChoNgoi.class, id);
-            em.remove(t);
+            if (t != null) {
+                em.remove(t);
+            }
             tr.commit();
             return true;
         } catch (Exception e) {

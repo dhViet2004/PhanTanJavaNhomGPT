@@ -1,24 +1,29 @@
 package testCRUD;
 
-import dao.LoaiToaTauDAO;
-import dao.TauDAO;
-import dao.ToaTauDAO;
-import dao.TuyenTauDAO;
+import dao.LichTrinhTauDAO;
+import dao.impl.LichTrinhTauDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
-import model.LoaiToa;
-import model.Tau;
-import model.ToaTau;
-import model.TuyenTau;
+import model.LichTrinhTau;
 import net.datafaker.Faker;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class Test_HV {
     public static void main(String[] args) {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
+        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl(em);
 
-        Faker faker = new Faker();
+        List<LichTrinhTau> list = lichTrinhTauDAO.getAllList();
+        list.forEach(lichTrinhTau -> {
+            System.out.println(lichTrinhTau);
+        });
+        List<LichTrinhTau> listLichTrinhTauByDateByGaDiGaDen = lichTrinhTauDAO.getListLichTrinhTauByDateAndGaDiGaDen(LocalDate.of(2025,01,24), "Swift Extension", "Freddie Manors");
+        listLichTrinhTauByDateByGaDiGaDen.forEach(lichTrinhTau -> {
+            System.out.println(lichTrinhTau);
+        });
+//        Faker faker = new Faker();
 //        <--------CRUD Tuyến Tàu ---------->
 //        TuyenTauDAO tuyenTauDAO = new TuyenTauDAO(em);
 //            <---------SAVE-------->

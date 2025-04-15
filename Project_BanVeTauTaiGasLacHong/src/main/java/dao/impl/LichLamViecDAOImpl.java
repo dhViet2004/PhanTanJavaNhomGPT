@@ -1,39 +1,29 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
-import model.NhanVien;
-import model.TaiKhoan;
+import model.LichLamViec;
 
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
- * @Class: NhanVienDAO
+ * @Class: LichLamViecDAO
  * @Tạo vào ngày: 18/01/2025
  * @Tác giả: Nguyen Huu Sang
  */
 @AllArgsConstructor
-public class NhanVienDAO {
+public class LichLamViecDAOImpl {
     private EntityManager em;
 
-    public NhanVien getnhanvienById(String id) {
-        EntityTransaction tr = em.getTransaction();
-        return em.find(NhanVien.class, id);
+    public LichLamViec getLichLamViecById(String id) {
+        return em.find(LichLamViec.class, id);
     }
 
-    public boolean save(NhanVien nv) {
+    public boolean save(LichLamViec llv) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            em.persist(nv);
-
-            //create tai khoan với NhanVien
-            TaiKhoan taiKhoan = new TaiKhoan();
-            taiKhoan.setMaNV(nv.getMaNV());
-            taiKhoan.setPassWord("Abc123.");
-            taiKhoan.setNhanVien(nv);
-            em.persist(taiKhoan);
-
+            em.persist(llv);
             tr.commit();
             return true;
         } catch (Exception e) {
@@ -43,11 +33,11 @@ public class NhanVienDAO {
         return false;
     }
 
-    public boolean update(NhanVien nv) {
+    public boolean update(LichLamViec llv) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            em.merge(nv);
+            em.merge(llv);
             tr.commit();
             return true;
         } catch (Exception e) {
@@ -61,15 +51,8 @@ public class NhanVienDAO {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
-            NhanVien nv = em.find(NhanVien.class, id);
-            if (nv != null) {
-                // TÌm và xóa tài khoản liên kết
-                TaiKhoan taiKhoan = em.find(TaiKhoan.class, id);
-                if (taiKhoan != null) {
-                    em.remove(taiKhoan);
-                }
-                em.remove(nv);
-            }
+            LichLamViec llv = em.find(LichLamViec.class, id);
+            em.remove(llv);
             tr.commit();
             return true;
         } catch (Exception e) {

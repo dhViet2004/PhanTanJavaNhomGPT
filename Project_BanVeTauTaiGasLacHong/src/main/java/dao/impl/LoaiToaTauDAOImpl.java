@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -7,7 +7,7 @@ import model.LoaiToa;
 
 import java.util.List;
 @AllArgsConstructor
-public class LoaiToaTauDAO {
+public class LoaiToaTauDAOImpl {
     private EntityManager em;
 
     public List<LoaiToa> getListLoaiToa(){

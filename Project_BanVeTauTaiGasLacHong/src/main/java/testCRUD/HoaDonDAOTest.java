@@ -1,6 +1,6 @@
 package testCRUD;
 
-import dao.HoaDonDAO;
+import dao.impl.HoaDonDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -9,7 +9,6 @@ import model.KhachHang;
 import model.LoaiHoaDon;
 import model.NhanVien;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class HoaDonDAOTest {
         EntityManager em = emf.createEntityManager();
 
         // Tạo instance của HoaDonDAO
-        HoaDonDAO hoaDonDAO = new HoaDonDAO(em);
+        HoaDonDAOImpl hoaDonDAOImpl = new HoaDonDAOImpl(em);
 
         // 1. Thêm hóa đơn mới
         System.out.println("=== Thêm hóa đơn mới ===");
@@ -37,24 +36,24 @@ public class HoaDonDAOTest {
         hoaDon.setLoaiHoaDon(loaiHoaDon); // Loại hóa đơn
         hoaDon.setTienGiam(0.0); // Số tiền giảm giá
 
-        boolean isSaved = hoaDonDAO.saveHoaDon(hoaDon);
+        boolean isSaved = hoaDonDAOImpl.saveHoaDon(hoaDon);
         System.out.println("Thêm hóa đơn: " + (isSaved ? "Thành công" : "Thất bại"));
 
         // 2. Lấy danh sách tất cả hóa đơn
         System.out.println("\n=== Danh sách tất cả hóa đơn ===");
-        List<HoaDon> allHoaDons = hoaDonDAO.getAllHoaDons();
+        List<HoaDon> allHoaDons = hoaDonDAOImpl.getAllHoaDons();
         allHoaDons.forEach(System.out::println);
 
         // 3. Tìm hóa đơn theo mã hóa đơn
         System.out.println("\n=== Tìm hóa đơn theo mã hóa đơn ===");
-        HoaDon foundHoaDon = hoaDonDAO.getHoaDonById("HD001");
+        HoaDon foundHoaDon = hoaDonDAOImpl.getHoaDonById("HD001");
         System.out.println("Kết quả: " + (foundHoaDon != null ? foundHoaDon : "Không tìm thấy"));
 
         // 4. Cập nhật thông tin hóa đơn
         System.out.println("\n=== Cập nhật thông tin hóa đơn ===");
         if (foundHoaDon != null) {
             foundHoaDon.setTongTien(600000.0); // Cập nhật tổng tiền
-            boolean isUpdated = hoaDonDAO.updateHoaDon(foundHoaDon);
+            boolean isUpdated = hoaDonDAOImpl.updateHoaDon(foundHoaDon);
             System.out.println("Cập nhật hóa đơn: " + (isUpdated ? "Thành công" : "Thất bại"));
         } else {
             System.out.println("Không tìm thấy hóa đơn để cập nhật.");
@@ -62,7 +61,7 @@ public class HoaDonDAOTest {
 
         // 5. Xóa hóa đơn theo mã hóa đơn
         System.out.println("\n=== Xóa hóa đơn theo mã hóa đơn ===");
-        boolean isDeleted = hoaDonDAO.deleteHoaDon("HD997009");
+        boolean isDeleted = hoaDonDAOImpl.deleteHoaDon("HD997009");
         System.out.println("Xóa hóa đơn: " + (isDeleted ? "Thành công" : "Thất bại"));
 
         // Đóng EntityManager và EntityManagerFactory

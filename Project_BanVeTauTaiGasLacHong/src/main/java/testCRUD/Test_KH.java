@@ -1,17 +1,15 @@
 package testCRUD;
 
-import dao.KhachHangDAO;
+import dao.impl.KhachHangDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
-import model.KhachHang;
-import model.LoaiKhachHang;
 
 public class Test_KH {
     public static void main(String[] args) {
 
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
-        KhachHangDAO khachHangDAO = new KhachHangDAO(em);
+        KhachHangDAOImpl khachHangDAOImpl = new KhachHangDAOImpl(em);
 //        System.out.println("Danh sách khách hàng có tên là Nguyễn");
 //        khachHangDAO.listKhachHangsByName("Tân").forEach(kh -> {
 //            System.out.println(kh);
@@ -36,7 +34,7 @@ public class Test_KH {
 //        loaiKhachHang.setMaLoaiKhachHang("LKH001");
 //        khachHang.setLoaiKhachHang(loaiKhachHang);
 //        khachHangDAO.save(khachHang);
-        khachHangDAO.delete("KH01");
+        khachHangDAOImpl.delete("KH01");
 
 
     }

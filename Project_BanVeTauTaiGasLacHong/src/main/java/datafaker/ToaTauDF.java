@@ -1,6 +1,6 @@
 package datafaker;
 
-import dao.TauDAO;
+import dao.impl.TauDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.LoaiToa;
@@ -14,8 +14,8 @@ public class ToaTauDF {
 
     public static void generateSampleData(EntityManager em) {
         // lấy danh sách các tàu
-        TauDAO tauDAO = new TauDAO(em);
-        List<Tau> tauList = tauDAO.getAllListT();
+        TauDAOImpl tauDAOImpl = new TauDAOImpl(em);
+        List<Tau> tauList = tauDAOImpl.getAllListT();
         // Khởi tạo Faker
         Faker faker = new Faker();
         EntityTransaction transaction = em.getTransaction();

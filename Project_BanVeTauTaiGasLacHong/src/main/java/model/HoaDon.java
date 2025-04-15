@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -15,7 +16,7 @@ import java.util.Set;
 @Entity
 @Table(name = "hoadon")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class HoaDon {
+public class HoaDon implements Serializable {
     @Id
     @Column(name = "ma_hd", columnDefinition = "varchar(255)", nullable = false, unique = true)
     @EqualsAndHashCode.Include

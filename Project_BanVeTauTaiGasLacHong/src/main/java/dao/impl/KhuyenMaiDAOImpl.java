@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @AllArgsConstructor
-public class KhuyenMaiDAO {
+public class KhuyenMaiDAOImpl {
 
     private EntityManager em;
 

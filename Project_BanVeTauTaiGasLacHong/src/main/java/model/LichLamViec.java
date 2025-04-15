@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -28,7 +29,7 @@ import java.time.LocalDateTime;
                 query = "select * from lichlamviec",
                 resultClass = LichLamViec.class)
 })
-public class LichLamViec {
+public class LichLamViec implements Serializable {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "ma_lich_lam_viec", columnDefinition = "varchar(255)", nullable = false, unique = true)

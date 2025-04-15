@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -7,11 +7,11 @@ import model.ChiTietHoaDonId;
 
 import java.util.List;
 
-public class ChiTietHoaDonDAO {
+public class ChiTietHoaDonDAOImpl {
 
     private EntityManager em;
 
-    public ChiTietHoaDonDAO(EntityManager em) {
+    public ChiTietHoaDonDAOImpl(EntityManager em) {
         this.em = em;
     }
 

@@ -1,4 +1,4 @@
-package dao;
+package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -8,7 +8,7 @@ import model.KhachHang;
 import java.util.List;
 
 @AllArgsConstructor
-public class KhachHangDAO {
+public class KhachHangDAOImpl {
 
     private EntityManager em;
 

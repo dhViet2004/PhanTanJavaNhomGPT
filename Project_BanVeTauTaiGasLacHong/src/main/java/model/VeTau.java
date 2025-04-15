@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -11,7 +12,7 @@ import java.util.Set;
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "vetau")
-public class VeTau {
+public class VeTau implements Serializable {
     @Id
     @Column(name = "ma_ve", columnDefinition = "VARCHAR(255)", unique = true, nullable = false)
     private String maVe;
