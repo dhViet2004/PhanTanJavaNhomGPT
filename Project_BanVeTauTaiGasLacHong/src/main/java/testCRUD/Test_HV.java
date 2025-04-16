@@ -18,12 +18,9 @@ public class Test_HV {
 
         List<LichTrinhTau> list = lichTrinhTauDAO.getAllList();
         list.forEach(lichTrinhTau -> {
-            System.out.println(lichTrinhTau);
+            System.out.println(lichTrinhTau.getTau().getTuyenTau());
         });
-        List<LichTrinhTau> listLichTrinhTauByDateByGaDiGaDen = lichTrinhTauDAO.getListLichTrinhTauByDateAndGaDiGaDen(LocalDate.of(2025,01,24), "Swift Extension", "Freddie Manors");
-        listLichTrinhTauByDateByGaDiGaDen.forEach(lichTrinhTau -> {
-            System.out.println(lichTrinhTau);
-        });
+
 //        Faker faker = new Faker();
 //        <--------CRUD Tuyến Tàu ---------->
 //        TuyenTauDAO tuyenTauDAO = new TuyenTauDAO(em);

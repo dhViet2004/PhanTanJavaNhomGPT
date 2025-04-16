@@ -20,17 +20,42 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
         this.em = JPAUtil.getEntityManager();;
     }
     @Override
-    public List<LichTrinhTau> getAllList() throws RemoteException{
+    public List<LichTrinhTau> getAllList() {
         EntityTransaction tx = em.getTransaction();
         List<LichTrinhTau> list = null;
+        tx.begin();
         try {
-            tx.begin();
-            list = em.createQuery("SELECT ltt FROM LichTrinhTau ltt", LichTrinhTau.class).getResultList();
+            // Sử dụng JOIN FETCH để tải trước dữ liệu của tàu và tuyến tàu
+            // Khi sử dụng JOIN FETCH, Hibernate sẽ tải các đối tượng liên kết trong cùng một câu truy vấn
+            String jpql = "SELECT ltt FROM LichTrinhTau ltt " +
+                    "JOIN FETCH ltt.tau t " +
+                    "JOIN FETCH t.tuyenTau tt";
+
+            list = em.createQuery(jpql, LichTrinhTau.class).getResultList();
+
+            // Đảm bảo dữ liệu đã được tải đầy đủ
+            // Mặc dù với JOIN FETCH không cần thiết phải khởi tạo, nhưng việc này giúp đảm bảo an toàn
+            for (LichTrinhTau ltt : list) {
+                // Truy cập các thuộc tính cần thiết để đảm bảo chúng được tải
+                if (ltt.getTau() != null) {
+                    ltt.getTau().getMaTau(); // Khởi tạo thuộc tính tau
+                    if (ltt.getTau().getTuyenTau() != null) {
+                        ltt.getTau().getTuyenTau().getGaDi(); // Khởi tạo thuộc tính gaDi của tuyenTau
+                        ltt.getTau().getTuyenTau().getGaDen(); // Khởi tạo thuộc tính gaDen của tuyenTau
+                    }
+                }
+            }
+
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
-            System.err.println("Lỗi khi lấy danh sách LichTrinhTau");
+            System.err.println("Lỗi khi lấy danh sách LichTrinhTau: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            // Đóng EntityManager sau khi hoàn thành để giải phóng tài nguyên
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
         return list;
     }
