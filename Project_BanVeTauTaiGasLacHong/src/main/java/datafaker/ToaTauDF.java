@@ -8,13 +8,14 @@ import model.Tau;
 import model.ToaTau;
 import net.datafaker.Faker;
 
+import java.rmi.RemoteException;
 import java.util.List;
 
 public class ToaTauDF {
 
-    public static void generateSampleData(EntityManager em) {
+    public static void generateSampleData(EntityManager em) throws RemoteException {
         // lấy danh sách các tàu
-        TauDAOImpl tauDAOImpl = new TauDAOImpl(em);
+        TauDAOImpl tauDAOImpl = new TauDAOImpl();
         List<Tau> tauList = tauDAOImpl.getAllListT();
         // Khởi tạo Faker
         Faker faker = new Faker();

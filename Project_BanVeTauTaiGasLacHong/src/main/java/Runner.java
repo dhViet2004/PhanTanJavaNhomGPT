@@ -14,41 +14,41 @@ public class Runner {
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
-        KhuyenMaiDF.generateAndPrintSampleData(em);
-        LoaiToaDF.generateSampleData(em);
-        TuyenTauDF.generateSampleData(em);
-        TauDF.generateSampleData(em);
-        ToaTauDF.generateSampleData(em);
-        LoaiChoDF.generateSampleData(em);
-
-        KhachHangDF khachHangDF = new KhachHangDF();
-        khachHangDF.generateAndPrintSampleData();
-
-        LoaiHoaDonDF faker = new LoaiHoaDonDF();
-        faker.generateAndSaveLoaiHoaDons(em);
-
-        HoaDonDF hoaDonFaker = new HoaDonDF(em);
-        hoaDonFaker.generateHoaDonData(50); // Tạo 20 hóa đơn
-
-        ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
-        chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
-
-        LocalDate day = LocalDate.of(2024,5,1);
-        LocalDate day1 = LocalDate.of(2023,4,2);
-        LocalDate day2 = LocalDate.of(2022,3,3);
-        LocalDate day3 = LocalDate.of(2021,2,4);
-        LocalDate day4 = LocalDate.of(2020,1,5);
-        // phương thức tạo Lịch trình tàu với tham số là ngày cho trước (create)
-        LichTrinhTauDF.generateLichTrinhForDay(em,day);
-        LichTrinhTauDF.generateLichTrinhForDay(em,day1);
-        LichTrinhTauDF.generateLichTrinhForDay(em,day2);
-        LichTrinhTauDF.generateLichTrinhForDay(em,day3);
-        LichTrinhTauDF.generateLichTrinhForDay(em,day4);
-//        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
-        LichTrinhTauDF.genarateSampleData(em);
-
-
-        em.close();
+//        KhuyenMaiDF.generateAndPrintSampleData(em);
+//        LoaiToaDF.generateSampleData(em);
+//        TuyenTauDF.generateSampleData(em);
+//        TauDF.generateSampleData(em);
+//        ToaTauDF.generateSampleData(em);
+//        LoaiChoDF.generateSampleData(em);
+//
+//        KhachHangDF khachHangDF = new KhachHangDF();
+//        khachHangDF.generateAndPrintSampleData();
+//
+//        LoaiHoaDonDF faker = new LoaiHoaDonDF();
+//        faker.generateAndSaveLoaiHoaDons(em);
+//
+//        HoaDonDF hoaDonFaker = new HoaDonDF(em);
+//        hoaDonFaker.generateHoaDonData(50); // Tạo 20 hóa đơn
+//
+//        ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
+//        chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
+//
+//        LocalDate day = LocalDate.of(2024,5,1);
+//        LocalDate day1 = LocalDate.of(2023,4,2);
+//        LocalDate day2 = LocalDate.of(2022,3,3);
+//        LocalDate day3 = LocalDate.of(2021,2,4);
+//        LocalDate day4 = LocalDate.of(2020,1,5);
+//        // phương thức tạo Lịch trình tàu với tham số là ngày cho trước (create)
+//        LichTrinhTauDF.generateLichTrinhForDay(em,day);
+//        LichTrinhTauDF.generateLichTrinhForDay(em,day1);
+//        LichTrinhTauDF.generateLichTrinhForDay(em,day2);
+//        LichTrinhTauDF.generateLichTrinhForDay(em,day3);
+//        LichTrinhTauDF.generateLichTrinhForDay(em,day4);
+////        // phát sinh dữ liệu cho 4 bảng LoaiCho, ChoNgoi, Vetau, LichTrinhTau liên kết với ToaTau và Tau
+//        LichTrinhTauDF.genarateSampleData(em);
+//
+//
+//        em.close();
 
 //        // Dùng datafaker tạo dữ liệu mẫu của lịch làm việc, nhân viên, tài khoản
 //        EntityTransaction transaction = em.getTransaction();

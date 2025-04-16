@@ -1,10 +1,13 @@
 package testCRUD;
 
 import dao.LichTrinhTauDAO;
+import dao.TauDAO;
 import dao.impl.LichTrinhTauDAOImpl;
+import dao.impl.TauDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 import model.LichTrinhTau;
+import model.Tau;
 import net.datafaker.Faker;
 
 import java.rmi.RemoteException;
@@ -12,14 +15,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 public class Test_HV {
-    public static void main(String[] args) throws RemoteException {
+    public static void main(String[] args) throws Exception {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
-        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
-
-        List<LichTrinhTau> list = lichTrinhTauDAO.getAllList();
-        list.forEach(lichTrinhTau -> {
-            System.out.println(lichTrinhTau.getTau().getTuyenTau());
-        });
+        TauDAO tauDAO = new TauDAOImpl();
+        List<Tau> taus = tauDAO.getAllListT();
+        taus.forEach(System.out::println);
 
 //        Faker faker = new Faker();
 //        <--------CRUD Tuyến Tàu ---------->

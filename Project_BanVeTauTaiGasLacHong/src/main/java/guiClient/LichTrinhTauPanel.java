@@ -2,8 +2,17 @@ package guiClient;
 
 import com.toedter.calendar.JDateChooser;
 import dao.LichTrinhTauDAO;
+import dao.TauDAO;
 import model.LichTrinhTau;
+import model.Tau;
+import model.TrangThai;
+import service.ScheduleStatusManager;
 
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.swing.*;
@@ -12,18 +21,24 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class LichTrinhTauPanel extends JPanel {
 
@@ -36,11 +51,16 @@ public class LichTrinhTauPanel extends JPanel {
     private JButton addButton;
     private JButton editButton;
     private JButton deleteButton;
-    private JComboBox<String> filterComboBox;
+    private JComboBox<Object> filterComboBox;
+    private JTabbedPane viewTabbedPane; // Tab để chuyển đổi giữa dạng bảng và lịch
+    private TrainScheduleCalendarPanel calendarPanel; // Panel dạng lịch
+    private JPanel tableViewPanel; // Panel chứa bảng
 
     private LichTrinhTauDAO lichTrinhTauDAO;
     private boolean isConnected = false;
-
+    private static LocalDate lastGeneratedDate = LocalDate.now();
+    private static int count = 0;
+    private ScheduleStatusManager statusManager;
     public LichTrinhTauPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -55,6 +75,7 @@ public class LichTrinhTauPanel extends JPanel {
         // Load initial data
         if (isConnected) {
             try {
+                initStatusManager();
                 loadAllScheduleData();
             } catch (RemoteException ex) {
                 LOGGER.log(Level.SEVERE, "Error loading schedule data", ex);
@@ -63,6 +84,70 @@ public class LichTrinhTauPanel extends JPanel {
         } else {
             showErrorMessage("Không thể kết nối đến máy chủ", null);
         }
+    }
+
+    private void initStatusManager() {
+        if (isConnected && lichTrinhTauDAO != null) {
+            // Tạo callback làm mới dữ liệu
+            Runnable refreshCallback = this::refreshDataAfterUpdate;
+
+            // Khởi tạo trình quản lý trạng thái
+            statusManager = new ScheduleStatusManager(lichTrinhTauDAO, refreshCallback);
+
+            LOGGER.info("Đã khởi tạo trình quản lý cập nhật trạng thái tự động");
+        }
+    }
+    private void refreshDataAfterUpdate() {
+        try {
+            // Làm mới dữ liệu trên giao diện mà không gọi cập nhật trạng thái lại
+            loadDataWithoutStatusCheck();
+
+            // Hiển thị thông báo nhỏ (tùy chọn)
+            showNotification("Đã cập nhật trạng thái các lịch trình tàu");
+
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi làm mới dữ liệu sau khi cập nhật trạng thái", ex);
+        }
+    }
+
+    private void loadDataWithoutStatusCheck() throws RemoteException {
+        if (!isConnected || lichTrinhTauDAO == null) {
+            connectToRMIServer();
+            if (!isConnected) {
+                throw new RemoteException("Not connected to RMI server");
+            }
+        }
+
+        tableModel.setRowCount(0);
+
+        try {
+            List<LichTrinhTau> schedules = lichTrinhTauDAO.getAllList();
+
+            if (schedules == null || schedules.isEmpty()) {
+                LOGGER.info("Không có lịch trình nào để hiển thị.");
+                return;
+            }
+
+            // Lọc và hiển thị dữ liệu theo bộ lọc hiện tại
+            String filterOption = filterComboBox.getSelectedItem().toString();
+            for (LichTrinhTau schedule : schedules) {
+                if (matchesFilter(schedule, filterOption)) {
+                    tableModel.addRow(createTableRow(schedule));
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Lỗi chi tiết khi tải dữ liệu: " + e.getMessage(), e);
+            throw new RemoteException("Lỗi khi tải dữ liệu: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Hiển thị thông báo nhỏ ở góc màn hình
+     */
+    private void showNotification(String message) {
+        // Bạn có thể triển khai một thông báo nhỏ ở góc màn hình
+        // hoặc cập nhật một label trạng thái trên giao diện
     }
 
     private JPanel createTitlePanel() {
@@ -81,10 +166,228 @@ public class LichTrinhTauPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
         panel.add(createSearchPanel(), BorderLayout.NORTH);
-        panel.add(createTablePanel(), BorderLayout.CENTER);
+
+        // Tạo TabbedPane để chứa cả chế độ xem bảng và lịch
+        viewTabbedPane = new JTabbedPane();
+
+        // Tạo panel chế độ xem bảng
+        tableViewPanel = new JPanel(new BorderLayout());
+        tableViewPanel.add(createTablePanel(), BorderLayout.CENTER);
+        calendarPanel = new TrainScheduleCalendarPanel(isConnected ? lichTrinhTauDAO : null);
+        // Nếu đã kết nối, tạo panel lịch
+        if (isConnected && lichTrinhTauDAO != null) {
+            // Thiết lập listener cho sự kiện click ngày
+            calendarPanel.setDayPanelClickListener((date, schedules) -> {
+                // Hiển thị danh sách lịch trình của ngày được chọn
+                if (!schedules.isEmpty()) {
+                    showScheduleDetailsDialog(date, schedules);
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "Không có lịch trình nào cho ngày " + date,
+                            "Thông tin",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+            });
+        } else {
+            // Sử dụng TrainScheduleCalendarPanel thay vì JPanel
+            calendarPanel = new TrainScheduleCalendarPanel(null);
+
+            // Thêm nhãn lỗi vào panel
+            JLabel errorLabel = new JLabel("Không thể kết nối đến server để hiển thị lịch");
+            errorLabel.setHorizontalAlignment(JLabel.CENTER);
+            errorLabel.setForeground(Color.RED);
+            calendarPanel.removeAll(); // Xóa tất cả thành phần khác
+            calendarPanel.setLayout(new BorderLayout());
+            calendarPanel.add(errorLabel, BorderLayout.CENTER);
+        }
+
+        // Thêm các tab vào TabbedPane
+        viewTabbedPane.addTab("Dạng Bảng", new ImageIcon(), tableViewPanel, "Hiển thị dạng bảng");
+        viewTabbedPane.addTab("Dạng Lịch", new ImageIcon(), calendarPanel, "Hiển thị dạng lịch");
+
+        panel.add(viewTabbedPane, BorderLayout.CENTER);
         panel.add(createActionPanel(), BorderLayout.SOUTH);
 
         return panel;
+    }
+    // Hiện hộp thoại chi tiết lịch trình khi click vào một ngày trong lịch
+    private void showScheduleDetailsDialog(LocalDate date, List<LichTrinhTau> schedules) {
+        JDialog dialog = new JDialog();
+        dialog.setTitle("Lịch trình ngày " + date);
+        dialog.setSize(800, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setModal(true);
+        dialog.setLayout(new BorderLayout());
+
+        // Tạo panel chứa bảng lịch trình
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Tạo model cho bảng lịch trình
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Mã lịch trình");
+        model.addColumn("Tàu");
+        model.addColumn("Tuyến đường");
+        model.addColumn("Giờ đi");
+        model.addColumn("Giờ đến (dự kiến)");
+        model.addColumn("Trạng thái");
+
+        // Thêm dữ liệu vào bảng
+        for (LichTrinhTau lichTrinh : schedules) {
+            model.addRow(new Object[]{
+                    lichTrinh.getMaLich(),
+                    lichTrinh.getTau().getMaTau() + " - " + lichTrinh.getTau().getTenTau(),
+                    lichTrinh.getTau().getTuyenTau().getGaDi() + " - " + lichTrinh.getTau().getTuyenTau().getGaDen(),
+                    lichTrinh.getGioDi().toString(),
+                    lichTrinh.getGioDi().plusHours(estimateTravelTime(lichTrinh)).toString(),
+                    lichTrinh.getTrangThai()
+            });
+        }
+
+        // Tạo bảng hiển thị lịch trình
+        JTable scheduleTable = new JTable(model);
+        scheduleTable.setRowHeight(25);
+        scheduleTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        scheduleTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+
+        // Set renderer cho cột trạng thái để hiển thị màu tương ứng
+        scheduleTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
+                Component comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                String status = value.toString();
+
+                // Thiết lập màu nền tương ứng với trạng thái
+                if ("Đã khởi hành".equals(status)) {
+                    comp.setBackground(new Color(46, 204, 113)); // Xanh lá
+                    comp.setForeground(Color.WHITE);
+                } else if ("Đã hủy".equals(status)) {
+                    comp.setBackground(new Color(231, 76, 60)); // Đỏ
+                    comp.setForeground(Color.WHITE);
+                } else if ("Bị trễ".equals(status)) {
+                    comp.setBackground(new Color(243, 156, 18)); // Cam
+                    comp.setForeground(Color.WHITE);
+                } else if ("Chưa khởi hành".equals(status)) {
+                    comp.setBackground(new Color(52, 152, 219)); // Xanh dương
+                    comp.setForeground(Color.WHITE);
+                } else {
+                    if (isSelected) {
+                        comp.setBackground(table.getSelectionBackground());
+                        comp.setForeground(table.getSelectionForeground());
+                    } else {
+                        comp.setBackground(table.getBackground());
+                        comp.setForeground(table.getForeground());
+                    }
+                }
+
+                return comp;
+            }
+        });
+
+        // Thêm bảng vào scroll pane
+        JScrollPane scrollPane = new JScrollPane(scheduleTable);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Thêm các nút thao tác
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton editButton = new JButton("Chỉnh sửa", createEditIcon(16, 16));
+        JButton deleteButton = new JButton("Xóa", createDeleteIcon(16, 16));
+        JButton closeButton = new JButton("Đóng");
+
+        // Sự kiện cho nút chỉnh sửa
+        editButton.addActionListener(e -> {
+            int row = scheduleTable.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Vui lòng chọn một lịch trình để chỉnh sửa",
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // Lấy mã lịch trình đã chọn
+            String maLich = (String) scheduleTable.getValueAt(row, 0);
+
+            // Đóng dialog hiện tại
+            dialog.dispose();
+
+            // Gọi hàm chỉnh sửa với mã lịch trình
+            editScheduleById(maLich);
+        });
+
+        // Sự kiện cho nút xóa
+        deleteButton.addActionListener(e -> {
+            int row = scheduleTable.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Vui lòng chọn một lịch trình để xóa",
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // Lấy mã lịch trình đã chọn
+            String maLich = (String) scheduleTable.getValueAt(row, 0);
+
+            // Xác nhận xóa
+            int option = JOptionPane.showConfirmDialog(dialog,
+                    "Bạn có chắc chắn muốn xóa lịch trình " + maLich + "?",
+                    "Xác nhận xóa",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (option == JOptionPane.YES_OPTION) {
+                try {
+                    // Thực hiện xóa
+                    boolean deleted = lichTrinhTauDAO.delete(maLich);
+
+                    if (deleted) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Đã xóa thành công lịch trình " + maLich,
+                                "Thành công",
+                                JOptionPane.INFORMATION_MESSAGE);
+
+                        // Cập nhật lại dữ liệu
+                        refreshData();
+
+                        // Đóng dialog
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Không thể xóa lịch trình " + maLich,
+                                "Lỗi",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Lỗi khi xóa lịch trình: " + ex.getMessage(),
+                            "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Sự kiện cho nút đóng
+        closeButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(editButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(closeButton);
+
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+    private void editScheduleById(String maLich) {
+        // TODO: Triển khai chức năng chỉnh sửa lịch trình theo mã
+        JOptionPane.showMessageDialog(this,
+                "Chức năng chỉnh sửa lịch trình sẽ được triển khai trong phiên bản tiếp theo.",
+                "Thông báo",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void connectToRMIServer() {
@@ -104,7 +407,7 @@ public class LichTrinhTauPanel extends JPanel {
 
                     // Kiểm tra và ghi log danh sách trạng thái
                     try {
-                        List<String> statuses = lichTrinhTauDAO.getTrangThai();
+                        List<TrangThai> statuses = lichTrinhTauDAO.getTrangThai();
                         LOGGER.info("Đã tải " + (statuses != null ? statuses.size() : 0) + " trạng thái từ cơ sở dữ liệu");
                     } catch (Exception e) {
                         LOGGER.log(Level.WARNING, "Lỗi khi tải danh sách trạng thái trong quá trình kết nối", e);
@@ -130,75 +433,490 @@ public class LichTrinhTauPanel extends JPanel {
         JPanel outerPanel = new JPanel(new BorderLayout());
         outerPanel.setBorder(BorderFactory.createTitledBorder("Tìm Kiếm Lịch Trình"));
 
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        // Panel chứa tất cả các điều khiển tìm kiếm
+        JPanel mainSearchPanel = new JPanel(new BorderLayout(0, 10));
 
-        // Date search components
+        // Panel cho hàng đầu tiên (ngày đi và trạng thái)
+        JPanel firstRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+
+        // Thành phần tìm kiếm theo ngày
         JLabel dateLabel = new JLabel("Ngày đi:");
         dateChooser = new JDateChooser();
         dateChooser.setDateFormatString("yyyy-MM-dd");
         dateChooser.setDate(new Date());
         dateChooser.setPreferredSize(new Dimension(150, 28));
 
-        // Filter components
-        JLabel filterLabel = new JLabel("Lọc theo:");
-
-        // Tạo danh sách trạng thái từ cơ sở dữ liệu
-        List<String> statusOptions = new ArrayList<>();
-        statusOptions.add("Tất cả"); // Luôn thêm lựa chọn "Tất cả"
+        // Thành phần lọc theo trạng thái
+        JLabel filterLabel = new JLabel("Lọc theo trạng thái:");
+        DefaultComboBoxModel<Object> filterModel = new DefaultComboBoxModel<>();
+        filterModel.addElement("Tất cả");
 
         try {
             if (isConnected && lichTrinhTauDAO != null) {
-                List<String> dbStatuses = lichTrinhTauDAO.getTrangThai();
+                List<TrangThai> dbStatuses = lichTrinhTauDAO.getTrangThai();
                 if (dbStatuses != null && !dbStatuses.isEmpty()) {
-                    statusOptions.addAll(dbStatuses);
+                    for (TrangThai status : dbStatuses) {
+                        filterModel.addElement(status);
+                    }
                     LOGGER.info("Đã tải thành công " + dbStatuses.size() + " trạng thái từ cơ sở dữ liệu");
                 } else {
                     LOGGER.warning("Không tìm thấy trạng thái nào trong cơ sở dữ liệu");
-                    // Thêm các trạng thái mặc định
-                    statusOptions.add("Đã khởi hành");
-                    statusOptions.add("Chưa khởi hành");
-                    statusOptions.add("Đã hủy");
                 }
-            } else {
-                LOGGER.warning("Chưa kết nối đến server hoặc lichTrinhTauDAO là null");
-                // Thêm các trạng thái mặc định
-                statusOptions.add("Đã khởi hành");
-                statusOptions.add("Chưa khởi hành");
-                statusOptions.add("Đã hủy");
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Lỗi khi tải danh sách trạng thái: " + e.getMessage(), e);
-            // Thêm các trạng thái mặc định nếu có lỗi xảy ra
-            statusOptions.add("Đã khởi hành");
-            statusOptions.add("Chưa khởi hành");
-            statusOptions.add("Đã hủy");
         }
 
-        filterComboBox = new JComboBox<>(statusOptions.toArray(new String[0]));
+        filterComboBox = new JComboBox<>(filterModel);
         filterComboBox.setPreferredSize(new Dimension(150, 28));
 
-        // Search button with custom icon
+        // Custom renderer để hiển thị mô tả của enum
+        filterComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                if (value instanceof TrangThai) {
+                    value = ((TrangThai) value).getValue();
+                }
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
+
+        // Thêm các thành phần vào panel hàng đầu
+        firstRowPanel.add(dateLabel);
+        firstRowPanel.add(dateChooser);
+        firstRowPanel.add(filterLabel);
+        firstRowPanel.add(filterComboBox);
+
+        // Panel cho hàng thứ hai (ga đi, ga đến, giờ đi)
+        JPanel secondRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+
+        // Thành phần tìm kiếm theo ga đi
+        JLabel depStationLabel = new JLabel("Ga đi:");
+
+        // Sử dụng model cho autocomplete ComboBox
+        DefaultComboBoxModel<String> depStationModel = new DefaultComboBoxModel<>();
+        depStationModel.addElement("Tất cả");
+
+        // Tạo ComboBox cho ga đi với AutoComplete
+        JComboBox<String> depStationComboBox = new JComboBox<>(depStationModel);
+        depStationComboBox.setPreferredSize(new Dimension(150, 28));
+        depStationComboBox.setEditable(true);
+
+        // Thêm AutoComplete cho ComboBox ga đi
+        setupAutoComplete(depStationComboBox);
+
+        // Thành phần tìm kiếm theo ga đến
+        JLabel arrStationLabel = new JLabel("Ga đến:");
+
+        // Sử dụng model cho autocomplete ComboBox
+        DefaultComboBoxModel<String> arrStationModel = new DefaultComboBoxModel<>();
+        arrStationModel.addElement("Tất cả");
+
+        // Tạo ComboBox cho ga đến với AutoComplete
+        JComboBox<String> arrStationComboBox = new JComboBox<>(arrStationModel);
+        arrStationComboBox.setPreferredSize(new Dimension(150, 28));
+        arrStationComboBox.setEditable(true);
+
+        // Thêm AutoComplete cho ComboBox ga đến
+        setupAutoComplete(arrStationComboBox);
+
+        // Tải danh sách ga từ cơ sở dữ liệu và thêm vào ComboBox
+        loadStationList(depStationComboBox, arrStationComboBox);
+
+        // Thành phần tìm kiếm theo giờ đi - THAY ĐỔI: Dùng spinner thay cho TextField
+        JLabel depTimeLabel = new JLabel("Giờ đi:");
+
+        // Tạo mô hình cho giờ (0-23) và phút (0-59)
+        SpinnerNumberModel hourModel = new SpinnerNumberModel(0, 0, 23, 1);
+        SpinnerNumberModel minuteModel = new SpinnerNumberModel(0, 0, 59, 1);
+
+        JSpinner hourSpinner = new JSpinner(hourModel);
+        JSpinner minuteSpinner = new JSpinner(minuteModel);
+
+        // Thiết lập editor để hiển thị đúng định dạng
+        JSpinner.NumberEditor hourEditor = new JSpinner.NumberEditor(hourSpinner, "00");
+        hourSpinner.setEditor(hourEditor);
+        JSpinner.NumberEditor minuteEditor = new JSpinner.NumberEditor(minuteSpinner, "00");
+        minuteSpinner.setEditor(minuteEditor);
+
+        // Panel chứa các spinner giờ và phút
+        JPanel timeSpinnerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+        // Thêm nhãn ":" giữa giờ và phút
+        JLabel separator = new JLabel(" : ");
+        separator.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        timeSpinnerPanel.add(hourSpinner);
+        timeSpinnerPanel.add(separator);
+        timeSpinnerPanel.add(minuteSpinner);
+
+        // Checkbox để người dùng có thể chọn tìm theo giờ hay không
+        JCheckBox useTimeCheckBox = new JCheckBox("Tìm theo giờ");
+        useTimeCheckBox.addActionListener(e -> {
+            boolean selected = useTimeCheckBox.isSelected();
+            hourSpinner.setEnabled(selected);
+            minuteSpinner.setEnabled(selected);
+        });
+
+        // Mặc định không tìm kiếm theo giờ
+        useTimeCheckBox.setSelected(false);
+        hourSpinner.setEnabled(false);
+        minuteSpinner.setEnabled(false);
+
+        // Thêm các thành phần vào panel hàng thứ hai
+        secondRowPanel.add(depStationLabel);
+        secondRowPanel.add(depStationComboBox);
+        secondRowPanel.add(arrStationLabel);
+        secondRowPanel.add(arrStationComboBox);
+        secondRowPanel.add(depTimeLabel);
+        secondRowPanel.add(timeSpinnerPanel);
+        secondRowPanel.add(useTimeCheckBox);
+
+        // Panel cho các nút tìm kiếm và làm mới
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+
+        // Nút tìm kiếm với biểu tượng tùy chỉnh
         searchButton = new JButton("Tìm Kiếm");
         searchButton.setIcon(createSearchIcon(16, 16));
-        searchButton.addActionListener(this::searchButtonClicked);
+        searchButton.addActionListener(e -> {
+            try {
+                // Lấy các giá trị tìm kiếm
+                Date selectedDate = dateChooser.getDate();
+                if (selectedDate == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn ngày hợp lệ.");
+                }
 
-        // Refresh button with custom icon
+                LocalDate localDate = selectedDate.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                String gaDi = depStationComboBox.getSelectedItem().toString();
+                if (gaDi.equals("Tất cả")) gaDi = null;
+
+                String gaDen = arrStationComboBox.getSelectedItem().toString();
+                if (gaDen.equals("Tất cả")) gaDen = null;
+
+                // Lấy giá trị giờ nếu checkbox được chọn
+                String gioDi = null;
+                if (useTimeCheckBox.isSelected()) {
+                    int hour = (int) hourSpinner.getValue();
+                    int minute = (int) minuteSpinner.getValue();
+                    gioDi = String.format("%02d:%02d", hour, minute);
+                }
+
+                // Thực hiện tìm kiếm dựa trên các trường đã nhập
+                searchSchedules(localDate, gaDi, gaDen, gioDi);
+
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(LichTrinhTauPanel.this,
+                        ex.getMessage(), "Lỗi tìm kiếm", JOptionPane.ERROR_MESSAGE);
+            } catch (RemoteException ex) {
+                LOGGER.log(Level.SEVERE, "Lỗi khi tìm kiếm lịch trình", ex);
+                showErrorMessage("Lỗi khi tìm kiếm lịch trình", ex);
+            }
+        });
+
+        // Nút làm mới với biểu tượng tùy chỉnh
         refreshButton = new JButton("Làm Mới");
         refreshButton.setIcon(createRefreshIcon(16, 16));
-        refreshButton.addActionListener(e -> refreshData());
+        refreshButton.addActionListener(e -> {
+            // Đặt lại các trường tìm kiếm về giá trị mặc định
+            dateChooser.setDate(new Date());
+            filterComboBox.setSelectedItem("Tất cả");
+            depStationComboBox.setSelectedItem("Tất cả");
+            arrStationComboBox.setSelectedItem("Tất cả");
+            useTimeCheckBox.setSelected(false);
+            hourSpinner.setValue(0);
+            minuteSpinner.setValue(0);
+            hourSpinner.setEnabled(false);
+            minuteSpinner.setEnabled(false);
 
-        // Add components to panel
-        panel.add(dateLabel);
-        panel.add(dateChooser);
-        panel.add(filterLabel);
-        panel.add(filterComboBox);
-        panel.add(searchButton);
-        panel.add(refreshButton);
+            // Làm mới dữ liệu
+            refreshData();
+        });
 
-        outerPanel.add(panel, BorderLayout.CENTER);
+        // Thêm các nút vào panel nút
+        buttonPanel.add(searchButton);
+        buttonPanel.add(refreshButton);
+
+        // Tổng hợp tất cả các panel vào panel chính
+        mainSearchPanel.add(firstRowPanel, BorderLayout.NORTH);
+        mainSearchPanel.add(secondRowPanel, BorderLayout.CENTER);
+        mainSearchPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        outerPanel.add(mainSearchPanel, BorderLayout.CENTER);
         return outerPanel;
     }
 
+    /**
+     * Thiết lập chức năng AutoComplete cho JComboBox
+     * @param comboBox JComboBox cần thêm chức năng AutoComplete
+     */
+    private void setupAutoComplete(JComboBox<String> comboBox) {
+        final JTextField editor = (JTextField) comboBox.getEditor().getEditorComponent();
+
+        // Tạo một ArrayList để lưu các mục ban đầu
+        final List<String> originalItems = new ArrayList<>();
+
+        // Đảm bảo comboBox luôn có "Tất cả" là lựa chọn mặc định đầu tiên
+        comboBox.addItem("Tất cả");
+        originalItems.add("Tất cả");
+
+        // Tạo một lọc văn bản để xử lý sự kiện bàn phím thay vì dùng DocumentListener
+        editor.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                // Bỏ qua các phím đặc biệt
+                if (e.getKeyCode() == KeyEvent.VK_ENTER ||
+                        e.getKeyCode() == KeyEvent.VK_ESCAPE ||
+                        e.getKeyCode() == KeyEvent.VK_UP ||
+                        e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    return;
+                }
+
+                // Lấy văn bản hiện tại trong editor
+                String text = editor.getText();
+
+                // Không thực hiện lọc nếu văn bản quá ngắn
+                if (text.length() < 1) {
+                    return;
+                }
+
+                // Sử dụng SwingUtilities.invokeLater để tránh lỗi khi sửa đổi mô hình trong lúc xử lý sự kiện
+                SwingUtilities.invokeLater(() -> {
+                    filterItems(comboBox, text, originalItems);
+                });
+            }
+        });
+    }
+    private void filterItems(JComboBox<String> comboBox, String text, List<String> originalItems) {
+        // Lưu lại các lựa chọn hiện tại
+        Object selectedItem = comboBox.getSelectedItem();
+        String typedText = text.toLowerCase();
+
+        // Đóng popup trong khi thay đổi mục
+        boolean isPopupVisible = comboBox.isPopupVisible();
+        if (isPopupVisible) {
+            comboBox.hidePopup();
+        }
+
+        // Tạo danh sách các mục phù hợp
+        List<String> matchingItems = originalItems.stream()
+                .filter(item -> item.toLowerCase().contains(typedText) || item.equals("Tất cả"))
+                .collect(Collectors.toList());
+
+        // Làm mới mô hình chỉ khi cần thiết
+        DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) comboBox.getModel();
+        model.removeAllElements();
+
+        // Luôn thêm "Tất cả" trước tiên
+        model.addElement("Tất cả");
+
+        // Thêm các mục phù hợp (trừ "Tất cả" đã thêm)
+        matchingItems.stream()
+                .filter(item -> !item.equals("Tất cả"))
+                .forEach(model::addElement);
+
+        // Đặt lại văn bản cho editor
+        comboBox.getEditor().setItem(text);
+
+        // Hiển thị lại popup nếu trước đó đã mở
+        if (isPopupVisible && model.getSize() > 0) {
+            comboBox.showPopup();
+        }
+    }
+    /**
+     * Tải danh sách ga vào các JComboBox
+     */
+    private void loadStationList(JComboBox<String> depComboBox, JComboBox<String> arrComboBox) {
+        try {
+            if (isConnected && lichTrinhTauDAO != null) {
+                // Lấy danh sách ga từ cơ sở dữ liệu
+                List<String> stations = lichTrinhTauDAO.getAllStations();
+
+                // Xóa tất cả các mục hiện có
+                depComboBox.removeAllItems();
+                arrComboBox.removeAllItems();
+
+                // Luôn thêm "Tất cả" trước tiên
+                depComboBox.addItem("Tất cả");
+                arrComboBox.addItem("Tất cả");
+
+                if (stations != null && !stations.isEmpty()) {
+                    // Thêm các ga vào ComboBox một cách an toàn
+                    for (String station : stations) {
+                        depComboBox.addItem(station);
+                        arrComboBox.addItem(station);
+                    }
+
+                    // Thiết lập AutoComplete cho các ComboBox sau khi đã thêm tất cả các mục
+                    setupComboBoxFiltering(depComboBox);
+                    setupComboBoxFiltering(arrComboBox);
+
+                    LOGGER.info("Đã tải thành công " + stations.size() + " ga từ cơ sở dữ liệu");
+                } else {
+                    LOGGER.warning("Không tìm thấy ga nào trong cơ sở dữ liệu");
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi tải danh sách ga: " + e.getMessage(), e);
+        }
+    }
+    private void setupComboBoxFiltering(JComboBox<String> comboBox) {
+        // Đảm bảo ComboBox có thể chỉnh sửa
+        comboBox.setEditable(true);
+
+        // Lấy tất cả các mục hiện tại
+        List<String> allItems = new ArrayList<>();
+        for (int i = 0; i < comboBox.getItemCount(); i++) {
+            allItems.add(comboBox.getItemAt(i));
+        }
+
+        // Thiết lập renderer đặc biệt để highlight từ khóa tìm kiếm
+        comboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+                if (c instanceof JLabel && value != null) {
+                    ((JLabel) c).setText(value.toString());
+                }
+
+                return c;
+            }
+        });
+
+        // Sử dụng KeyAdapter để xử lý sự kiện gõ phím
+        JTextField editor = (JTextField) comboBox.getEditor().getEditorComponent();
+        editor.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                // Không xử lý các phím đặc biệt
+                if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_UP ||
+                        e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    return;
+                }
+
+                String text = editor.getText().toLowerCase();
+
+                // Sử dụng SwingUtilities.invokeLater để tránh lỗi khi thay đổi mô hình trong sự kiện
+                SwingUtilities.invokeLater(() -> {
+                    // Lưu lại trạng thái popup
+                    boolean wasVisible = comboBox.isPopupVisible();
+                    comboBox.hidePopup();
+
+                    // Tạo model mới
+                    DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+
+                    // Luôn thêm "Tất cả" vào đầu tiên
+                    model.addElement("Tất cả");
+
+                    // Thêm các mục phù hợp
+                    for (String item : allItems) {
+                        if (!item.equals("Tất cả") && item.toLowerCase().contains(text)) {
+                            model.addElement(item);
+                        }
+                    }
+
+                    // Áp dụng model mới
+                    comboBox.setModel(model);
+
+                    // Đặt lại văn bản
+                    comboBox.getEditor().setItem(text);
+                    editor.setCaretPosition(text.length());
+
+                    // Hiển thị lại popup nếu trước đó đã mở và có kết quả
+                    if ((wasVisible || !text.isEmpty()) && model.getSize() > 0) {
+                        comboBox.showPopup();
+                    }
+                });
+            }
+        });
+    }
+
+    private void searchSchedules(LocalDate date, String gaDi, String gaDen, String gioDi) throws RemoteException {
+        if (!isConnected || lichTrinhTauDAO == null) {
+            reconnectAndLoadData(date);
+            if (!isConnected) {
+                throw new RemoteException("Không thể kết nối đến server");
+            }
+        }
+
+        tableModel.setRowCount(0);
+        List<LichTrinhTau> schedules;
+
+        try {
+            // Quyết định phương thức tìm kiếm dựa trên các tham số
+            if (gaDi == null && gaDen == null && gioDi == null) {
+                // Chỉ tìm theo ngày
+                schedules = lichTrinhTauDAO.getListLichTrinhTauByDate(date);
+            } else if (gaDi != null && gaDen == null && gioDi == null) {
+                // Tìm theo ngày và ga đi
+                schedules = lichTrinhTauDAO.getListLichTrinhTauByDateAndGaDi(date, gaDi);
+            } else if (gaDi != null && gaDen != null && gioDi == null) {
+                // Tìm theo ngày, ga đi và ga đến
+                schedules = lichTrinhTauDAO.getListLichTrinhTauByDateAndGaDiGaDen(date, gaDi, gaDen);
+            } else if (gaDi != null && gaDen != null && gioDi != null) {
+                // Tìm theo tất cả các trường
+                schedules = lichTrinhTauDAO.getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(date, gaDi, gaDen, gioDi);
+            } else {
+                // Trường hợp còn lại: có ga đến nhưng không có ga đi, hoặc có giờ đi nhưng thiếu ga đi/đến
+                JOptionPane.showMessageDialog(this,
+                        "Để tìm kiếm với ga đến, bạn cần chọn ga đi trước.\n" +
+                                "Để tìm kiếm với giờ đi, bạn cần chọn cả ga đi và ga đến.",
+                        "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            if (schedules == null || schedules.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Không tìm thấy lịch trình nào phù hợp với tiêu chí tìm kiếm.",
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // Áp dụng bộ lọc trạng thái nếu được chọn
+            Object selectedItem = filterComboBox.getSelectedItem();
+
+            for (LichTrinhTau schedule : schedules) {
+                // Kiểm tra xem lịch trình có phù hợp với bộ lọc trạng thái hay không
+                if (matchesStatusFilter(schedule, selectedItem)) {
+                    tableModel.addRow(createTableRow(schedule));
+                }
+            }
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Lỗi chi tiết khi tìm kiếm: " + e.getMessage(), e);
+            throw new RemoteException("Lỗi khi tìm kiếm: " + e.getMessage(), e);
+        }
+    }
+
+    // Phương thức mới để kiểm tra trạng thái
+    private boolean matchesStatusFilter(LichTrinhTau schedule, Object filterValue) {
+        // Nếu là "Tất cả" hoặc null, hiển thị tất cả
+        if (filterValue == null || "Tất cả".equals(filterValue)) {
+            return true;
+        }
+
+        // Nếu lịch trình không có trạng thái, không phù hợp với bất kỳ bộ lọc nào ngoại trừ "Tất cả"
+        if (schedule.getTrangThai() == null) {
+            return false;
+        }
+
+        // Nếu filterValue là một TrangThai enum
+        if (filterValue instanceof TrangThai) {
+            return schedule.getTrangThai() == filterValue;
+        }
+
+        // Nếu filterValue là một chuỗi (giá trị hiển thị)
+        String filterString = filterValue.toString();
+
+        // So sánh với giá trị hiển thị của trạng thái
+        return schedule.getTrangThai().getValue().equals(filterString);
+    }
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Danh Sách Lịch Trình"));
@@ -230,6 +948,10 @@ public class LichTrinhTauPanel extends JPanel {
         // Áp dụng custom UI cho bảng để có hiệu ứng hover
         setupTableUI();
 
+        // Thiết lập phím tắt và menu ngữ cảnh
+        setupKeyBindings();
+        setupContextMenu();
+
         // Add table to scroll pane
         JScrollPane scrollPane = new JScrollPane(scheduleTable);
         scrollPane.getViewport().setBackground(Color.WHITE);
@@ -248,47 +970,131 @@ public class LichTrinhTauPanel extends JPanel {
         scheduleTable.setGridColor(new Color(230, 230, 230));
         scheduleTable.setBackground(Color.WHITE);
         scheduleTable.setForeground(Color.BLACK);
-        scheduleTable.setSelectionBackground(new Color(66, 139, 202)); // Màu khi chọn
+        scheduleTable.setSelectionBackground(new Color(66, 139, 202)); // Màu khi chọn chính thức
         scheduleTable.setSelectionForeground(Color.WHITE);
 
-        // Thêm hiệu ứng hover bằng cách sử dụng MouseAdapter
+        // Biến để lưu trạng thái lựa chọn và hiệu ứng hover
+        final int[] permanentSelectedRow = {-1}; // Lựa chọn chính thức
+        final int[] hoverRow = {-1}; // Dòng đang hover
+        final boolean[] isUserSelection = {false}; // Cờ đánh dấu người dùng đã chọn một dòng
+
+        // Thêm hiệu ứng hover bằng cách sử dụng MouseMotionAdapter
         scheduleTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e) {
+                // Lấy dòng hiện tại đang hover
                 Point point = e.getPoint();
-                int row = scheduleTable.rowAtPoint(point);
+                int currentRow = scheduleTable.rowAtPoint(point);
 
-                if (row >= 0) {
-                    // Đặt hàng đang hover thành màu xanh nhạt
-                    if (scheduleTable.getSelectedRow() != row) {
-                        scheduleTable.clearSelection();
-                        scheduleTable.addRowSelectionInterval(row, row);
-                        scheduleTable.setSelectionBackground(new Color(173, 216, 230)); // Màu xanh dương nhạt
+                // Nếu di chuyển đến một dòng mới
+                if (currentRow != hoverRow[0]) {
+                    // Cập nhật dòng đang hover
+                    hoverRow[0] = currentRow;
+
+                    // Nếu người dùng đã có lựa chọn chính thức, chỉ hiển thị hiệu ứng hover
+                    if (isUserSelection[0] && permanentSelectedRow[0] >= 0) {
+                        // Nạp lại chọn chính thức
+                        scheduleTable.setSelectionBackground(new Color(66, 139, 202));
+                        scheduleTable.setSelectionForeground(Color.WHITE);
+                        scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
+
+                        // Vẽ hiệu ứng hover cho dòng hiện tại (có thể thực hiện qua custom renderer)
+                        scheduleTable.repaint();
+                    }
+                    // Nếu không có lựa chọn chính thức, áp dụng hiệu ứng hover như lựa chọn
+                    else if (currentRow >= 0) {
+                        scheduleTable.setSelectionBackground(new Color(173, 216, 230)); // Màu xanh nhạt cho hover
                         scheduleTable.setSelectionForeground(Color.BLACK);
+                        scheduleTable.setRowSelectionInterval(currentRow, currentRow);
                     }
                 }
             }
         });
 
+        // Xử lý các sự kiện chuột khác
         scheduleTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                // Khi chuột rời khỏi bảng, xóa hiệu ứng hover
-                scheduleTable.clearSelection();
+                hoverRow[0] = -1; // Xóa trạng thái hover
+
+                // Nếu có lựa chọn chính thức, giữ nguyên lựa chọn đó
+                if (isUserSelection[0] && permanentSelectedRow[0] >= 0) {
+                    scheduleTable.setSelectionBackground(new Color(66, 139, 202));
+                    scheduleTable.setSelectionForeground(Color.WHITE);
+                    scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
+                }
+                // Nếu chỉ là hover, xóa lựa chọn khi rời khỏi bảng
+                else {
+                    scheduleTable.clearSelection();
+                }
             }
 
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 int row = scheduleTable.getSelectedRow();
                 if (row >= 0) {
-                    // Khi click, đặt màu chọn thành màu xanh đậm
+                    // Lưu lựa chọn chính thức
+                    permanentSelectedRow[0] = row;
+                    isUserSelection[0] = true;
+
+                    // Đặt màu chọn thành màu xanh đậm
                     scheduleTable.setSelectionBackground(new Color(66, 139, 202));
                     scheduleTable.setSelectionForeground(Color.WHITE);
                 }
             }
         });
 
-        // Thiết lập UI cho header
+        // Theo dõi các thay đổi trong lựa chọn
+        scheduleTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = scheduleTable.getSelectedRow();
+                // Nếu người dùng đã chọn một dòng nhưng bây giờ không có dòng nào được chọn,
+                // và chọn cuối cùng vẫn hợp lệ, thì khôi phục lựa chọn đó
+                if (selectedRow == -1 && isUserSelection[0] && permanentSelectedRow[0] >= 0 &&
+                        permanentSelectedRow[0] < scheduleTable.getRowCount()) {
+                    scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
+                }
+            }
+        });
+
+        // Sử dụng custom renderer để hiển thị màu hover
+        scheduleTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
+                Component comp = super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column);
+
+                // Nếu dòng này là lựa chọn chính thức
+                if (isSelected && row == permanentSelectedRow[0] && isUserSelection[0]) {
+                    comp.setBackground(new Color(66, 139, 202)); // Màu xanh đậm cho lựa chọn
+                    comp.setForeground(Color.WHITE);
+                }
+                // Nếu dòng này đang được hover
+                else if (isSelected && row == hoverRow[0]) {
+                    comp.setBackground(new Color(173, 216, 230)); // Màu xanh nhạt cho hover
+                    comp.setForeground(Color.BLACK);
+                }
+                // Màu sắc thông thường cho các dòng lẻ chẵn
+                else {
+                    if (row % 2 == 0) {
+                        comp.setBackground(Color.WHITE);
+                    } else {
+                        comp.setBackground(new Color(245, 245, 245)); // Màu xám nhạt
+                    }
+                    comp.setForeground(Color.BLACK);
+                }
+
+                // Canh lề và font
+                ((JLabel) comp).setHorizontalAlignment(SwingConstants.CENTER);
+                comp.setFont(new Font("Arial", Font.PLAIN, 12));
+
+                return comp;
+            }
+        });
+
+        // Thiết lập UI cho header (giữ nguyên)
         scheduleTable.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -330,7 +1136,6 @@ public class LichTrinhTauPanel extends JPanel {
         panel.add(addButton);
         panel.add(editButton);
         panel.add(deleteButton);
-
         return panel;
     }
 
@@ -434,7 +1239,14 @@ public class LichTrinhTauPanel extends JPanel {
             System.out.println("Đang tìm kiếm cho ngày: " + localDate);
 
             if (isConnected) {
-                loadScheduleData(localDate);
+                // Nếu đang ở chế độ xem bảng, tải dữ liệu vào bảng
+                if (viewTabbedPane.getSelectedIndex() == 0) {
+                    loadScheduleData(localDate);
+                }
+                // Nếu đang ở chế độ xem lịch, chuyển đến ngày được chọn
+                else if (viewTabbedPane.getSelectedIndex() == 1 && calendarPanel != null) {
+                    calendarPanel.setSelectedDate(localDate);
+                }
             } else {
                 reconnectAndLoadData(localDate);
             }
@@ -529,8 +1341,21 @@ public class LichTrinhTauPanel extends JPanel {
 
     private void refreshData() {
         try {
+            // Sử dụng StatusManager để cập nhật trạng thái
+            if (statusManager != null) {
+                statusManager.updateDepartedSchedules();
+            }
+
+            // Tiếp tục phương thức làm mới dữ liệu hiện tại
             if (isConnected) {
-                loadAllScheduleData();
+                // Nếu đang ở chế độ xem bảng, tải lại dữ liệu bảng
+                if (viewTabbedPane.getSelectedIndex() == 0) {
+                    loadAllScheduleData();
+                }
+                // Nếu đang ở chế độ xem lịch, làm mới lịch
+                else if (viewTabbedPane.getSelectedIndex() == 1 && calendarPanel != null) {
+                    calendarPanel.refreshCalendar();
+                }
             } else {
                 connectToRMIServer();
                 if (isConnected) {
@@ -582,10 +1407,390 @@ public class LichTrinhTauPanel extends JPanel {
     }
 
     private void addSchedule() {
-        JOptionPane.showMessageDialog(this,
-                "Chức năng thêm lịch trình sẽ được triển khai trong phiên bản tiếp theo.",
-                "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
+        // Tạo dialog cho việc thêm lịch trình
+        JDialog addDialog = new JDialog();
+        addDialog.setTitle("Thêm lịch trình tàu");
+        addDialog.setSize(600, 450);
+        addDialog.setLocationRelativeTo(this);
+        addDialog.setModal(true);
+        addDialog.setLayout(new BorderLayout(10, 10));
+        addDialog.setResizable(false);
+
+        // Panel chính để chứa các thành phần
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Tiêu đề form
+        JLabel titleLabel = new JLabel("THÊM LỊCH TRÌNH TÀU", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        mainPanel.add(titleLabel);
+
+        // 1. Panel chọn tàu
+        JPanel trainPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JLabel trainLabel = new JLabel("Tàu:");
+        trainLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        trainLabel.setPreferredSize(new Dimension(120, 28));
+
+        JComboBox<Tau> trainComboBox = new JComboBox<>();
+        trainComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        trainComboBox.setPreferredSize(new Dimension(400, 28));
+
+        // Renderer đơn giản cho tàu
+        trainComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Tau) {
+                    Tau tau = (Tau) value;
+                    setText("Tàu " + tau.getMaTau() + " - " + tau.getTenTau());
+                }
+                return c;
+            }
+        });
+
+        trainPanel.add(trainLabel);
+        trainPanel.add(trainComboBox);
+
+        // 2. Panel chọn ngày đi
+        JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JLabel dateLabel = new JLabel("Ngày đi:");
+        dateLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        dateLabel.setPreferredSize(new Dimension(120, 28));
+
+        JDateChooser departureDateChooser = new JDateChooser();
+        departureDateChooser.setDateFormatString("dd/MM/yyyy");
+        departureDateChooser.setPreferredSize(new Dimension(400, 28));
+        departureDateChooser.setFont(new Font("Arial", Font.PLAIN, 14));
+        departureDateChooser.setDate(new Date());
+
+        datePanel.add(dateLabel);
+        datePanel.add(departureDateChooser);
+
+        // 3. Panel chọn giờ đi
+        JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JLabel timeLabel = new JLabel("Giờ đi:");
+        timeLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        timeLabel.setPreferredSize(new Dimension(120, 28));
+
+        // Tạo spinner cho giờ và phút
+        SpinnerNumberModel hourModel = new SpinnerNumberModel(0, 0, 23, 1);
+        SpinnerNumberModel minuteModel = new SpinnerNumberModel(0, 0, 59, 1);
+
+        JSpinner hourSpinner = new JSpinner(hourModel);
+        hourSpinner.setFont(new Font("Arial", Font.PLAIN, 14));
+        hourSpinner.setPreferredSize(new Dimension(70, 28));
+
+        JLabel colonLabel = new JLabel(":");
+        colonLabel.setFont(new Font("Arial", Font.BOLD, 14));
+
+        JSpinner minuteSpinner = new JSpinner(minuteModel);
+        minuteSpinner.setFont(new Font("Arial", Font.PLAIN, 14));
+        minuteSpinner.setPreferredSize(new Dimension(70, 28));
+
+        // Cố gắng thiết lập editors với định dạng hai chữ số
+        try {
+            JSpinner.NumberEditor hourEditor = new JSpinner.NumberEditor(hourSpinner, "00");
+            hourSpinner.setEditor(hourEditor);
+
+            JSpinner.NumberEditor minuteEditor = new JSpinner.NumberEditor(minuteSpinner, "00");
+            minuteSpinner.setEditor(minuteEditor);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Không thể thiết lập editor cho spinners", e);
+        }
+
+        JPanel timeSpinnerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        timeSpinnerPanel.add(hourSpinner);
+        timeSpinnerPanel.add(colonLabel);
+        timeSpinnerPanel.add(minuteSpinner);
+        timeSpinnerPanel.add(new JLabel("  (giờ:phút)"));
+
+        timePanel.add(timeLabel);
+        timePanel.add(timeSpinnerPanel);
+
+        // 4. Panel chọn trạng thái
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JLabel statusLabel = new JLabel("Trạng thái:");
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        statusLabel.setPreferredSize(new Dimension(120, 28));
+
+        JComboBox<String> statusComboBox = new JComboBox<>();
+        statusComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        statusComboBox.setPreferredSize(new Dimension(400, 28));
+
+        // Tải danh sách trạng thái
+        try {
+            if (isConnected && lichTrinhTauDAO != null) {
+                List<TrangThai> statuses = lichTrinhTauDAO.getTrangThai();
+                if (statuses != null && !statuses.isEmpty()) {
+                    // Xóa các item cũ trước khi thêm mới
+                    statusComboBox.removeAllItems();
+
+                    // Thêm tất cả các trạng thái từ cơ sở dữ liệu
+                    for (TrangThai status : statuses) {
+                        statusComboBox.addItem(status.getValue());
+                    }
+                    // Đặt giá trị mặc định là "Chưa khởi hành" nếu có
+                    statusComboBox.setSelectedItem("Chưa khởi hành");
+                } else {
+                    // Thêm các trạng thái mặc định nếu không tìm thấy từ cơ sở dữ liệu
+                    statusComboBox.addItem("Chưa khởi hành");
+                    statusComboBox.addItem("Đã khởi hành");
+                    statusComboBox.addItem("Đã hủy");
+                    statusComboBox.addItem("Hoạt động");
+                }
+            } else {
+                // Thêm các trạng thái mặc định nếu không kết nối được
+                statusComboBox.addItem("Chưa khởi hành");
+                statusComboBox.addItem("Đã khởi hành");
+                statusComboBox.addItem("Đã hủy");
+                statusComboBox.addItem("Hoạt động");
+            }
+        } catch (RemoteException ex) {
+            LOGGER.log(Level.WARNING, "Không thể tải danh sách trạng thái", ex);
+            // Thêm các trạng thái mặc định
+            statusComboBox.addItem("Chưa khởi hành");
+            statusComboBox.addItem("Đã khởi hành");
+            statusComboBox.addItem("Đã hủy");
+            statusComboBox.addItem("Hoạt động");
+        }
+
+        statusPanel.add(statusLabel);
+        statusPanel.add(statusComboBox);
+
+        // 5. Panel hiển thị thông tin tuyến đường
+        JPanel routePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JLabel routeLabel = new JLabel("Tuyến đường:");
+        routeLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        routeLabel.setPreferredSize(new Dimension(120, 28));
+
+        JTextField routeTextField = new JTextField();
+        routeTextField.setFont(new Font("Arial", Font.PLAIN, 14));
+        routeTextField.setPreferredSize(new Dimension(400, 28));
+        routeTextField.setEditable(false);
+        routeTextField.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+
+        routePanel.add(routeLabel);
+        routePanel.add(routeTextField);
+
+        // Thêm tất cả các panel con vào panel chính
+        mainPanel.add(trainPanel);
+        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(datePanel);
+        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(timePanel);
+        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(statusPanel);
+        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(routePanel);
+
+        // Panel chứa các nút thao tác
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton saveButton = new JButton("Lưu");
+        saveButton.setFont(new Font("Arial", Font.BOLD, 14));
+        saveButton.setPreferredSize(new Dimension(100, 35));
+
+        JButton cancelButton = new JButton("Hủy");
+        cancelButton.setFont(new Font("Arial", Font.BOLD, 14));
+        cancelButton.setPreferredSize(new Dimension(100, 35));
+
+        // Thêm icon cho nút (nếu phương thức tạo icon hoạt động)
+        try {
+            saveButton.setIcon(createAddIcon(16, 16));
+            cancelButton.setIcon(createDeleteIcon(16, 16));
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Không thể thiết lập icon cho nút", e);
+        }
+
+        buttonsPanel.add(saveButton);
+        buttonsPanel.add(cancelButton);
+
+        // Thêm panel chính và panel nút vào dialog
+        addDialog.add(mainPanel, BorderLayout.CENTER);
+        addDialog.add(buttonsPanel, BorderLayout.SOUTH);
+
+        // Tải danh sách tàu từ TauDAO
+        try {
+            // Tạo kết nối đến RMI server
+            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+            TauDAO tauDAO = (TauDAO) registry.lookup("tauDAO");
+
+            // Lấy danh sách tàu và thêm vào combobox
+            List<Tau> trains = tauDAO.getAllListT();
+            if (trains != null && !trains.isEmpty()) {
+                DefaultComboBoxModel<Tau> model = new DefaultComboBoxModel<>();
+                for (Tau train : trains) {
+                    model.addElement(train);
+                }
+                trainComboBox.setModel(model);
+
+                // Hiển thị thông tin tuyến đường của tàu được chọn
+                Tau selectedTrain = (Tau) trainComboBox.getSelectedItem();
+                if (selectedTrain != null) {
+                    try {
+                        if (selectedTrain.getTuyenTau() != null) {
+                            String routeInfo = "Tàu " + selectedTrain.getMaTau() + ": " +
+                                    selectedTrain.getTuyenTau().getGaDi() + " → " +
+                                    selectedTrain.getTuyenTau().getGaDen();
+                            routeTextField.setText(routeInfo);
+                        } else {
+                            routeTextField.setText("Tàu " + selectedTrain.getMaTau() + " - Không có thông tin tuyến đường");
+                        }
+                    } catch (Exception ex) {
+                        LOGGER.log(Level.WARNING, "Lỗi khi hiển thị thông tin tuyến đường", ex);
+                        routeTextField.setText("Tàu " + selectedTrain.getMaTau() + " - Lỗi tải thông tin tuyến đường");
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(addDialog,
+                        "Không có tàu nào trong hệ thống. Vui lòng tạo tàu trước.",
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+                addDialog.dispose();
+                return;
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi tải danh sách tàu", ex);
+            JOptionPane.showMessageDialog(addDialog,
+                    "Không thể tải danh sách tàu: " + ex.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+            addDialog.dispose();
+            return;
+        }
+
+        // Cập nhật thông tin tuyến đường khi chọn tàu khác
+        trainComboBox.addActionListener(e -> {
+            Tau selectedTrain = (Tau) trainComboBox.getSelectedItem();
+            if (selectedTrain != null) {
+                try {
+                    if (selectedTrain.getTuyenTau() != null) {
+                        String routeInfo = "Tàu " + selectedTrain.getMaTau() + ": " +
+                                selectedTrain.getTuyenTau().getGaDi() + " → " +
+                                selectedTrain.getTuyenTau().getGaDen();
+                        routeTextField.setText(routeInfo);
+                    } else {
+                        routeTextField.setText("Tàu " + selectedTrain.getMaTau() + " - Không có thông tin tuyến đường");
+                    }
+                } catch (Exception ex) {
+                    LOGGER.log(Level.WARNING, "Lỗi khi hiển thị thông tin tuyến đường", ex);
+                    routeTextField.setText("Tàu " + selectedTrain.getMaTau() + " - Lỗi tải thông tin tuyến đường");
+                }
+            } else {
+                routeTextField.setText("");
+            }
+        });
+
+        // Xử lý sự kiện khi người dùng nhấn nút "Hủy"
+        cancelButton.addActionListener(e -> addDialog.dispose());
+
+        // Xử lý sự kiện khi người dùng nhấn nút "Lưu"
+        saveButton.addActionListener(e -> {
+            try {
+                // Kiểm tra các thông tin đầu vào
+                Tau selectedTrain = (Tau) trainComboBox.getSelectedItem();
+                if (selectedTrain == null) {
+                    JOptionPane.showMessageDialog(addDialog, "Vui lòng chọn tàu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Date departureDate = departureDateChooser.getDate();
+                if (departureDate == null) {
+                    JOptionPane.showMessageDialog(addDialog, "Vui lòng chọn ngày đi!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Chuyển đổi java.util.Date sang java.time.LocalDate
+                LocalDate localDate = departureDate.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                // Lấy giờ và phút
+                int hour = (int) hourSpinner.getValue();
+                int minute = (int) minuteSpinner.getValue();
+                LocalTime departureTime = LocalTime.of(hour, minute);
+
+                // Lấy trạng thái
+                String statusValue = (String) statusComboBox.getSelectedItem();
+                if (statusValue == null || statusValue.isEmpty()) {
+                    JOptionPane.showMessageDialog(addDialog, "Vui lòng chọn trạng thái!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Tạo mã lịch trình mới sử dụng phương thức đã thêm
+                String maLich = generateLichTrinhCode();
+
+                // Tạo đối tượng LichTrinhTau mới
+                LichTrinhTau newSchedule = new LichTrinhTau();
+                newSchedule.setMaLich(maLich);
+                newSchedule.setNgayDi(localDate);
+                newSchedule.setGioDi(departureTime);
+                newSchedule.setTrangThai(TrangThai.fromValue(statusValue));
+                newSchedule.setTau(selectedTrain);
+
+                // Xác nhận thêm
+                int confirm = JOptionPane.showConfirmDialog(
+                        addDialog,
+                        "Xác nhận thêm lịch trình mới?\n\n" +
+                                "- Mã lịch trình: " + maLich + "\n" +
+                                "- Tàu: " + selectedTrain.getMaTau() + " - " + selectedTrain.getTenTau() + "\n" +
+                                "- Ngày đi: " + localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
+                                "- Giờ đi: " + String.format("%02d:%02d", hour, minute) + "\n" +
+                                "- Trạng thái: " + statusValue,
+                        "Xác nhận",
+                        JOptionPane.YES_NO_OPTION
+                );
+
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
+
+                // Kiểm tra kết nối tới RMI server trước khi lưu
+                if (!isConnected || lichTrinhTauDAO == null) {
+                    connectToRMIServer();
+                    if (!isConnected) {
+                        JOptionPane.showMessageDialog(addDialog,
+                                "Không thể kết nối đến máy chủ để lưu lịch trình.",
+                                "Lỗi kết nối",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+
+                // Lưu lịch trình mới vào cơ sở dữ liệu
+                boolean saved = lichTrinhTauDAO.save(newSchedule);
+                if (saved) {
+                    JOptionPane.showMessageDialog(addDialog,
+                            "Thêm lịch trình thành công!\nMã lịch trình: " + maLich,
+                            "Thông báo",
+                            JOptionPane.INFORMATION_MESSAGE);
+
+                    // Đóng dialog
+                    addDialog.dispose();
+
+                    // Làm mới dữ liệu trên bảng
+                    refreshData();
+                } else {
+                    JOptionPane.showMessageDialog(addDialog,
+                            "Không thể lưu lịch trình. Vui lòng thử lại.",
+                            "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Lỗi khi lưu lịch trình tàu", ex);
+                JOptionPane.showMessageDialog(addDialog,
+                        "Lỗi: " + ex.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Hiển thị dialog
+        addDialog.setVisible(true);
     }
 
     private void editSchedule() {
@@ -598,7 +1803,13 @@ public class LichTrinhTauPanel extends JPanel {
             return;
         }
 
-        Object scheduleId = scheduleTable.getValueAt(selectedRow, 0);
+        // Đảm bảo chuyển đổi chỉ số từ view sang model nếu bảng có sắp xếp
+        int modelRow = selectedRow;
+        if (scheduleTable.getRowSorter() != null) {
+            modelRow = scheduleTable.getRowSorter().convertRowIndexToModel(selectedRow);
+        }
+
+        Object scheduleId = tableModel.getValueAt(modelRow, 0);
 
         JOptionPane.showMessageDialog(this,
                 "Chức năng chỉnh sửa lịch trình sẽ được triển khai trong phiên bản tiếp theo.",
@@ -606,29 +1817,346 @@ public class LichTrinhTauPanel extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Xử lý sự kiện khi người dùng nhấn nút "Xóa" lịch trình
+     */
     private void deleteSchedule() {
+        // Lấy dòng được chọn, nếu có
+        int selectedRow = scheduleTable.getSelectedRow();
+
+        // Nếu không có dòng nào được chọn
+        if (selectedRow == -1) {
+            // Hiển thị thông báo yêu cầu chọn một lịch trình
+            JOptionPane.showMessageDialog(this,
+                    "Vui lòng chọn một lịch trình trong bảng để xóa.",
+                    "Chưa chọn lịch trình",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Chuyển đổi chỉ số dòng từ view sang model (nếu bảng có sắp xếp)
+        int modelRow = selectedRow;
+        if (scheduleTable.getRowSorter() != null) {
+            modelRow = scheduleTable.getRowSorter().convertRowIndexToModel(selectedRow);
+        }
+
+        // Lấy thông tin chi tiết của lịch trình từ hàng được chọn
+        String scheduleId = tableModel.getValueAt(modelRow, 0).toString();
+        String scheduleTrain = tableModel.getValueAt(modelRow, 2).toString();
+        String scheduleDate = tableModel.getValueAt(modelRow, 1).toString();
+        String scheduleTime = tableModel.getValueAt(modelRow, 4).toString();
+        String scheduleStatus = tableModel.getValueAt(modelRow, 6).toString();
+
+        // Tạo thông báo xác nhận với đầy đủ thông tin chi tiết
+        StringBuilder confirmMsg = new StringBuilder();
+        confirmMsg.append("Bạn có chắc chắn muốn xóa lịch trình sau?\n\n");
+        confirmMsg.append("Mã lịch trình: ").append(scheduleId).append("\n");
+        confirmMsg.append("Tàu: ").append(scheduleTrain).append("\n");
+        confirmMsg.append("Ngày đi: ").append(scheduleDate).append("\n");
+        confirmMsg.append("Giờ đi: ").append(scheduleTime).append("\n");
+        confirmMsg.append("Trạng thái: ").append(scheduleStatus).append("\n\n");
+        confirmMsg.append("Dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục.");
+
+        // Hiển thị hộp thoại xác nhận với biểu tượng cảnh báo
+        int option = JOptionPane.showConfirmDialog(this,
+                confirmMsg.toString(),
+                "Xác nhận xóa lịch trình",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        // Nếu người dùng xác nhận xóa
+        if (option == JOptionPane.YES_OPTION) {
+            try {
+                // Kiểm tra kết nối đến server
+                if (!isConnected || lichTrinhTauDAO == null) {
+                    connectToRMIServer();
+                    if (!isConnected) {
+                        throw new Exception("Không thể kết nối đến máy chủ");
+                    }
+                }
+
+                // Hiển thị thông báo đang xử lý
+                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                // Thực hiện xóa lịch trình
+                boolean deleted = lichTrinhTauDAO.delete(scheduleId);
+
+                // Khôi phục con trỏ
+                setCursor(Cursor.getDefaultCursor());
+
+                // Xử lý kết quả xóa
+                if (deleted) {
+                    // Hiển thị thông báo thành công
+                    JOptionPane.showMessageDialog(this,
+                            "Đã xóa thành công lịch trình: " + scheduleId,
+                            "Xóa thành công",
+                            JOptionPane.INFORMATION_MESSAGE);
+
+                    // Làm mới dữ liệu trên bảng
+                    refreshData();
+                } else {
+                    // Hiển thị thông báo thất bại
+                    JOptionPane.showMessageDialog(this,
+                            "Không thể xóa lịch trình " + scheduleId + ".\n" +
+                                    "Lịch trình này có thể đang được sử dụng bởi các bản ghi khác.",
+                            "Xóa không thành công",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                // Khôi phục con trỏ
+                setCursor(Cursor.getDefaultCursor());
+
+                // Ghi log lỗi
+                LOGGER.log(Level.SEVERE, "Lỗi khi xóa lịch trình: " + scheduleId, ex);
+
+                // Hiển thị thông báo lỗi
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi khi xóa lịch trình: " + ex.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    public void shutdown() {
+        if (statusManager != null) {
+            statusManager.shutdown();
+        }
+    }
+    // Thêm phương thức xem chi tiết lịch trình
+    private void viewScheduleDetails() {
         int selectedRow = scheduleTable.getSelectedRow();
         if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this,
-                    "Vui lòng chọn lịch trình để xóa.",
+                    "Vui lòng chọn lịch trình để xem chi tiết.",
                     "Thông báo",
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        Object scheduleId = scheduleTable.getValueAt(selectedRow, 0);
-
-        int option = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc chắn muốn xóa lịch trình này?",
-                "Xác nhận xóa",
-                JOptionPane.YES_NO_OPTION);
-
-        if (option == JOptionPane.YES_OPTION) {
-            JOptionPane.showMessageDialog(this,
-                    "Chức năng xóa lịch trình sẽ được triển khai trong phiên bản tiếp theo.",
-                    "Thông báo",
-                    JOptionPane.INFORMATION_MESSAGE);
+        // Chuyển đổi chỉ số dòng từ view sang model (nếu bảng có sắp xếp)
+        int modelRow = selectedRow;
+        if (scheduleTable.getRowSorter() != null) {
+            modelRow = scheduleTable.getRowSorter().convertRowIndexToModel(selectedRow);
         }
+
+        // Lấy thông tin chi tiết của lịch trình từ hàng được chọn
+        String scheduleId = tableModel.getValueAt(modelRow, 0).toString();
+        String scheduleDate = tableModel.getValueAt(modelRow, 1).toString();
+        String scheduleTrain = tableModel.getValueAt(modelRow, 2).toString();
+        String scheduleRoute = tableModel.getValueAt(modelRow, 3).toString();
+        String scheduleDepartTime = tableModel.getValueAt(modelRow, 4).toString();
+        String scheduleArriveTime = tableModel.getValueAt(modelRow, 5).toString();
+        String scheduleStatus = tableModel.getValueAt(modelRow, 6).toString();
+
+        // Kiểm tra và cập nhật trạng thái nếu đã qua thời gian khởi hành
+        boolean statusUpdated = false;
+        try {
+            // Chỉ kiểm tra nếu trạng thái không phải "Đã khởi hành" hoặc "Đã hủy"
+            if (!scheduleStatus.equals("Đã khởi hành") && !scheduleStatus.equals("Đã hủy")) {
+                // Chuyển đổi chuỗi ngày và giờ đi thành LocalDateTime
+                LocalDate date = LocalDate.parse(scheduleDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                LocalTime time = LocalTime.parse(scheduleDepartTime, DateTimeFormatter.ofPattern("HH:mm"));
+                LocalDateTime departureDateTime = LocalDateTime.of(date, time);
+
+                // Kiểm tra nếu thời gian khởi hành đã qua
+                if (departureDateTime.isBefore(LocalDateTime.now())) {
+                    // Cập nhật trạng thái trong cơ sở dữ liệu
+                    if (isConnected && lichTrinhTauDAO != null) {
+                        LichTrinhTau schedule = lichTrinhTauDAO.getById(scheduleId);
+                        if (schedule != null) {
+                            schedule.setTrangThai(TrangThai.DA_KHOI_HANH);
+                            boolean updated = lichTrinhTauDAO.update(schedule);
+
+                            if (updated) {
+                                LOGGER.info("Đã tự động cập nhật trạng thái lịch trình " + scheduleId + " thành Đã khởi hành");
+                                scheduleStatus = "Đã khởi hành";
+                                tableModel.setValueAt(scheduleStatus, modelRow, 6);
+                                statusUpdated = true;
+                            } else {
+                                LOGGER.warning("Không thể cập nhật trạng thái lịch trình " + scheduleId);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "Lỗi khi kiểm tra và cập nhật trạng thái lịch trình: " + ex.getMessage(), ex);
+        }
+
+        // Tạo dialog hiển thị thông tin chi tiết
+        JDialog detailDialog = new JDialog();
+        detailDialog.setTitle("Chi tiết lịch trình");
+        detailDialog.setSize(500, 400);
+        detailDialog.setLocationRelativeTo(this);
+        detailDialog.setModal(true);
+        detailDialog.setLayout(new BorderLayout(10, 10));
+
+        // Tạo panel chứa thông tin chi tiết
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new GridLayout(7, 2, 10, 10));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Tạo các label thông tin với font tốt hơn
+        Font labelFont = new Font("Arial", Font.BOLD, 14);
+        Font valueFont = new Font("Arial", Font.PLAIN, 14);
+
+        // Thêm các thông tin vào panel
+        JLabel idLabel = new JLabel("Mã lịch trình:");
+        idLabel.setFont(labelFont);
+        contentPanel.add(idLabel);
+
+        JLabel idValueLabel = new JLabel(scheduleId);
+        idValueLabel.setFont(valueFont);
+        contentPanel.add(idValueLabel);
+
+        JLabel dateLabel = new JLabel("Ngày đi:");
+        dateLabel.setFont(labelFont);
+        contentPanel.add(dateLabel);
+
+        JLabel dateValueLabel = new JLabel(scheduleDate);
+        dateValueLabel.setFont(valueFont);
+        contentPanel.add(dateValueLabel);
+
+        JLabel trainLabel = new JLabel("Tàu:");
+        trainLabel.setFont(labelFont);
+        contentPanel.add(trainLabel);
+
+        JLabel trainValueLabel = new JLabel(scheduleTrain);
+        trainValueLabel.setFont(valueFont);
+        contentPanel.add(trainValueLabel);
+
+        JLabel routeLabel = new JLabel("Tuyến đường:");
+        routeLabel.setFont(labelFont);
+        contentPanel.add(routeLabel);
+
+        JLabel routeValueLabel = new JLabel(scheduleRoute);
+        routeValueLabel.setFont(valueFont);
+        contentPanel.add(routeValueLabel);
+
+        JLabel departTimeLabel = new JLabel("Giờ đi:");
+        departTimeLabel.setFont(labelFont);
+        contentPanel.add(departTimeLabel);
+
+        JLabel departTimeValueLabel = new JLabel(scheduleDepartTime);
+        departTimeValueLabel.setFont(valueFont);
+        contentPanel.add(departTimeValueLabel);
+
+        JLabel arriveTimeLabel = new JLabel("Giờ đến (dự kiến):");
+        arriveTimeLabel.setFont(labelFont);
+        contentPanel.add(arriveTimeLabel);
+
+        JLabel arriveTimeValueLabel = new JLabel(scheduleArriveTime);
+        arriveTimeValueLabel.setFont(valueFont);
+        contentPanel.add(arriveTimeValueLabel);
+
+        JLabel statusLabel = new JLabel("Trạng thái:");
+        statusLabel.setFont(labelFont);
+        contentPanel.add(statusLabel);
+
+        // Hiển thị trạng thái với màu sắc tương ứng
+        JLabel statusValueLabel = new JLabel(scheduleStatus);
+        statusValueLabel.setFont(new Font("Arial", Font.BOLD, 14));
+
+        if ("Đã khởi hành".equals(scheduleStatus)) {
+            statusValueLabel.setForeground(new Color(46, 204, 113)); // Xanh lá
+        } else if ("Đã hủy".equals(scheduleStatus)) {
+            statusValueLabel.setForeground(new Color(231, 76, 60)); // Đỏ
+        } else {
+            statusValueLabel.setForeground(new Color(52, 152, 219)); // Xanh dương
+        }
+        contentPanel.add(statusValueLabel);
+
+        // Tạo một panel riêng cho thông báo cập nhật (nếu có)
+        JPanel notificationPanel = new JPanel(new BorderLayout());
+        notificationPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 20));
+
+        // Nếu trạng thái đã được cập nhật, hiển thị thông báo
+        if (statusUpdated) {
+            JLabel notificationLabel = new JLabel(
+                    "Lịch trình này đã qua thời gian khởi hành và đã được tự động cập nhật trạng thái.");
+            notificationLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+            notificationLabel.setForeground(new Color(231, 76, 60)); // Màu đỏ nhạt
+            notificationPanel.add(notificationLabel, BorderLayout.CENTER);
+        }
+
+        // Panel chứa nút đóng
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton closeButton = new JButton("Đóng");
+        closeButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        closeButton.setPreferredSize(new Dimension(100, 30));
+        closeButton.addActionListener(e -> detailDialog.dispose());
+        buttonPanel.add(closeButton);
+
+        // Thêm các panel vào dialog
+        detailDialog.add(contentPanel, BorderLayout.CENTER);
+        detailDialog.add(notificationPanel, BorderLayout.NORTH);
+        detailDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Hiển thị dialog
+        detailDialog.setVisible(true);
+
+        // Nếu trạng thái đã được cập nhật, làm mới bảng dữ liệu sau khi đóng dialog
+        if (statusUpdated) {
+            SwingUtilities.invokeLater(this::refreshData);
+        }
+    }
+
+    // Thêm vào phương thức khởi tạo hoặc một phương thức riêng biệt
+    private void setupKeyBindings() {
+        InputMap inputMap = scheduleTable.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap actionMap = scheduleTable.getActionMap();
+
+        // Thêm phím tắt Delete để xóa lịch trình
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "delete");
+        actionMap.put("delete", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSchedule();
+            }
+        });
+
+        // Thêm phím tắt Enter để xem chi tiết
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "view");
+        actionMap.put("view", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                viewScheduleDetails();
+            }
+        });
+    }
+
+    private void setupContextMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        JMenuItem viewItem = new JMenuItem("Xem chi tiết");
+        viewItem.setIcon(createViewIcon(16, 16));
+        viewItem.addActionListener(e -> viewScheduleDetails());
+
+        JMenuItem editItem = new JMenuItem("Chỉnh sửa");
+        editItem.setIcon(createEditIcon(16, 16));
+        editItem.addActionListener(e -> editSchedule());
+
+        JMenuItem deleteItem = new JMenuItem("Xóa lịch trình");
+        deleteItem.setIcon(createDeleteIcon(16, 16));
+        deleteItem.addActionListener(e -> deleteSchedule());
+
+        popupMenu.add(viewItem);
+        popupMenu.add(editItem);
+        popupMenu.add(new JSeparator());
+        popupMenu.add(deleteItem);
+
+        scheduleTable.setComponentPopupMenu(popupMenu);
+    }
+
+    // Thêm phương thức tạo icon "Xem chi tiết"
+    private Icon createViewIcon(int width, int height) {
+        return new ImageIcon(createIconImage(width, height, new Color(41, 128, 185), icon -> {
+            // Draw an eye-like icon
+            Graphics2D g2 = icon;
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.drawOval(4, 6, 8, 5);
+            g2.drawOval(7, 6, 2, 2);
+        }));
     }
 
     private void showErrorMessage(String message, Exception ex) {
@@ -674,5 +2202,58 @@ public class LichTrinhTauPanel extends JPanel {
 
             return comp;
         }
+    }
+
+    /**
+     * Tạo mã lịch trình ngẫu nhiên đảm bảo không trùng lặp
+     * @return String mã lịch trình
+     */
+    private String generateLichTrinhCode() throws RemoteException {
+        // Kiểm tra kết nối
+        if (!isConnected || lichTrinhTauDAO == null) {
+            connectToRMIServer();
+            if (!isConnected) {
+                throw new RemoteException("Không thể kết nối đến server");
+            }
+        }
+
+        // Sử dụng ngày và giờ hiện tại (thay vì ngẫu nhiên) khi tạo lịch trình mới
+        LocalDateTime now = LocalDateTime.now();
+
+        // Định dạng ngày tháng giờ phút giây
+        String dateTimePart = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+        // Nếu là ngày mới, đặt lại số đếm về 0
+        if (!now.toLocalDate().isEqual(lastGeneratedDate)) {
+            count = 0;
+            lastGeneratedDate = now.toLocalDate();
+        }
+
+        // Tăng số đếm để đảm bảo mã lịch trình không trùng
+        if (count >= 999) {
+            count = 1; // Đặt lại số đếm nếu vượt quá 999
+        } else {
+            count++; // Tăng số đếm
+        }
+
+        // Tạo phần số đếm, đảm bảo có tối đa 3 chữ số
+        String countPart = String.format("%03d", count);
+
+        // Tạo mã lịch trình với cấu trúc: LLT + ngày tháng giờ phút giây + số đếm
+        String lichTrinhCode = "LLT" + dateTimePart + "-" + countPart;
+
+        // Kiểm tra trùng lặp trong cơ sở dữ liệu
+        try {
+            LichTrinhTau existingLichTrinh = lichTrinhTauDAO.getById(lichTrinhCode);
+            if (existingLichTrinh != null) {
+                // Nếu mã đã tồn tại, gọi lại hàm để tạo mã khác
+                return generateLichTrinhCode();
+            }
+        } catch (Exception e) {
+            // Nếu không tìm thấy (thường sẽ gây ra ngoại lệ), thì coi như mã này chưa tồn tại
+            LOGGER.log(Level.FINE, "Mã lịch trình chưa tồn tại, có thể sử dụng: " + lichTrinhCode);
+        }
+
+        return lichTrinhCode;
     }
 }

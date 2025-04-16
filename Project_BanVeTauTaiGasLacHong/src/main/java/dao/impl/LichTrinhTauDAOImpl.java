@@ -3,7 +3,9 @@ package dao.impl;
 import dao.LichTrinhTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Query;
 import model.LichTrinhTau;
+import model.TrangThai;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
@@ -305,8 +307,22 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
 
         try {
             tr.begin();
-            // Chuyển đổi gioDi từ chuỗi sang LocalTime
-            LocalTime time = LocalTime.parse(gioDi);
+
+            // Xử lý định dạng giờ đi đúng
+            LocalTime time;
+            try {
+                // Kiểm tra định dạng giờ (HH:mm) trước
+                if (gioDi.matches("\\d{1,2}:\\d{2}")) {
+                    time = LocalTime.parse(gioDi);
+                } else if (gioDi.matches("\\d{1,2}")) {
+                    // Nếu người dùng chỉ nhập số giờ (không có phút)
+                    time = LocalTime.of(Integer.parseInt(gioDi), 0);
+                } else {
+                    throw new IllegalArgumentException("Định dạng giờ không hợp lệ. Sử dụng định dạng HH:mm hoặc HH");
+                }
+            } catch (Exception e) {
+                throw new RemoteException("Định dạng giờ không hợp lệ: " + gioDi + ". Vui lòng sử dụng định dạng HH:mm hoặc HH", e);
+            }
 
             // Sử dụng JOIN FETCH để tránh lỗi LazyInitializationException
             String jpql = "SELECT ltt FROM LichTrinhTau ltt " +
@@ -356,17 +372,38 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
     }
 
     @Override
-    public List<String> getTrangThai() throws RemoteException {
+    public List<TrangThai> getTrangThai() throws RemoteException {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tx = em.getTransaction();
-        List<String> trangThaiList = new ArrayList<>();
+        List<TrangThai> trangThaiList = new ArrayList<>();
 
         try {
             tx.begin();
 
-            // Sử dụng DISTINCT để lấy tất cả các trạng thái khác nhau
-            String jpql = "SELECT DISTINCT ltt.trangThai FROM LichTrinhTau ltt ORDER BY ltt.trangThai";
-            trangThaiList = em.createQuery(jpql, String.class).getResultList();
+            // Sử dụng native query để lấy các giá trị chuỗi từ DB
+            Query query = em.createNativeQuery("SELECT DISTINCT trang_thai FROM lichtrinhtau ORDER BY trang_thai");
+            List<String> result = query.getResultList();
+
+            // Thêm các giá trị mặc định
+            trangThaiList.add(TrangThai.DA_KHOI_HANH);
+            trangThaiList.add(TrangThai.CHUA_KHOI_HANH);
+            trangThaiList.add(TrangThai.DA_HUY);
+            trangThaiList.add(TrangThai.HOAT_DONG); // Thêm giá trị này
+
+            // Xử lý các giá trị từ database
+            for (String statusStr : result) {
+                try {
+                    // Thử chuyển đổi chuỗi thành enum
+                    TrangThai status = TrangThai.valueOf(statusStr);
+                    // Chỉ thêm nếu chưa có trong danh sách
+                    if (!trangThaiList.contains(status)) {
+                        trangThaiList.add(status);
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Ghi log và bỏ qua giá trị không hợp lệ
+                    System.err.println("Cảnh báo: Bỏ qua giá trị trạng thái không xác định trong cơ sở dữ liệu: " + statusStr);
+                }
+            }
 
             tx.commit();
         } catch (Exception e) {
@@ -375,7 +412,13 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
             }
             System.err.println("Lỗi khi lấy danh sách trạng thái: " + e.getMessage());
             e.printStackTrace();
-            throw new RemoteException("Lỗi khi lấy danh sách trạng thái", e);
+
+            // Đảm bảo luôn trả về ít nhất một số trạng thái cơ bản
+            trangThaiList.clear();
+            trangThaiList.add(TrangThai.DA_KHOI_HANH);
+            trangThaiList.add(TrangThai.CHUA_KHOI_HANH);
+            trangThaiList.add(TrangThai.DA_HUY);
+            trangThaiList.add(TrangThai.HOAT_DONG);
         } finally {
             if (em != null && em.isOpen()) {
                 em.close();
@@ -383,5 +426,123 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
         }
 
         return trangThaiList;
+    }
+    @Override
+    public List<LichTrinhTau> getListLichTrinhTauByDateRange(LocalDate startDate, LocalDate endDate) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<LichTrinhTau> result = new ArrayList<>();
+
+        try {
+            tx.begin();
+            // Sử dụng JOIN FETCH để tải trước dữ liệu của tàu và tuyến tàu để tránh lỗi LazyInitializationException
+            String jpql = "SELECT lt FROM LichTrinhTau lt " +
+                    "JOIN FETCH lt.tau t " +
+                    "JOIN FETCH t.tuyenTau tt " +
+                    "WHERE lt.ngayDi BETWEEN :startDate AND :endDate";
+
+            result = em.createQuery(jpql, LichTrinhTau.class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getResultList();
+
+            // Đảm bảo dữ liệu đã được tải đầy đủ
+            for (LichTrinhTau lt : result) {
+                if (lt.getTau() != null) {
+                    lt.getTau().getMaTau();
+                    if (lt.getTau().getTuyenTau() != null) {
+                        lt.getTau().getTuyenTau().getGaDi();
+                        lt.getTau().getTuyenTau().getGaDen();
+                    }
+                }
+            }
+
+            tx.commit();
+            return result;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách LichTrinhTau theo khoảng ngày: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy danh sách LichTrinhTau theo khoảng ngày", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    @Override
+    public List<String> getAllStations() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<String> stations = new ArrayList<>();
+
+        try {
+            tx.begin();
+
+            // Lấy tất cả các ga đi từ bảng TuyenTau
+            String queryGaDi = "SELECT DISTINCT tt.gaDi FROM TuyenTau tt ORDER BY tt.gaDi";
+            List<String> gaDiList = em.createQuery(queryGaDi, String.class).getResultList();
+            stations.addAll(gaDiList);
+
+            // Lấy tất cả các ga đến từ bảng TuyenTau mà không trùng với ga đi đã có
+            String queryGaDen = "SELECT DISTINCT tt.gaDen FROM TuyenTau tt WHERE tt.gaDen NOT IN (:gaDiList) ORDER BY tt.gaDen";
+            List<String> gaDenList = em.createQuery(queryGaDen, String.class)
+                    .setParameter("gaDiList", gaDiList)
+                    .getResultList();
+            stations.addAll(gaDenList);
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách ga: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy danh sách ga", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return stations;
+    }
+
+    @Override
+    public List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai trangThai) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<LichTrinhTau> list = new ArrayList<>();
+
+        try {
+            tx.begin();
+            // Sử dụng JOIN FETCH để tránh lỗi LazyInitializationException
+            String jpql = "SELECT ltt FROM LichTrinhTau ltt " +
+                    "JOIN FETCH ltt.tau t " +
+                    "JOIN FETCH t.tuyenTau tt " +
+                    "WHERE ltt.trangThai = :trangThai " +
+                    "ORDER BY ltt.ngayDi, ltt.gioDi";
+
+            list = em.createQuery(jpql, LichTrinhTau.class)
+                    .setParameter("trangThai", trangThai)
+                    .getResultList();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách LichTrinhTau theo trạng thái: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy danh sách LichTrinhTau theo trạng thái", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return list;
     }
 }

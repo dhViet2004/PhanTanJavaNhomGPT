@@ -1,6 +1,7 @@
 package dao;
 
 import model.LichTrinhTau;
+import model.TrangThai;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -20,5 +21,10 @@ public interface LichTrinhTauDAO extends Remote {
     List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(LocalDate date, String gaDi, String gaDen, String gioDi) throws RemoteException;
     // Phương thức kiểm tra kết nối
     boolean testConnection() throws RemoteException;
-    List<String> getTrangThai() throws RemoteException;
+    List<TrangThai> getTrangThai() throws RemoteException;
+
+    List<LichTrinhTau> getListLichTrinhTauByDateRange(LocalDate startDate, LocalDate endDate) throws RemoteException;
+
+    List<String> getAllStations() throws RemoteException;
+    List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai trangThai) throws RemoteException;
 }

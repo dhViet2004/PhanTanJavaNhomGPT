@@ -8,3 +8,5 @@ select * from tuyentau where ga_di = "Mayme Centers" and ga_den = "Heller Cliff"
 select * from taikhoan;
 select * from nhanvien;
 select * from lichlamviec;
+
+SELECT DISTINCT trang_thai FROM lichtrinhtau;

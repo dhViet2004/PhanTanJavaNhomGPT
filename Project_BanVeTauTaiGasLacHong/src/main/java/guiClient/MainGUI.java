@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +14,7 @@ public class MainGUI extends JFrame {
     private JPanel contentPanel; // Content panel managed by CardLayout
     private CardLayout cardLayout; // CardLayout for switching panels
     private Map<String, JPanel> panelMap; // Cache for panels
-
+    private LichTrinhTauPanel lichTrinhTauPanel;
     public MainGUI() {
         setTitle("Quản lý tàu hỏa");
         setSize(1200, 800);
@@ -59,7 +61,28 @@ public class MainGUI extends JFrame {
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         return headerPanel;
     }
+    @Override
+    public void dispose() {
+        // Giải phóng các tài nguyên
+        if (lichTrinhTauPanel != null) {
+            lichTrinhTauPanel.shutdown();
+        }
 
+        // Gọi phương thức dispose của lớp cha
+        super.dispose();
+    }
+    private void setupWindowListeners() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // Giải phóng tài nguyên trước khi đóng
+                if (lichTrinhTauPanel != null) {
+                    lichTrinhTauPanel.shutdown();
+                }
+                dispose();
+            }
+        });
+    }
     private JPanel createVerticalMenu() {
         JPanel menuPanel = new JPanel();
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));

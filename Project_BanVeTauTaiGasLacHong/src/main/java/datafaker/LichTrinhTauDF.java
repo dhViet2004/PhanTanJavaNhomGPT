@@ -39,7 +39,7 @@ public class LichTrinhTauDF {
             tx.begin();
                 LichTrinhTau lichTrinh = new LichTrinhTau();
                 lichTrinh.setMaLich(generateRandomLichTrinhCode(em));
-                lichTrinh.setTrangThai("Hoạt động");
+                lichTrinh.setTrangThai(TrangThai.valueOf("Hoạt động"));
 
                 // Lấy giờ ngẫu nhiên trong ngày cho trước
                 LocalTime gioDi = LocalTime.of(faker.number().numberBetween(0, 23), faker.number().numberBetween(0, 59));
@@ -181,7 +181,7 @@ public class LichTrinhTauDF {
             for (int i = 0; i < 1; i++) { // Tạo 20 lịch trình tàu
                 LichTrinhTau lichTrinh = new LichTrinhTau();
                 lichTrinh.setMaLich(generateRandomLichTrinhCode(em));
-                lichTrinh.setTrangThai("Hoạt động");
+                lichTrinh.setTrangThai(TrangThai.valueOf("Hoạt động"));
 
                 // Tạo thời gian và ngày ngẫu nhiên
                 LocalTime gioDi = LocalTime.of(faker.number().numberBetween(0, 23), faker.number().numberBetween(0, 59));
