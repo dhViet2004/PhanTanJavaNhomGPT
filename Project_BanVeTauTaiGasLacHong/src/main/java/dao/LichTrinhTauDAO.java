@@ -13,8 +13,12 @@ public interface LichTrinhTauDAO extends Remote {
     boolean save(LichTrinhTau lichTrinhTau) throws RemoteException;
     boolean update(LichTrinhTau lichTrinhTau) throws RemoteException;
     boolean delete(LichTrinhTau lichTrinhTau) throws RemoteException;
+    boolean delete(String id) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByDate(LocalDate date) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByDateAndGaDi(LocalDate date, String gaDi) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDen(LocalDate date, String gaDi, String gaDen) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByDateAndGaDiGaDenAndGioDi(LocalDate date, String gaDi, String gaDen, String gioDi) throws RemoteException;
+    // Phương thức kiểm tra kết nối
+    boolean testConnection() throws RemoteException;
+    List<String> getTrangThai() throws RemoteException;
 }

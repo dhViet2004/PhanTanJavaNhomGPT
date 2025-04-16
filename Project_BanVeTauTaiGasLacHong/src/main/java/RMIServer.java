@@ -2,23 +2,36 @@ import dao.LichTrinhTauDAO;
 
 import dao.impl.LichTrinhTauDAOImpl;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class RMIServer {
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) {
+        try {
+            System.out.println("Khởi động RMI Server...");
 
-        Context context = new InitialContext();
 
-        LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
+            System.setProperty("java.rmi.server.hostname", "127.0.0.1");
 
-        LocateRegistry.createRegistry(9090);
 
-        context.bind("rmi://MSI:9090/lichTrinhTauDAO", lichTrinhTauDAO);
+            LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
 
-        System.out.println("Server is ready!!!");
 
+            Registry registry = LocateRegistry.createRegistry(9090);
+
+
+            registry.rebind("lichTrinhTauDAO", lichTrinhTauDAO);
+
+            System.out.println("RMI Server đã sẵn sàng!");
+            System.out.println("Registry đang chạy tại rmi://127.0.0.1:9090");
+            System.out.println("Các đối tượng đã đăng ký:");
+            System.out.println("- lichTrinhTauDAO");
+
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
+        }
     }
 }

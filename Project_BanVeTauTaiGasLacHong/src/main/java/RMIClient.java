@@ -10,7 +10,7 @@ public class RMIClient {
 
         Context context = new InitialContext();
        LichTrinhTauDAO lichTrinhTauDAO = (LichTrinhTauDAO) context.lookup("rmi://MSI:9090/lichTrinhTauDAO");
-
+                System.out.println("Client is ready!!!");
        lichTrinhTauDAO.getListLichTrinhTauByDate(LocalDate.of(2025,01,24))
                .forEach(st -> System.out.println(st));
     }
