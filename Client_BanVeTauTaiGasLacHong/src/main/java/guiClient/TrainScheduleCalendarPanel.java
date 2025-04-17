@@ -6,12 +6,10 @@ import model.TrangThai;
 
 import javax.swing.*;
 import java.awt.*;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,13 +34,12 @@ public class TrainScheduleCalendarPanel extends JPanel {
     // Hằng số cho màu sắc theo trạng thái - Cập nhật màu sắc theo yêu cầu
     private static final Map<String, Color> STATUS_COLORS = new HashMap<>();
 
-    // Cập nhật bảng màu trong static block
     static {
-        // Cập nhật bảng màu theo yêu cầu
+        // Cập nhật bảng màu theo yêu cầu: Xanh dương, đỏ, vàng, xanh lá
         STATUS_COLORS.put("Đã khởi hành", new Color(46, 139, 87));    // Xanh lá đậm (Sea Green)
         STATUS_COLORS.put("Chưa khởi hành", new Color(30, 144, 255)); // Xanh dương (Dodger Blue)
         STATUS_COLORS.put("Đã hủy", new Color(220, 20, 60));          // Đỏ (Crimson)
-        STATUS_COLORS.put("Hoạt động", new Color(255, 140, 0));       // Vàng cam đậm (Dark Orange) - Màu nổi bật hơn
+        STATUS_COLORS.put("Hoạt động", new Color(255, 165, 0));       // Vàng cam (Orange)
         STATUS_COLORS.put("default", new Color(110, 110, 110));       // Xám (Màu mặc định)
     }
 
@@ -377,89 +374,56 @@ public class TrainScheduleCalendarPanel extends JPanel {
     /**
      * Tạo panel hiển thị thông tin cho một lịch trình
      */
-    /**
-     * Tạo panel hiển thị thông tin cho một lịch trình
-     */
-    /**
-     * Tạo panel hiển thị thông tin cho một lịch trình
-     */
     private JPanel createScheduleItem(LichTrinhTau schedule) {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
         // Lấy thời gian hiện tại
         LocalDate currentDate = LocalDate.now();
-        java.time.LocalTime currentTime = java.time.LocalTime.now();
-
-        // Xác định trạng thái hiển thị ban đầu
-        TrangThai originalStatus = schedule.getTrangThai();
-        TrangThai displayStatus = originalStatus;
 
         // Kiểm tra nếu lịch trình đã qua (ngày đi trước ngày hiện tại, hoặc cùng ngày nhưng giờ đã qua)
         boolean isSchedulePast = schedule.getNgayDi().isBefore(currentDate) ||
                 (schedule.getNgayDi().isEqual(currentDate) &&
-                        schedule.getGioDi().isBefore(currentTime));
+                        schedule.getGioDi().isBefore(java.time.LocalTime.now()));
 
-        // Kiểm tra nếu lịch trình sắp khởi hành trong vòng 30 phút
-        boolean isAboutToStart = false;
-        if (schedule.getNgayDi().isEqual(currentDate)) {
-            // Tính khoảng cách thời gian giữa giờ hiện tại và giờ đi
-            long minutesUntilDeparture = java.time.Duration.between(currentTime, schedule.getGioDi()).toMinutes();
-            isAboutToStart = minutesUntilDeparture >= 0 && minutesUntilDeparture <= 30;
-        }
+        // Xác định trạng thái hiển thị
+        TrangThai displayStatus = schedule.getTrangThai();
 
-        // Quy tắc xác định trạng thái hiển thị
-        if (isAboutToStart && displayStatus == TrangThai.CHUA_KHOI_HANH) {
-            // Nếu sắp khởi hành trong vòng 30 phút -> "Hoạt động"
-            displayStatus = TrangThai.HOAT_DONG;
-        } else if (isSchedulePast && displayStatus != TrangThai.DA_HUY) {
-            // Nếu đã qua thời gian khởi hành và không phải đã hủy -> "Đã khởi hành"
+        // Nếu lịch trình đã qua thời gian khởi hành và không phải là "Đã hủy"
+        if (isSchedulePast && displayStatus != TrangThai.DA_HUY) {
+            // Gán trạng thái hiển thị là "Đã khởi hành"
+            // (chỉ thay đổi hiển thị, không thay đổi giá trị thực của lịch trình)
             displayStatus = TrangThai.DA_KHOI_HANH;
         }
 
         // Lấy màu sắc tương ứng với trạng thái hiển thị
-        String statusValue = displayStatus.getValue();
+        String statusValue = displayStatus != null ? displayStatus.getValue() : "";
         Color statusColor = STATUS_COLORS.getOrDefault(statusValue, STATUS_COLORS.get("default"));
         panel.setBackground(statusColor);
 
-        // Thêm viền đặc biệt cho trạng thái "Hoạt động"
-        if (displayStatus == TrangThai.HOAT_DONG) {
-            panel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 215, 0), 1), // Viền màu vàng gold
-                    BorderFactory.createEmptyBorder(1, 1, 1, 1)
-            ));
-        } else {
-            panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        }
-
+        // Phần code còn lại giữ nguyên
         String trainInfo = schedule.getTau().getMaTau() + " - " + schedule.getGioDi().toString();
         JLabel scheduleLabel = new JLabel(trainInfo);
         scheduleLabel.setFont(new Font("Arial", Font.PLAIN, 10));
         scheduleLabel.setForeground(Color.WHITE);
         scheduleLabel.setBorder(BorderFactory.createEmptyBorder(1, 3, 1, 3));
+
         panel.add(scheduleLabel, BorderLayout.CENTER);
 
         // Tooltip hiển thị cả trạng thái thực tế và trạng thái hiển thị nếu khác nhau
         String tooltipStatus;
-        if (isAboutToStart && originalStatus == TrangThai.CHUA_KHOI_HANH) {
-            tooltipStatus = originalStatus.getValue() + " (Hiển thị: Hoạt động)";
-        } else if (isSchedulePast && originalStatus != TrangThai.DA_KHOI_HANH && originalStatus != TrangThai.DA_HUY) {
-            tooltipStatus = originalStatus.getValue() + " (Hiển thị: Đã khởi hành)";
+        if (isSchedulePast && schedule.getTrangThai() != TrangThai.DA_KHOI_HANH &&
+                schedule.getTrangThai() != TrangThai.DA_HUY) {
+            tooltipStatus = schedule.getTrangThai().getValue() + " (Hiển thị: Đã khởi hành)";
         } else {
-            tooltipStatus = originalStatus.getValue();
-        }
-
-        // Hiển thị thông tin chi tiết hơn trong tooltip
-        String departureTimeInfo = "";
-        if (isAboutToStart) {
-            long minutesUntilDeparture = java.time.Duration.between(currentTime, schedule.getGioDi()).toMinutes();
-            departureTimeInfo = " (Khởi hành trong " + minutesUntilDeparture + " phút)";
+            tooltipStatus = schedule.getTrangThai().getValue();
         }
 
         String tooltip = "<html>" +
                 "Mã lịch: " + schedule.getMaLich() + "<br>" +
                 "Tàu: " + schedule.getTau().getMaTau() + " - " + schedule.getTau().getTenTau() + "<br>" +
                 "Tuyến: " + schedule.getTau().getTuyenTau().getGaDi() + " -> " + schedule.getTau().getTuyenTau().getGaDen() + "<br>" +
-                "Thời gian: " + schedule.getGioDi() + departureTimeInfo + "<br>" +
+                "Thời gian: " + schedule.getGioDi() + "<br>" +
                 "Trạng thái: " + tooltipStatus +
                 "</html>";
         panel.setToolTipText(tooltip);

@@ -31,9 +31,10 @@ public class VeTau implements Serializable {
     @Column(name = "gia_ve", columnDefinition = "FLOAT", nullable = false)
 
     private double giaVe;
-    @Column(name = "trang_thai", columnDefinition = "VARCHAR(255)",nullable = false)
 
-    private String trangThai;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trang_thai", columnDefinition = "VARCHAR(255)",nullable = false)
+    private TrangThaiVeTau trangThai;
 
     @ManyToOne
     @JoinColumn(name = "lich_trinh_tau_ma_lich", referencedColumnName = "ma_lich")

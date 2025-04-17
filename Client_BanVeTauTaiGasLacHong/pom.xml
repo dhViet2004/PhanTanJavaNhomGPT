@@ -18,6 +18,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.toedter</groupId>
+            <artifactId>jcalendar</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
             <groupId>com.local</groupId>
             <artifactId>banvetau</artifactId>
             <version>1.0-SNAPSHOT</version>

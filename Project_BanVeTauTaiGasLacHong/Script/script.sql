@@ -10,3 +10,7 @@ select * from nhanvien;
 select * from lichlamviec;
 
 SELECT DISTINCT trang_thai FROM lichtrinhtau;
+
+UPDATE vetau SET trang_thai = 'DA_TRA' WHERE trang_thai = 'Đã trả';
+
+select * from vetau

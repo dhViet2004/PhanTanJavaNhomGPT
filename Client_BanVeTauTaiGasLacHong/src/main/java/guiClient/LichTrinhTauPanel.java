@@ -1,5 +1,6 @@
 package guiClient;
 
+
 import com.toedter.calendar.JDateChooser;
 import dao.LichTrinhTauDAO;
 import dao.TauDAO;
@@ -9,14 +10,6 @@ import model.TrangThai;
 import service.AITravelTimePredictor;
 import service.ScheduleStatusManager;
 
-import javax.swing.event.DocumentListener;
-import javax.swing.event.DocumentEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.beans.PropertyChangeListener;
-import java.util.*;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -26,6 +19,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeListener;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -35,6 +29,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -3171,7 +3167,7 @@ public class LichTrinhTauPanel extends JPanel {
 
                     // Lấy trạng thái
                     String selectedStatus = statusComboBox.getSelectedItem().toString();
-                    TrangThai status = (TrangThai) statusComboBox.getSelectedItem();
+                    TrangThai status = TrangThai.fromValue(selectedStatus);
 
                     // Cập nhật thông tin lịch trình
                     lichTrinh.setTau(selectedTrain);
@@ -3313,16 +3309,6 @@ public class LichTrinhTauPanel extends JPanel {
         String scheduleDate = tableModel.getValueAt(modelRow, 1).toString();
         String scheduleTime = tableModel.getValueAt(modelRow, 4).toString();
         String scheduleStatus = tableModel.getValueAt(modelRow, 6).toString();
-
-        // Kiểm tra trạng thái lịch trình - chỉ cho phép xóa lịch trình có trạng thái "Chưa khởi hành"
-        if (!scheduleStatus.equals("Chưa khởi hành")) {
-            JOptionPane.showMessageDialog(this,
-                    "Chỉ được phép xóa các lịch trình có trạng thái 'Chưa khởi hành'.\n" +
-                            "Lịch trình đã chọn có trạng thái: " + scheduleStatus,
-                    "Không thể xóa",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
 
         // Tạo thông báo xác nhận với đầy đủ thông tin chi tiết
         StringBuilder confirmMsg = new StringBuilder();
