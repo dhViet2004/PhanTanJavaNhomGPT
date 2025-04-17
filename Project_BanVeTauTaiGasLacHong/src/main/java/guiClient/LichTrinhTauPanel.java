@@ -1629,7 +1629,7 @@ public class LichTrinhTauPanel extends JPanel {
         // Tạo dialog cho việc thêm nhiều lịch trình
         JDialog batchDialog = new JDialog();
         batchDialog.setTitle("Tạo nhiều lịch trình tự động");
-        batchDialog.setSize(650, 500);
+        batchDialog.setSize(650, 600);
         batchDialog.setLocationRelativeTo(this);
         batchDialog.setModal(true);
         batchDialog.setLayout(new BorderLayout(10, 10));

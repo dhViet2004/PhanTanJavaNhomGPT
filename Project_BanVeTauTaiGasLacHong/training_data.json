@@ -1,0 +1,110 @@
+{
+    "intents": {
+        "thanks": [
+            {
+                "entities": {},
+                "query": "Cảm ơn"
+            },
+            {
+                "entities": {},
+                "query": "Cám ơn bạn nhiều"
+            },
+            {
+                "entities": {},
+                "query": "Thank you"
+            }
+        ],
+        "train_query": [
+            {
+                "entities": {"ma_tau": "SE2"},
+                "query": "Thông tin về tàu SE2"
+            },
+            {
+                "entities": {"ma_tau": "TN4"},
+                "query": "Tàu TN4 có chạy tuyến nào"
+            }
+        ],
+        "greeting": [
+            {
+                "entities": {},
+                "query": "Xin chào"
+            },
+            {
+                "entities": {},
+                "query": "Chào bạn"
+            },
+            {
+                "entities": {},
+                "query": "Hello"
+            }
+        ],
+        "goodbye": [
+            {
+                "entities": {},
+                "query": "Tạm biệt"
+            },
+            {
+                "entities": {},
+                "query": "Bye"
+            },
+            {
+                "entities": {},
+                "query": "Hẹn gặp lại"
+            }
+        ],
+        "schedule_query": [
+            {
+                "entities": {
+                    "ga_di": "Hà Nội",
+                    "ga_den": "Đà Nẵng"
+                },
+                "query": "Cho tôi lịch tàu từ Hà Nội đến Đà Nẵng"
+            },
+            {
+                "entities": {
+                    "ngay_di": "ngày mai",
+                    "ga_den": "Sài Gòn"
+                },
+                "query": "Có tàu nào đi Sài Gòn ngày mai không"
+            }
+        ],
+        "station_query": [
+            {
+                "entities": {"ga": "Hà Nội"},
+                "query": "Thông tin về ga Hà Nội"
+            },
+            {
+                "entities": {"ga": "Sài Gòn"},
+                "query": "Cho tôi địa chỉ ga Sài Gòn"
+            }
+        ],
+        "status_query": [
+            {
+                "entities": {"ma_tau": "SE2"},
+                "query": "Trạng thái của tàu SE2"
+            },
+            {
+                "entities": {"ma_tau": "SE3"},
+                "query": "Tàu SE3 đã khởi hành chưa"
+            }
+        ]
+    },
+    "responses": {
+        "thanks": [
+            "Không có gì! Rất vui khi được giúp bạn.",
+            "Không có chi! Bạn cần hỗ trợ gì thêm không?"
+        ],
+        "greeting": [
+            "Xin chào! Tôi có thể giúp gì cho bạn về lịch trình tàu hỏa?",
+            "Chào bạn! Bạn cần tìm thông tin gì về lịch trình tàu?"
+        ],
+        "goodbye": [
+            "Tạm biệt! Rất vui được hỗ trợ bạn.",
+            "Chúc bạn một ngày tốt lành! Hẹn gặp lại."
+        ],
+        "fallback": [
+            "Xin lỗi, tôi không hiểu ý bạn. Bạn có thể nói rõ hơn được không?",
+            "Tôi chưa được đào tạo để hiểu câu hỏi này. Bạn có thể hỏi về lịch trình tàu, trạng thái tàu, hoặc thông tin ga."
+        ]
+    }
+}
