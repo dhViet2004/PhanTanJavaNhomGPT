@@ -62,7 +62,7 @@ public class LichTrinhTauPanel extends JPanel {
     private static int count = 0;
     private ScheduleStatusManager statusManager;
     private AITravelTimePredictor aiPredictor;
-
+    private ChatbotDialog chatbotDialog;
     public LichTrinhTauPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -1160,8 +1160,15 @@ public class LichTrinhTauPanel extends JPanel {
     private JPanel createActionPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+
+        // Nút trợ lý ảo/chatbot
+        JButton chatbotButton = new JButton("Trợ lý ảo");
+        chatbotButton.setIcon(createChatbotIcon(16, 16));
+        chatbotButton.addActionListener(e -> showChatbot());
+
         // Thêm nút Dự đoán thời gian
         JButton predictButton = new JButton("Dự đoán thời gian");
+        predictButton.setIcon(createPredictIcon(16, 16));
         predictButton.addActionListener(e -> showPrediction());
         // Create action buttons with custom icons
         addButton = new JButton("Thêm Lịch Trình");
@@ -1182,12 +1189,53 @@ public class LichTrinhTauPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteSchedule());
 
         // Add buttons to panel
+        panel.add(chatbotButton);
         panel.add(predictButton);
         panel.add(addButton);
         panel.add(batchAddButton);
         panel.add(editButton);
         panel.add(deleteButton);
         return panel;
+    }
+
+    private Icon createChatbotIcon(int width, int height) {
+        return new ImageIcon(createIconImage(width, height, new Color(52, 152, 219), g -> {
+            // Vẽ hình chat bubble đơn giản
+            g.setStroke(new BasicStroke(1.5f));
+            g.drawRoundRect(2, 3, 12, 9, 4, 4);
+            g.drawLine(4, 12, 6, 14);
+            g.drawLine(6, 14, 8, 12);
+
+            // Vẽ các dấu chấm trong bubble
+            g.fillOval(5, 8, 1, 1);
+            g.fillOval(8, 8, 1, 1);
+            g.fillOval(11, 8, 1, 1);
+        }));
+    }
+    private Icon createPredictIcon(int width, int height) {
+        return new ImageIcon(createIconImage(width, height, new Color(155, 89, 182), g -> {
+            // Vẽ hình đồng hồ đơn giản
+            g.setStroke(new BasicStroke(1.5f));
+            g.drawOval(3, 3, 10, 10);
+            g.drawLine(8, 8, 8, 5);
+            g.drawLine(8, 8, 11, 10);
+        }));
+    }
+    private void showChatbot() {
+        // Khởi tạo dialog nếu chưa có
+        if (chatbotDialog == null) {
+            // Tìm JFrame cha chứa panel này
+            JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            chatbotDialog = new ChatbotDialog(parentFrame);
+            chatbotDialog.attachToOwner();
+        }
+
+        // Hiển thị hoặc ẩn dialog tùy thuộc vào trạng thái hiện tại
+        if (chatbotDialog.isVisible()) {
+            chatbotDialog.setVisible(false);
+        } else {
+            chatbotDialog.showAtCorner();
+        }
     }
 
     /**
