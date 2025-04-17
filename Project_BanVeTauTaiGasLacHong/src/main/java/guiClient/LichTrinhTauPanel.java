@@ -6,6 +6,7 @@ import dao.TauDAO;
 import model.LichTrinhTau;
 import model.Tau;
 import model.TrangThai;
+import service.AITravelTimePredictor;
 import service.ScheduleStatusManager;
 
 import javax.swing.event.DocumentListener;
@@ -60,6 +61,8 @@ public class LichTrinhTauPanel extends JPanel {
     private static LocalDate lastGeneratedDate = LocalDate.now();
     private static int count = 0;
     private ScheduleStatusManager statusManager;
+    private AITravelTimePredictor aiPredictor;
+
     public LichTrinhTauPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -76,6 +79,7 @@ public class LichTrinhTauPanel extends JPanel {
             try {
                 initStatusManager();
                 loadAllScheduleData();
+                this.aiPredictor = AITravelTimePredictor.getInstance();
             } catch (RemoteException ex) {
                 LOGGER.log(Level.SEVERE, "Error loading schedule data", ex);
                 showErrorMessage("Không thể tải dữ liệu lịch trình", ex);
@@ -1156,7 +1160,9 @@ public class LichTrinhTauPanel extends JPanel {
     private JPanel createActionPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-
+        // Thêm nút Dự đoán thời gian
+        JButton predictButton = new JButton("Dự đoán thời gian");
+        predictButton.addActionListener(e -> showPrediction());
         // Create action buttons with custom icons
         addButton = new JButton("Thêm Lịch Trình");
         addButton.setIcon(createAddIcon(16, 16));
@@ -1176,12 +1182,175 @@ public class LichTrinhTauPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteSchedule());
 
         // Add buttons to panel
+        panel.add(predictButton);
         panel.add(addButton);
         panel.add(batchAddButton);
         panel.add(editButton);
         panel.add(deleteButton);
         return panel;
     }
+
+    /**
+     * Hiển thị dialog dự đoán thời gian di chuyển
+     */
+    private void showPrediction() {
+        int selectedRow = scheduleTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Vui lòng chọn lịch trình để xem dự đoán.",
+                    "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Đảm bảo chuyển đổi chỉ số từ view sang model nếu bảng có sắp xếp
+        int modelRow = selectedRow;
+        if (scheduleTable.getRowSorter() != null) {
+            modelRow = scheduleTable.getRowSorter().convertRowIndexToModel(selectedRow);
+        }
+
+        // Lấy mã lịch trình
+        String maLich = tableModel.getValueAt(modelRow, 0).toString();
+
+        try {
+            // Lấy đối tượng lịch trình
+            LichTrinhTau lichTrinh = lichTrinhTauDAO.getById(maLich);
+            if (lichTrinh == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Không tìm thấy thông tin lịch trình.",
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Dự đoán thời gian di chuyển
+            AITravelTimePredictor.PredictionResult prediction = aiPredictor.predictTravelTime(lichTrinh);
+
+            // Tạo và hiển thị dialog dự đoán
+            showPredictionDialog(lichTrinh, prediction);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi dự đoán thời gian: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi dự đoán thời gian: " + e.getMessage(),
+                    "Lỗi dự đoán",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Hiển thị dialog chi tiết dự đoán thời gian
+     */
+    private void showPredictionDialog(LichTrinhTau lichTrinh, AITravelTimePredictor.PredictionResult prediction) {
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Dự đoán thời gian di chuyển", true);
+        dialog.setSize(550, 550);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setResizable(false);
+
+        // Panel chính
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Tiêu đề
+        JLabel titleLabel = new JLabel("Dự đoán thời gian di chuyển", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Panel thông tin
+        JPanel infoPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Thông tin lịch trình"));
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        infoPanel.add(new JLabel("Mã lịch trình:"));
+        infoPanel.add(new JLabel(lichTrinh.getMaLich()));
+
+        infoPanel.add(new JLabel("Tàu:"));
+        infoPanel.add(new JLabel(lichTrinh.getTau().getMaTau() + " - " + lichTrinh.getTau().getTenTau()));
+
+        infoPanel.add(new JLabel("Tuyến đường:"));
+        infoPanel.add(new JLabel(lichTrinh.getTau().getTuyenTau().getGaDi() + " → " + lichTrinh.getTau().getTuyenTau().getGaDen()));
+
+        infoPanel.add(new JLabel("Ngày đi:"));
+        infoPanel.add(new JLabel(lichTrinh.getNgayDi().format(dateFormatter)));
+
+        infoPanel.add(new JLabel("Giờ khởi hành:"));
+        infoPanel.add(new JLabel(lichTrinh.getGioDi().format(timeFormatter)));
+
+        infoPanel.add(new JLabel("Trạng thái:"));
+        infoPanel.add(new JLabel(lichTrinh.getTrangThai().getValue()));
+
+        // Panel dự đoán
+        JPanel predictionPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        predictionPanel.setBorder(BorderFactory.createTitledBorder("Kết quả dự đoán"));
+
+        predictionPanel.add(new JLabel("Thời gian di chuyển dự kiến:"));
+        predictionPanel.add(new JLabel(prediction.getFormattedTravelTime()));
+
+        predictionPanel.add(new JLabel("Giờ đến dự kiến:"));
+        predictionPanel.add(new JLabel(prediction.getEstimatedArrivalTime(lichTrinh.getGioDi()).format(timeFormatter)));
+
+        predictionPanel.add(new JLabel("Độ chính xác dự đoán:"));
+
+        // Tạo thanh độ chính xác
+        JProgressBar accuracyBar = new JProgressBar(0, 100);
+        accuracyBar.setValue(prediction.getAccuracyPercentage());
+        accuracyBar.setStringPainted(true);
+        accuracyBar.setString(prediction.getAccuracyPercentage() + "%");
+
+        // Đặt màu cho thanh độ chính xác
+        if (prediction.getAccuracyPercentage() >= 85) {
+            accuracyBar.setForeground(new Color(46, 204, 113)); // Xanh lá
+        } else if (prediction.getAccuracyPercentage() >= 70) {
+            accuracyBar.setForeground(new Color(241, 196, 15)); // Vàng
+        } else {
+            accuracyBar.setForeground(new Color(231, 76, 60)); // Đỏ
+        }
+
+        predictionPanel.add(accuracyBar);
+
+        // Panel giải thích
+        JPanel explanationPanel = new JPanel(new BorderLayout(5, 5));
+        explanationPanel.setBorder(BorderFactory.createTitledBorder("Giải thích"));
+
+        JTextArea explanationArea = new JTextArea(prediction.getExplanation());
+        explanationArea.setEditable(false);
+        explanationArea.setLineWrap(true);
+        explanationArea.setWrapStyleWord(true);
+        explanationArea.setFont(new Font("Arial", Font.PLAIN, 12));
+        explanationArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        JScrollPane scrollPane = new JScrollPane(explanationArea);
+        scrollPane.setPreferredSize(new Dimension(500, 120));
+        explanationPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Panel nút
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton closeButton = new JButton("Đóng");
+        closeButton.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(closeButton);
+
+        // Thêm các thành phần vào panel chính
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        mainPanel.add(infoPanel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(predictionPanel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(explanationPanel);
+
+        // Thêm vào dialog
+        dialog.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Hiển thị dialog
+        dialog.setVisible(true);
+    }
+
     // Phương thức tạo icon cho nút Batch
     private Icon createBatchIcon(int width, int height) {
         return new ImageIcon(createIconImage(width, height, new Color(41, 128, 185), icon -> {
@@ -1376,7 +1545,18 @@ public class LichTrinhTauPanel extends JPanel {
         String departureTime = schedule.getGioDi().format(timeFormatter);
 
         // Tính và định dạng giờ đến dự kiến
-        String arrivalTime = schedule.getGioDi().plusHours(estimateTravelTime(schedule)).format(timeFormatter);
+        String arrivalTime;
+        try {
+            // Sử dụng AI để dự đoán thời gian di chuyển
+            AITravelTimePredictor.PredictionResult prediction = aiPredictor.predictTravelTime(schedule);
+            LocalTime estimatedArrival = prediction.getEstimatedArrivalTime(schedule.getGioDi());
+            arrivalTime = estimatedArrival.format(timeFormatter);
+        } catch (Exception e) {
+            // Nếu gặp lỗi, sử dụng phương pháp ước tính đơn giản
+            LOGGER.warning("Không thể dự đoán thời gian đến, sử dụng ước tính đơn giản: " + e.getMessage());
+            LocalTime estimatedArrival = schedule.getGioDi().plusHours(estimateTravelTime(schedule));
+            arrivalTime = estimatedArrival.format(timeFormatter);
+        }
 
         // Lấy chuỗi hiển thị của trạng thái từ getValue()
         String statusDisplay = schedule.getTrangThai().getValue();
@@ -1390,9 +1570,10 @@ public class LichTrinhTauPanel extends JPanel {
                         schedule.getTau().getTuyenTau().getGaDen(),
                 departureTime,
                 arrivalTime,
-                statusDisplay  // Sử dụng giá trị hiển thị thay vì enum
+                statusDisplay
         };
     }
+
     /**
      * Hiển thị giao diện tạo lịch trình tự động trong khoảng thời gian
      */
@@ -2111,9 +2292,36 @@ public class LichTrinhTauPanel extends JPanel {
         });
     }
 
+    /**
+     * Ước tính thời gian di chuyển cho một lịch trình (giờ)
+     */
     private int estimateTravelTime(LichTrinhTau schedule) {
-        // This is a placeholder for estimating travel time based on route distance
-        return 2; // Default 2 hours
+        try {
+            // Sử dụng AI để dự đoán thời gian
+            AITravelTimePredictor.PredictionResult prediction = aiPredictor.predictTravelTime(schedule);
+
+            // Chuyển từ phút sang giờ (làm tròn lên)
+            return (int) Math.ceil(prediction.getPredictedMinutes() / 60.0);
+        } catch (Exception e) {
+            LOGGER.warning("Không thể dự đoán thời gian di chuyển, sử dụng ước tính đơn giản: " + e.getMessage());
+
+            // Sử dụng phương pháp ước tính cũ nếu AI thất bại
+            try {
+                String routeId = schedule.getTau().getTuyenTau().getMaTuyen();
+
+                if (routeId.contains("HN-SG") || routeId.contains("SG-HN")) {
+                    return 27; // 27 giờ cho tuyến Hà Nội - Sài Gòn
+                } else if (routeId.contains("HN-DN") || routeId.contains("DN-HN")) {
+                    return 13; // 13 giờ cho tuyến Hà Nội - Đà Nẵng
+                } else if (routeId.contains("DN-SG") || routeId.contains("SG-DN")) {
+                    return 16; // 16 giờ cho tuyến Đà Nẵng - Sài Gòn
+                } else {
+                    return 8;  // Mặc định 8 giờ cho các tuyến khác
+                }
+            } catch (Exception ex) {
+                return 8; // Mặc định 8 giờ nếu không thể xác định tuyến
+            }
+        }
     }
 
     private void reconnectAndLoadData(LocalDate localDate) {
