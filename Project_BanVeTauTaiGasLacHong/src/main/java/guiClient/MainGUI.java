@@ -6,6 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -159,17 +160,100 @@ public class MainGUI extends JFrame {
         // Check if the panel already exists in the cache
         if (!panelMap.containsKey(panelName)) {
             JPanel newPanel;
+
             if (panelName.equals("Quản lý lịch trình")) {
-                newPanel = new LichTrinhTauPanel(); // Replace with your actual panel class
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu lịch trình...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel quản lý lịch trình trong luồng riêng
+                SwingWorker<LichTrinhTauPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected LichTrinhTauPanel doInBackground() {
+                        return new LichTrinhTauPanel();
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            LichTrinhTauPanel panel = get();
+                            lichTrinhTauPanel = panel;
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm, không thực hiện phần còn lại của method
             } else {
                 newPanel = createPlaceholderPanel(panelName);
+                contentPanel.add(newPanel, panelName);
+                panelMap.put(panelName, newPanel);
             }
-            contentPanel.add(newPanel, panelName);
-            panelMap.put(panelName, newPanel);
         }
 
         // Show the panel
         cardLayout.show(contentPanel, panelName);
+    }
+
+    private JPanel createLoadingPanel(String message) {
+        JPanel loadingPanel = new JPanel(new BorderLayout());
+        loadingPanel.setBackground(Color.WHITE);
+
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setBackground(Color.WHITE);
+
+        // Tạo panel chứa spinner và thông báo
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(Color.WHITE);
+
+        // Tạo spinner
+        JLabel spinnerLabel = new JLabel(new ImageIcon(createLoadingSpinnerGif()));
+        spinnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Tạo thông báo
+        JLabel messageLabel = new JLabel(message);
+        messageLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        // Thêm spinner và thông báo vào panel
+        contentPanel.add(spinnerLabel);
+        contentPanel.add(messageLabel);
+
+        // Thêm vào center panel để căn chỉnh giữa màn hình
+        centerPanel.add(contentPanel);
+        loadingPanel.add(centerPanel, BorderLayout.CENTER);
+
+        return loadingPanel;
+    }
+
+    // Phương thức tạo spinner (hoặc bạn có thể sử dụng một ảnh GIF spinner có sẵn)
+    private Image createLoadingSpinnerGif() {
+        // Bạn có thể thay thế cái này bằng một ảnh GIF spinner thực tế
+        // Đây chỉ là một placeholder đơn giản
+        BufferedImage image = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setColor(new Color(41, 128, 185));
+        g2.fillOval(0, 0, 50, 50);
+        g2.dispose();
+        return image;
     }
 
     public static void main(String[] args) {
