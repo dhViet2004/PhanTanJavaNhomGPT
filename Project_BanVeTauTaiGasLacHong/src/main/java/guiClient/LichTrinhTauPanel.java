@@ -63,6 +63,7 @@ public class LichTrinhTauPanel extends JPanel {
     private ScheduleStatusManager statusManager;
     private AITravelTimePredictor aiPredictor;
     private ChatbotDialog chatbotDialog;
+
     public LichTrinhTauPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));

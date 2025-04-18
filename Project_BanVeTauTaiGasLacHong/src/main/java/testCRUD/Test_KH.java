@@ -4,12 +4,14 @@ import dao.impl.KhachHangDAOImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 
+import java.rmi.RemoteException;
+
 public class Test_KH {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws RemoteException {
 
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
-        KhachHangDAOImpl khachHangDAOImpl = new KhachHangDAOImpl(em);
+        KhachHangDAOImpl khachHangDAOImpl = new KhachHangDAOImpl();
 //        System.out.println("Danh sách khách hàng có tên là Nguyễn");
 //        khachHangDAO.listKhachHangsByName("Tân").forEach(kh -> {
 //            System.out.println(kh);

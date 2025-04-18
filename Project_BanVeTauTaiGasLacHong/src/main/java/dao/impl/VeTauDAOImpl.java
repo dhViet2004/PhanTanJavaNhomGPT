@@ -1,5 +1,6 @@
 package dao.impl;
 
+import dao.VeTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.VeTau;
@@ -7,7 +8,7 @@ import util.JPAUtil;
 
 import java.util.List;
 
-public class VeTauDAOImpl {
+public class VeTauDAOImpl implements VeTauDAO {
     private EntityManager em;
 
     public VeTauDAOImpl() {
@@ -76,5 +77,12 @@ public class VeTauDAOImpl {
             tr.rollback();
         }
         return false;
+    }
+
+    public List<VeTau> getByInvoiceId(String invoiceId) {
+        String query = "SELECT vt FROM VeTau vt WHERE vt.hoaDon.maHD = :invoiceId";
+        return em.createQuery(query, VeTau.class)
+                .setParameter("invoiceId", invoiceId)
+                .getResultList();
     }
 }
