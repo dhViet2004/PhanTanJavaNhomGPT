@@ -26,6 +26,7 @@ import java.rmi.RemoteException;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
@@ -59,7 +60,9 @@ public class LichTrinhSelectorDialog extends JDialog {
     private NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(locale);
     private ToaTauDoiVeDAO toaTauDAO;
     private ChoNgoiDoiVeDAO choNgoiDAO;
-
+    private LocalDate currentDate;
+    private LocalTime currentTime;
+    // Thêm constructor mới chấp nhận dữ liệu đã preload
     public LichTrinhSelectorDialog(Frame owner, LichTrinhTauDAO lichTrinhDAO,
                                    ToaTauDoiVeDAO toaTauDAO, ChoNgoiDoiVeDAO choNgoiDAO,
                                    LichTrinhSelectorCallback callback) {
@@ -71,15 +74,54 @@ public class LichTrinhSelectorDialog extends JDialog {
         this.dsLichTrinh = new ArrayList<>();
         this.dsLichTrinhLoc = new ArrayList<>();
 
+        // Lưu thời gian hiện tại để so sánh
+        this.currentDate = LocalDate.now();
+        this.currentTime = LocalTime.now();
+
+        // Đảm bảo datePicker không cho chọn ngày trong quá khứ
         initComponents();
+
+        // Thiết lập ngày bắt đầu cho datePicker không sớm hơn ngày hiện tại
+        datePicker.setDate(LocalDate.now());
+
+        // Tải dữ liệu trong thread riêng để không block UI
         loadDataInBackground();
     }
+
+    private void loadFullDataInBackground() {
+        SwingWorker<List<LichTrinhTau>, Void> worker = new SwingWorker<List<LichTrinhTau>, Void>() {
+            @Override
+            protected List<LichTrinhTau> doInBackground() throws Exception {
+                // Nếu cần lấy thêm dữ liệu đầy đủ
+                return lichTrinhDAO.getAllList();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<LichTrinhTau> fullData = get();
+
+                    // Nếu dữ liệu preload không đầy đủ, cập nhật lại
+                    if (fullData.size() > dsLichTrinh.size()) {
+                        dsLichTrinh = fullData;
+                        filterLichTrinh(); // Lọc lại theo các điều kiện hiện tại
+                        displayLichTrinh(dsLichTrinhLoc);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
 
     private void loadDataInBackground() {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
-                loadLichTrinh();
+                loadLichTrinh(); // Hàm loadLichTrinh đã được cập nhật để chỉ lấy lịch trình tương lai
                 loadComboBoxGa();
                 return null;
             }
@@ -387,7 +429,7 @@ public class LichTrinhSelectorDialog extends JDialog {
         // Phần code cho Bảng giá vé theo loại chỗ trong initComponents()
         JLabel lblBangGiaVe = new JLabel("Bảng giá vé theo loại chỗ:");
         lblBangGiaVe.setFont(labelHeaderFont);
-        pnlInfo.add(lblBangGiaVe);
+        pnlInfo.add(lblBangGiaVe, BorderLayout.WEST);
 
 
         DefaultTableModel modelGiaVe = new DefaultTableModel(
@@ -535,11 +577,29 @@ public class LichTrinhSelectorDialog extends JDialog {
         try {
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            // Lấy danh sách lịch trình từ server
+            // Thay vì lấy tất cả lịch trình, chỉ lấy lịch trình từ thời điểm hiện tại trở đi
+            LocalDate currentDate = LocalDate.now();
+
+            // Lấy danh sách lịch trình từ server (từ ngày hiện tại đến 30 ngày sau)
             dsLichTrinh = lichTrinhDAO.getListLichTrinhTauByDateRange(
-                    LocalDate.now(),
-                    LocalDate.now().plusDays(30)
+                    currentDate,
+                    currentDate.plusDays(30)
             );
+
+            // Lọc thêm theo giờ hiện tại
+            LocalTime currentTime = LocalTime.now();
+            dsLichTrinh = dsLichTrinh.stream()
+                    .filter(lt -> {
+                        if (lt.getNgayDi().isAfter(currentDate)) {
+                            return true;  // Ngày đi sau ngày hiện tại
+                        } else if (lt.getNgayDi().isEqual(currentDate)) {
+                            return lt.getGioDi().isAfter(currentTime);  // Ngày đi là ngày hiện tại, kiểm tra giờ đi
+                        } else {
+                            return false; // Ngày đi trước ngày hiện tại
+                        }
+                    })
+                    .collect(Collectors.toList());
+
             dsLichTrinhLoc = new ArrayList<>(dsLichTrinh);
 
             // Lấy danh sách ga để đổ vào combobox
@@ -578,7 +638,8 @@ public class LichTrinhSelectorDialog extends JDialog {
         pnlLichTrinh.removeAll();
 
         if (danhSach.isEmpty()) {
-            JLabel lblNoData = new JLabel("Không tìm thấy lịch trình phù hợp", createSearchIcon(48, 48, new Color(200, 200, 200)), JLabel.CENTER);
+            JLabel lblNoData = new JLabel("Không tìm thấy lịch trình phù hợp từ thời điểm hiện tại",
+                    createSearchIcon(48, 48, new Color(200, 200, 200)), JLabel.CENTER);
             lblNoData.setFont(new Font("Arial", Font.ITALIC, 16));
             lblNoData.setForeground(Color.GRAY);
             lblNoData.setHorizontalAlignment(SwingConstants.CENTER);
@@ -980,9 +1041,6 @@ public class LichTrinhSelectorDialog extends JDialog {
                             case 4:  // Tàu
                                 label.setText("Tàu: " + lichTrinh.getTau().getMaTau());
                                 break;
-                            case 5:  // Khoảng cách - thay đổi thành nội dung khác hoặc để trống
-                                label.setText("Khoảng cách: -"); // Hoặc bạn có thể hiển thị thông tin khác ở đây
-                                break;
                             case 6:  // Giá vé cơ bản
                                 // Giá vé sẽ được cập nhật sau khi tính toán
                                 break;
@@ -1128,8 +1186,22 @@ public class LichTrinhSelectorDialog extends JDialog {
         String gaDen = cboGaDen.getSelectedItem() != null ? cboGaDen.getSelectedItem().toString() : "Tất cả";
         LocalDate ngayDi = datePicker.getDate();
 
+        // Cập nhật thời gian hiện tại khi lọc
+        LocalDate currentDate = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
+
         dsLichTrinhLoc = dsLichTrinh.stream()
                 .filter(lt -> {
+                    // Kiểm tra xem lịch trình có trong tương lai hay không
+                    boolean isFuture;
+                    if (lt.getNgayDi().isAfter(currentDate)) {
+                        isFuture = true;  // Ngày đi sau ngày hiện tại
+                    } else if (lt.getNgayDi().isEqual(currentDate)) {
+                        isFuture = lt.getGioDi().isAfter(currentTime);  // Ngày đi là ngày hiện tại, kiểm tra giờ đi
+                    } else {
+                        isFuture = false; // Ngày đi trước ngày hiện tại
+                    }
+
                     // Lọc theo từ khóa
                     boolean matchKeyword = keyword.isEmpty() ||
                             lt.getMaLich().toLowerCase().contains(keyword) ||
@@ -1149,7 +1221,7 @@ public class LichTrinhSelectorDialog extends JDialog {
                     boolean matchNgayDi = ngayDi == null ||
                             lt.getNgayDi().equals(ngayDi);
 
-                    return matchKeyword && matchGaDi && matchGaDen && matchNgayDi;
+                    return isFuture && matchKeyword && matchGaDi && matchGaDen && matchNgayDi;
                 })
                 .collect(Collectors.toList());
 
@@ -1257,8 +1329,62 @@ public class LichTrinhSelectorDialog extends JDialog {
             add(cboMonth);
             add(cboYear);
 
-            // Thiết lập ngày mặc định là hôm nay
-            setDate(LocalDate.now());
+            // Chỉ cho phép chọn từ ngày hiện tại trở đi
+            LocalDate currentDate = LocalDate.now();
+
+            // Chỉ cho phép chọn tháng/năm hiện tại và tương lai
+            cboYear.addActionListener(e -> {
+                if (cboYear.getSelectedItem() != null && cboMonth.getSelectedIndex() != -1) {
+                    int selectedYear = (Integer) cboYear.getSelectedItem();
+                    int selectedMonth = cboMonth.getSelectedIndex() + 1;
+
+                    // Nếu chọn năm hiện tại, chỉ cho phép chọn tháng hiện tại trở đi
+                    if (selectedYear == currentDate.getYear() && selectedMonth < currentDate.getMonthValue()) {
+                        cboMonth.setSelectedIndex(currentDate.getMonthValue() - 1);
+                    }
+                }
+            });
+
+            cboMonth.addActionListener(e -> {
+                if (cboYear.getSelectedItem() != null && cboMonth.getSelectedIndex() != -1) {
+                    int selectedYear = (Integer) cboYear.getSelectedItem();
+                    int selectedMonth = cboMonth.getSelectedIndex() + 1;
+
+                    // Nếu chọn năm và tháng hiện tại, chỉ cho phép chọn ngày hiện tại trở đi
+                    if (selectedYear == currentDate.getYear() && selectedMonth == currentDate.getMonthValue()) {
+                        updateDaysWithMinimum(currentDate.getDayOfMonth());
+                    } else {
+                        updateDays();
+                    }
+                }
+            });
+        }
+
+        private void updateDaysWithMinimum(int minimumDay) {
+            if (cboMonth.getSelectedIndex() == -1 || cboYear.getSelectedItem() == null) {
+                return;
+            }
+
+            int month = cboMonth.getSelectedIndex() + 1;
+            int year = (Integer) cboYear.getSelectedItem();
+            int day = date != null ? date.getDayOfMonth() : minimumDay;
+
+            int daysInMonth = LocalDate.of(year, month, 1).lengthOfMonth();
+
+            cboDay.removeAllItems();
+            for (int i = minimumDay; i <= daysInMonth; i++) {
+                cboDay.addItem(i);
+            }
+
+            if (day < minimumDay) {
+                cboDay.setSelectedItem(minimumDay);
+            } else if (day <= daysInMonth) {
+                cboDay.setSelectedItem(day);
+            } else {
+                cboDay.setSelectedItem(daysInMonth);
+            }
+
+            updateDate();
         }
 
         private void updateDays() {
@@ -1308,6 +1434,12 @@ public class LichTrinhSelectorDialog extends JDialog {
         }
 
         public void setDate(LocalDate date) {
+            // Đảm bảo ngày không sớm hơn ngày hiện tại
+            LocalDate currentDate = LocalDate.now();
+            if (date.isBefore(currentDate)) {
+                date = currentDate;
+            }
+
             this.date = date;
 
             cboYear.setSelectedItem(date.getYear());
@@ -1316,6 +1448,7 @@ public class LichTrinhSelectorDialog extends JDialog {
             // updateDays sẽ được gọi qua sự kiện của cboMonth
             // và cboDay sẽ được cập nhật sau đó
         }
+
 
         public void addDateChangeListener(DateChangeListener listener) {
             listeners.add(listener);

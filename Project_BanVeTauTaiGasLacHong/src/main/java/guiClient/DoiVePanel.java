@@ -7,6 +7,7 @@ import dao.ToaTauDoiVeDAO;
 import model.*;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -25,13 +26,17 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class DoiVePanel extends JPanel {
+    // Thêm các biến cho preloading
+    private boolean isPreloadingData = false;
+    private SwingWorker<Map<String, List<LichTrinhTau>>, Void> preloadWorker;
+    private Map<String, List<LichTrinhTau>> cachedLichTrinh = new ConcurrentHashMap<>();
+
     private DoiVeDAO doiVeDAO;
     private LichTrinhTauDAO lichTrinhTauDAO;
     private ToaTauDoiVeDAO toaTauDAO;
@@ -103,6 +108,7 @@ public class DoiVePanel extends JPanel {
 
         // Kết nối đến RMI server
         connectToServer();
+        startPreloadingData();
     }
 
     private void connectToServer() {
@@ -121,6 +127,7 @@ public class DoiVePanel extends JPanel {
                 if (doiVeDAO.testConnection()) {
                     SwingUtilities.invokeLater(() -> {
                         updateStatus(READY_TEXT, false);
+                        startPreloadingData();
                     });
                 } else {
                     updateStatus(ERROR_TEXT, false);
@@ -137,6 +144,75 @@ public class DoiVePanel extends JPanel {
                     "Lỗi Kết Nối", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
+    }
+
+    private void startPreloadingData() {
+        if (isPreloadingData || lichTrinhTauDAO == null) {
+            return;
+        }
+
+        isPreloadingData = true;
+
+        preloadWorker = new SwingWorker<Map<String, List<LichTrinhTau>>, Void>() {
+            @Override
+            protected Map<String, List<LichTrinhTau>> doInBackground() throws Exception {
+                Map<String, List<LichTrinhTau>> result = new ConcurrentHashMap<>();
+
+                try {
+                    // Lấy danh sách lịch trình và nhóm theo các tiêu chí phổ biến
+                    List<LichTrinhTau> allLichTrinh = lichTrinhTauDAO.getAllList();
+
+                    // Nhóm lịch trình theo ga đi
+                    Map<String, List<LichTrinhTau>> lichTrinhByGaDi = new HashMap<>();
+                    for (LichTrinhTau lichTrinh : allLichTrinh) {
+                        String gaDi = lichTrinh.getTau().getTuyenTau().getGaDi();
+                        lichTrinhByGaDi.computeIfAbsent(gaDi, k -> new ArrayList<>()).add(lichTrinh);
+                    }
+                    result.put("gaDi", new ArrayList<>(lichTrinhByGaDi.values().stream()
+                            .flatMap(List::stream)
+                            .limit(100) // Giới hạn số lượng để tối ưu bộ nhớ
+                            .toList()));
+
+                    // Nhóm lịch trình theo ga đến
+                    Map<String, List<LichTrinhTau>> lichTrinhByGaDen = new HashMap<>();
+                    for (LichTrinhTau lichTrinh : allLichTrinh) {
+                        String gaDen = lichTrinh.getTau().getTuyenTau().getGaDen();
+                        lichTrinhByGaDen.computeIfAbsent(gaDen, k -> new ArrayList<>()).add(lichTrinh);
+                    }
+                    result.put("gaDen", new ArrayList<>(lichTrinhByGaDen.values().stream()
+                            .flatMap(List::stream)
+                            .limit(100)
+                            .toList()));
+
+                    // Lưu toàn bộ danh sách (có giới hạn)
+                    result.put("all", allLichTrinh.stream().limit(200).collect(Collectors.toList()));
+
+                    // Preload thông tin toa tàu cho các lịch trình phổ biến (20 lịch trình đầu tiên)
+                    for (int i = 0; i < Math.min(20, allLichTrinh.size()); i++) {
+                        String maTau = allLichTrinh.get(i).getTau().getMaTau();
+                        toaTauDAO.getToaTauByMaTau(maTau); // Kết quả sẽ được cache bởi ToaTauDoiVeDAO
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                return result;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    cachedLichTrinh = get();
+                    isPreloadingData = false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isPreloadingData = false;
+                }
+            }
+        };
+
+        preloadWorker.execute();
     }
 
     private void initializeUI() {
@@ -965,7 +1041,7 @@ public class DoiVePanel extends JPanel {
 
     private void hienThiDialogChonLichTrinh() {
         try {
-            // Hiển thị dialog chọn lịch trình với giao diện đẹp
+            // Hiển thị dialog chọn lịch trình
             LichTrinhSelectorDialog dialog = new LichTrinhSelectorDialog(
                     (Frame) SwingUtilities.getWindowAncestor(this),
                     lichTrinhTauDAO,
@@ -973,6 +1049,8 @@ public class DoiVePanel extends JPanel {
                     choNgoiDAO,
                     this::xuLyLichTrinhDaChon
             );
+
+            // Hiển thị dialog
             dialog.setVisible(true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -1141,11 +1219,52 @@ public class DoiVePanel extends JPanel {
 
         // Tạo panel nút bấm
         JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnOK = new JButton("Xác nhận");
-        btnOK.setBackground(primaryColor);
+        pnlButtons.setBackground(Color.WHITE); // Đặt màu nền cho panel
+
+// Tạo button với class Anonymous để ghi đè phương thức vẽ
+        JButton btnOK = new JButton("Xác nhận") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Vẽ nền button với màu primaryColor
+                g2.setColor(getModel().isPressed() ? primaryColor.darker().darker() :
+                        getModel().isRollover() ? primaryColor.darker() : primaryColor);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                g2.dispose();
+
+                // Vẽ text và icon
+                super.paintComponent(g);
+            }
+        };
+
+// Cấu hình button
         btnOK.setForeground(Color.WHITE);
+        btnOK.setFont(new Font("Arial", Font.BOLD, 12));
+        btnOK.setBorderPainted(false);     // Quan trọng: Tắt việc vẽ viền
+        btnOK.setContentAreaFilled(false); // Quan trọng: Tắt việc fill nội dung mặc định
+        btnOK.setFocusPainted(false);      // Tắt hiệu ứng focus
         btnOK.setIcon(createCheckIcon(16, 16, Color.WHITE));
+        btnOK.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnOK.setPreferredSize(new Dimension(120, 30)); // Đặt kích thước cố định
+
+// Thêm hiệu ứng hover
+        btnOK.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnOK.repaint(); // Kích hoạt vẽ lại khi chuột vào
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnOK.repaint(); // Kích hoạt vẽ lại khi chuột ra
+            }
+        });
+
+// Thêm hành động
         btnOK.addActionListener(e -> dialog.dispose());
+
+// Thêm vào panel và content
         pnlButtons.add(btnOK);
         pnlContent.add(pnlButtons, BorderLayout.SOUTH);
 
