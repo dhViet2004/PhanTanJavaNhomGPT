@@ -545,4 +545,50 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
         }
         return list;
     }
+    @Override
+    public List<LichTrinhTau> getListLichTrinhTauByMaTauAndNgayDi(String maTau, LocalDate ngayDi) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<LichTrinhTau> result = new ArrayList<>();
+
+        try {
+            tx.begin();
+
+            // Sử dụng JOIN FETCH để tải trước dữ liệu của tàu và tuyến tàu
+            String jpql = "SELECT lt FROM LichTrinhTau lt " +
+                    "JOIN FETCH lt.tau t " +
+                    "JOIN FETCH t.tuyenTau tt " +
+                    "WHERE lt.ngayDi = :ngayDi AND t.maTau = :maTau";
+
+            result = em.createQuery(jpql, LichTrinhTau.class)
+                    .setParameter("ngayDi", ngayDi)
+                    .setParameter("maTau", maTau)
+                    .getResultList();
+
+            // Đảm bảo dữ liệu đã được tải đầy đủ
+            for (LichTrinhTau lt : result) {
+                if (lt.getTau() != null) {
+                    lt.getTau().getMaTau();
+                    if (lt.getTau().getTuyenTau() != null) {
+                        lt.getTau().getTuyenTau().getGaDi();
+                        lt.getTau().getTuyenTau().getGaDen();
+                    }
+                }
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách LichTrinhTau theo tàu và ngày đi: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy danh sách LichTrinhTau theo tàu và ngày đi", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return result;
+    }
 }

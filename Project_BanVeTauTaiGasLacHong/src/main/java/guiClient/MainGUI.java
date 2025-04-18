@@ -92,7 +92,7 @@ public class MainGUI extends JFrame {
 
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
-                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống"
+                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống","Đổi vé"
         };
 
         for (String item : menuItems) {
@@ -200,6 +200,45 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm, không thực hiện phần còn lại của method
+            }       // THÊM ĐOẠN NÀY
+        else if (panelName.equals("Đổi vé")) {
+                    // Hiển thị giao diện tải dữ liệu
+                    JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
+                    contentPanel.add(loadingPanel, "Loading_" + panelName);
+                    cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                    // Tạo panel quản lý vé trong luồng riêng
+                    SwingWorker<DoiVePanel, Void> worker = new SwingWorker<>() {
+                        @Override
+                        protected DoiVePanel doInBackground() {
+                            return new DoiVePanel();
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                // Lấy panel sau khi đã tạo xong
+                                DoiVePanel panel = get();
+
+                                // Thêm vào cache và hiển thị
+                                contentPanel.add(panel, panelName);
+                                panelMap.put(panelName, panel);
+                                cardLayout.show(contentPanel, panelName);
+
+                                // Xóa panel loading
+                                contentPanel.remove(loadingPanel);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                JOptionPane.showMessageDialog(MainGUI.this,
+                                        "Không thể tải dữ liệu: " + e.getMessage(),
+                                        "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                                cardLayout.show(contentPanel, "Trang chủ");
+                            }
+                        }
+                    };
+
+                    worker.execute();
+                    return; // Thoát sớm
             } else {
                 newPanel = createPlaceholderPanel(panelName);
                 contentPanel.add(newPanel, panelName);
