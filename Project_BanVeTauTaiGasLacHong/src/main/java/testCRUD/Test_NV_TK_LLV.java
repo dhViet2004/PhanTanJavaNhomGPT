@@ -11,6 +11,7 @@ import net.datafaker.Faker;
  * @Tác giả: Nguyen Huu Sang
  */
 public class Test_NV_TK_LLV {
+    //text commit
     public static void main(String[] args) {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb").createEntityManager();
 
