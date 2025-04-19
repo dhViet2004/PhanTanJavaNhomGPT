@@ -107,7 +107,7 @@ public class MenuItem extends JButton {
         // Set appropriate font and color for active state
         if (isActive) {
             setFont(originalFont.deriveFont(Font.BOLD));
-            setForeground(Color.BLUE);
+            setForeground(new Color(90, 233, 255));
         }
 
         // Fill the background before calling super.paintComponent

@@ -23,16 +23,11 @@ public class Menu extends JComponent {
     private MigLayout layout;
     private String[][] menuItems = new String[][]{
             {"Dashboard"},
-            {"Email", "Inbox", "Read", "Compost"},
-            {"Chat"},
-            {"Calendar"},
-            {"UI Kit", "Accordion", "Alerts", "Badges", "Breadcrumbs", "Buttons", "Button group"},
-            {"Advanced UI", "Cropper", "Owl Carousel", "Sweet Alert"},
-            {"Forms", "Basic Elements", "Advanced Elements", "SEditors", "Wizard"},
-            {"Charts", "Apex", "Flot", "Peity", "Sparkline"},
-            {"Table", "Basic Tables", "Data Table"},
-            {"Icons", "Feather Icons", "Flag Icons", "Mdi Icons"},
-            {"Special Pages", "Blank page", "Faq", "Invoice", "Profile", "Pricing", "Timeline"}
+            {"Bán vé"},
+            {"Quản lý vé", "Đổi vé", "Trả vé"},
+            {"Quản lý lịch trình tàu"},
+            {"Tra cứu", "Tra cứu vé", "Tra cứu theo tuyến", "Tra cứu hóa đơn", "Tra cứu theo chuyến"},
+            {"Thống kê", "Doanh thu theo ca", "Lượng vé theo thời gian", "Doanh thu bán vé"},
     };
 
     public Menu() {
