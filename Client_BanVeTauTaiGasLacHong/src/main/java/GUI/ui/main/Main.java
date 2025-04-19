@@ -1,9 +1,9 @@
 package GUI.ui.main;
 
-import GUI.component.DefaultForm;
+import GUI.component.DoiVePanel;
 import GUI.component.HomeForm;
-import GUI.ui.menu.MenuEvent;
 import GUI.component.LichTrinhTauPanel;
+import GUI.ui.menu.MenuEvent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -32,8 +32,10 @@ public class Main extends javax.swing.JFrame {
                 }
                 else if (index == 3){
                     showForm(new LichTrinhTauPanel());
-                }else {
-                    showForm(new DefaultForm("Form : " + index + " " + subIndex));
+                } else if (index == 2 && subIndex == 1) {
+                    showForm(new DoiVePanel());
+                } else {
+
                 }
             }
         });
