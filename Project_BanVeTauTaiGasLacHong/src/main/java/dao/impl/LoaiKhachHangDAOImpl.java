@@ -18,15 +18,14 @@ import java.util.List;
  */
 public class LoaiKhachHangDAOImpl extends UnicastRemoteObject implements LoaiKhachHangDAO {
 
-    private static EntityManager em;
-
     public LoaiKhachHangDAOImpl() throws RemoteException {
-        super();
-        this.em = JPAUtil.getEntityManager();
+
     }
 
     // Save a new customer type
+    @Override
     public boolean save(LoaiKhachHang loaiKhachHang) {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -40,8 +39,10 @@ public class LoaiKhachHangDAOImpl extends UnicastRemoteObject implements LoaiKha
         return false;
     }
 
+    @Override
     // Update an existing customer type
     public boolean update(LoaiKhachHang loaiKhachHang) {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -55,8 +56,10 @@ public class LoaiKhachHangDAOImpl extends UnicastRemoteObject implements LoaiKha
         return false;
     }
 
+    @Override
     // Delete a customer type by ID
     public boolean delete(String id) {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -80,17 +83,24 @@ public class LoaiKhachHangDAOImpl extends UnicastRemoteObject implements LoaiKha
 
     @Override
     public List<LoaiKhachHang> getAll() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager(); // Ensure EntityManager is initialized
         try {
             String query = "SELECT lkh FROM LoaiKhachHang lkh";
             return em.createQuery(query, LoaiKhachHang.class).getResultList();
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RemoteException("Error retrieving customer types", ex);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close(); // Ensure EntityManager is closed to release resources
+            }
         }
     }
 
     // Find a customer type by ID
+    @Override
     public LoaiKhachHang findById(String id) {
+        EntityManager em = JPAUtil.getEntityManager();
         return em.find(LoaiKhachHang.class, id);
     }
 

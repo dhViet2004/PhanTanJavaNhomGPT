@@ -18,3 +18,11 @@ select * from vetau
 
 select * from khachhang;
 select * from loaikhachhang;
+
+select * from hoadon;
+select * from loaihoadon;
+select * from chitiet_hoadon;
+
+select * from khuyenmai;
+select * from loaicho;
+

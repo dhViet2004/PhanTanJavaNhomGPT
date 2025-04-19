@@ -6,16 +6,18 @@ import jakarta.persistence.EntityTransaction;
 import model.VeTau;
 import util.JPAUtil;
 
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 
-public class VeTauDAOImpl implements VeTauDAO {
-    private EntityManager em;
+public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
+    public VeTauDAOImpl() throws RemoteException {
 
-    public VeTauDAOImpl() {
-        this.em = JPAUtil.getEntityManager();;
     }
 
-    public List<VeTau> getAllList() {
+    @Override
+    public List<VeTau> getAllList() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tx = em.getTransaction();
         List<VeTau> list = null;
         try {
@@ -30,11 +32,15 @@ public class VeTauDAOImpl implements VeTauDAO {
         return list;
     }
 
-    public VeTau getById(String id) {
+    @Override
+    public VeTau getById(String id) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         return em.find(VeTau.class, id);
     }
 
-    public boolean save(VeTau t) {
+    @Override
+    public boolean save(VeTau t) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -48,7 +54,9 @@ public class VeTauDAOImpl implements VeTauDAO {
         return false;
     }
 
-    public boolean update(VeTau t) {
+    @Override
+    public boolean update(VeTau t) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -62,7 +70,9 @@ public class VeTauDAOImpl implements VeTauDAO {
         return false;
     }
 
-    public boolean delete(String id) {
+    @Override
+    public boolean delete(String id) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -79,10 +89,38 @@ public class VeTauDAOImpl implements VeTauDAO {
         return false;
     }
 
-    public List<VeTau> getByInvoiceId(String invoiceId) {
-        String query = "SELECT vt FROM VeTau vt WHERE vt.hoaDon.maHD = :invoiceId";
-        return em.createQuery(query, VeTau.class)
-                .setParameter("invoiceId", invoiceId)
-                .getResultList();
+    @Override
+    public List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException {
+//        EntityManager em = JPAUtil.getEntityManager();
+//        String query = "SELECT vt FROM VeTau vt WHERE vt.hoaDon.maHD = :invoiceId";
+//        return em.createQuery(query, VeTau.class)
+//                .setParameter("invoiceId", invoiceId)
+//                .getResultList();
+            EntityManager em = JPAUtil.getEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            List<VeTau> list = null;
+            try {
+                tx.begin();
+                String query = "SELECT DISTINCT vt FROM VeTau vt " +
+                        "JOIN FETCH vt.chiTietHoaDons cthd " +
+                        "JOIN FETCH cthd.hoaDon hd " +
+                        "WHERE hd.maHD = :invoiceId";
+
+                list = em.createQuery(query, VeTau.class)
+                        .setParameter("invoiceId", invoiceId)
+                        .getResultList();
+                tx.commit();
+            } catch (Exception e) {
+                if (tx != null && tx.isActive()) {
+                    tx.rollback();
+                }
+                System.err.println("Lỗi khi lấy danh sách vé theo hóa đơn: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                if (em != null && em.isOpen()) {
+                    em.close();
+                }
+            }
+            return list;
     }
 }

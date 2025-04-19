@@ -32,9 +32,9 @@ public class Runner {
 
         ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
         chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
-
         em.close();
-//
+
+
 //        LocalDate day = LocalDate.of(2024,5,1);
 //        LocalDate day1 = LocalDate.of(2023,4,2);
 //        LocalDate day2 = LocalDate.of(2022,3,3);
