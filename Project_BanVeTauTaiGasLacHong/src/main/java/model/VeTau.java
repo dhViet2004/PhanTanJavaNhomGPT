@@ -3,6 +3,7 @@ package model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -38,14 +39,17 @@ public class VeTau implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "lich_trinh_tau_ma_lich", referencedColumnName = "ma_lich")
+    @ToString.Exclude
     private LichTrinhTau lichTrinhTau;
 
     @ManyToOne
     @JoinColumn(name = "khuyen_mai_ma_km", referencedColumnName = "ma_km")
+    @ToString.Exclude
     private KhuyenMai khuyenMai;
 
     @OneToOne
     @JoinColumn(name = "cho_ngoi_ma_cho",referencedColumnName = "ma_cho")
+    @ToString.Exclude
      private ChoNgoi choNgoi;
 
 //    @ManyToMany(mappedBy = "veTaus")
@@ -53,6 +57,7 @@ public class VeTau implements Serializable {
 
     // Mối quan hệ với ChiTietHoaDon
     @OneToMany(mappedBy = "veTau", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private Set<ChiTietHoaDon> chiTietHoaDons;
 
 }

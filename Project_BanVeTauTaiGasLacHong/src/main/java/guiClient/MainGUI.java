@@ -161,6 +161,46 @@ public class MainGUI extends JFrame {
         if (!panelMap.containsKey(panelName)) {
             JPanel newPanel;
 
+            if (panelName.equals("Quản lý khách hàng")) {
+                // Display loading interface
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu khách hàng...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Create customer management panel in a separate thread
+                SwingWorker<QuanLyKhachHangPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected QuanLyKhachHangPanel doInBackground() throws Exception {
+                        return new QuanLyKhachHangPanel();
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Get the panel after it's created
+                            QuanLyKhachHangPanel panel = get();
+
+                            // Add to cache and display
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Remove loading panel
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu khách hàng: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Exit early, don't execute the rest of the method
+            }
+
             if (panelName.equals("Quản lý lịch trình")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu lịch trình...");

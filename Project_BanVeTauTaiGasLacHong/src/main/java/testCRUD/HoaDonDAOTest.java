@@ -9,12 +9,13 @@ import model.KhachHang;
 import model.LoaiHoaDon;
 import model.NhanVien;
 
+import java.rmi.RemoteException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class HoaDonDAOTest {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws RemoteException {
         // Tạo EntityManagerFactory và EntityManager
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("mariadb");
         EntityManager em = emf.createEntityManager();

@@ -79,6 +79,23 @@
             <artifactId>jcalendar</artifactId>
             <version>1.4</version>
         </dependency>
+
+<!--        Dùng JDatePicker để chọn ngày sinh:-->
+        <dependency>
+            <groupId>org.jdatepicker</groupId>
+            <artifactId>jdatepicker</artifactId>
+            <version>1.3.4</version>
+        </dependency>
+
+<!--        Dùng flatlaf-->
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.2</version>
+        </dependency>
+
+
+
         <dependency>
             <groupId>com.toedter</groupId>
             <artifactId>jcalendar</artifactId>

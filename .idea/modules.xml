@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/PhanTanJavaNhomGPT.iml" filepath="$PROJECT_DIR$/.idea/PhanTanJavaNhomGPT.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Project_BanVeTauTaiGasLacHong/Project_BanVeTauTaiGasLacHong.iml" filepath="$PROJECT_DIR$/Project_BanVeTauTaiGasLacHong/Project_BanVeTauTaiGasLacHong.iml" />
     </modules>
   </component>
 </project>
