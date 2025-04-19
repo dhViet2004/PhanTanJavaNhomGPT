@@ -1886,4 +1886,5 @@ public class DoiVePanel extends JPanel {
         g2.dispose();
         return new ImageIcon(image);
     }
+
 }

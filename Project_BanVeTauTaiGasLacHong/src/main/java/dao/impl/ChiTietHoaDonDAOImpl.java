@@ -1,63 +1,103 @@
 package dao.impl;
 
+import dao.ChiTietHoaDonDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import model.ChiTietHoaDon;
 import model.ChiTietHoaDonId;
 import util.JPAUtil;
 
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 
-public class ChiTietHoaDonDAOImpl {
+public class ChiTietHoaDonDAOImpl extends UnicastRemoteObject implements ChiTietHoaDonDAO {
 
-    private EntityManager em;
-
-    public ChiTietHoaDonDAOImpl() {
-        this.em = JPAUtil.getEntityManager();
+    public ChiTietHoaDonDAOImpl() throws RemoteException {
+        // Constructor phải có throws RemoteException khi extends UnicastRemoteObject
     }
 
-    // Create: Thêm chi tiết hóa đơn
-    public boolean saveChiTietHoaDon(ChiTietHoaDon chiTietHoaDon) {
+    @Override
+    public List<ChiTietHoaDon> getAllList() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<ChiTietHoaDon> list = null;
+        try {
+            tx.begin();
+            list = em.createQuery("SELECT c FROM ChiTietHoaDon c", ChiTietHoaDon.class).getResultList();
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+            System.err.println("Lỗi khi lấy danh sách ChiTietHoaDon");
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public ChiTietHoaDon getById(ChiTietHoaDonId id) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        ChiTietHoaDon result = null;
+        try {
+            result = em.find(ChiTietHoaDon.class, id);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tìm ChiTietHoaDon theo ID");
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean save(ChiTietHoaDon chiTietHoaDon) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
             em.persist(chiTietHoaDon);
             tr.commit();
             return true;
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            e.printStackTrace();
             tr.rollback();
-            ex.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
         return false;
     }
 
-    // Read: Lấy danh sách chi tiết hóa đơn
-    public List<ChiTietHoaDon> getAllChiTietHoaDons() {
-        return em.createQuery("SELECT c FROM ChiTietHoaDon c", ChiTietHoaDon.class).getResultList();
-    }
-
-    // Read: Tìm chi tiết hóa đơn theo mã hóa đơn và mã vé
-    public ChiTietHoaDon getChiTietHoaDonById(ChiTietHoaDonId id) {
-        return em.find(ChiTietHoaDon.class, id);
-    }
-
-    // Update: Cập nhật thông tin chi tiết hóa đơn
-    public boolean updateChiTietHoaDon(ChiTietHoaDon chiTietHoaDon) {
+    @Override
+    public boolean update(ChiTietHoaDon chiTietHoaDon) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
             em.merge(chiTietHoaDon);
             tr.commit();
             return true;
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            e.printStackTrace();
             tr.rollback();
-            ex.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
         return false;
     }
 
-    // Delete: Xóa chi tiết hóa đơn theo mã hóa đơn và mã vé
-    public boolean deleteChiTietHoaDon(ChiTietHoaDonId id) {
+    @Override
+    public boolean delete(ChiTietHoaDonId id) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -67,10 +107,66 @@ public class ChiTietHoaDonDAOImpl {
             }
             tr.commit();
             return true;
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            e.printStackTrace();
             tr.rollback();
-            ex.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
         return false;
+    }
+
+    @Override
+    public List<ChiTietHoaDon> getByHoaDonId(String hoaDonId) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<ChiTietHoaDon> list = null;
+        try {
+            tx.begin();
+            String query = "SELECT c FROM ChiTietHoaDon c WHERE c.id.maHD = :hoaDonId";
+            list = em.createQuery(query, ChiTietHoaDon.class)
+                    .setParameter("hoaDonId", hoaDonId)
+                    .getResultList();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách chi tiết hóa đơn theo mã hóa đơn: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public List<ChiTietHoaDon> getByVeTauId(String veTauId) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<ChiTietHoaDon> list = null;
+        try {
+            tx.begin();
+            String query = "SELECT c FROM ChiTietHoaDon c WHERE c.id.maVe = :veTauId";
+            list = em.createQuery(query, ChiTietHoaDon.class)
+                    .setParameter("veTauId", veTauId)
+                    .getResultList();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi lấy danh sách chi tiết hóa đơn theo mã vé: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return list;
     }
 }
