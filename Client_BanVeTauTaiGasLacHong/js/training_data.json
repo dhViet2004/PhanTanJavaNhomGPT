@@ -1,0 +1,107 @@
+{
+  "intents": {
+    "greeting": [
+      {"query": "Xin chào", "entities": {}},
+      {"query": "Chào bạn", "entities": {}},
+      {"query": "Hello", "entities": {}},
+      {"query": "Hi bot", "entities": {}},
+      {"query": "Này trợ lý", "entities": {}}
+    ],
+    "thanks": [
+      {"query": "Cảm ơn", "entities": {}},
+      {"query": "Cám ơn bạn nhiều", "entities": {}},
+      {"query": "Thank you", "entities": {}},
+      {"query": "Cảm ơn vì thông tin", "entities": {}},
+      {"query": "Cám ơn trợ lý", "entities": {}}
+    ],
+    "goodbye": [
+      {"query": "Tạm biệt", "entities": {}},
+      {"query": "Bye", "entities": {}},
+      {"query": "Hẹn gặp lại", "entities": {}},
+      {"query": "Tôi đi đây", "entities": {}},
+      {"query": "Chào tạm biệt", "entities": {}}
+    ],
+    "schedule_query": [
+      {"query": "Cho tôi lịch tàu từ Hà Nội đến Đà Nẵng", "entities": {"ga_di": "Hà Nội", "ga_den": "Đà Nẵng"}},
+      {"query": "Có tàu nào đi Sài Gòn ngày mai không", "entities": {"ga_den": "Sài Gòn", "ngay_di": "ngày mai"}},
+      {"query": "Kiểm tra lịch trình tàu từ Vinh đến Huế", "entities": {"ga_di": "Vinh", "ga_den": "Huế"}},
+      {"query": "Tàu từ Hải Phòng đến Hà Nội có những chuyến nào", "entities": {"ga_di": "Hải Phòng", "ga_den": "Hà Nội"}},
+      {"query": "Lịch trình tàu từ Đà Nẵng đi Nha Trang ngày 20/5", "entities": {"ga_di": "Đà Nẵng", "ga_den": "Nha Trang", "ngay_di": "20/5"}}
+    ],
+    "status_query": [
+      {"query": "Trạng thái của tàu SE2", "entities": {"ten_tau": "SE2"}},
+      {"query": "Tàu SE3 đã khởi hành chưa", "entities": {"ten_tau": "SE3"}},
+      {"query": "Kiểm tra lịch trình LT0012 đã đi chưa", "entities": {"ma_lich": "LT0012"}},
+      {"query": "Tàu TN5 có bị hủy không", "entities": {"ten_tau": "TN5"}},
+      {"query": "Tình trạng chuyến tàu từ Hà Nội đi Sài Gòn hôm nay", "entities": {"ga_di": "Hà Nội", "ga_den": "Sài Gòn", "ngay_di": "hôm nay"}}
+    ],
+    "station_query": [
+      {"query": "Thông tin về ga Hà Nội", "entities": {"ga": "Hà Nội"}},
+      {"query": "Cho tôi địa chỉ ga Sài Gòn", "entities": {"ga": "Sài Gòn"}},
+      {"query": "Ga Đà Nẵng ở đâu", "entities": {"ga": "Đà Nẵng"}},
+      {"query": "Số điện thoại của ga Huế", "entities": {"ga": "Huế"}},
+      {"query": "Ga Nha Trang có những tiện ích gì", "entities": {"ga": "Nha Trang"}}
+    ],
+    "train_query": [
+      {"query": "Thông tin về tàu SE2", "entities": {"ten_tau": "SE2"}},
+      {"query": "Tàu TN4 có chạy tuyến nào", "entities": {"ten_tau": "TN4"}},
+      {"query": "Cho tôi biết về tàu LP6", "entities": {"ten_tau": "LP6"}},
+      {"query": "Tàu SE1 có bao nhiêu toa", "entities": {"ten_tau": "SE1"}},
+      {"query": "Lịch trình sắp tới của tàu SE5", "entities": {"ten_tau": "SE5"}}
+    ],
+    "ticket_query": [
+      {"query": "Giá vé tàu từ Hà Nội đến Đà Nẵng", "entities": {"ga_di": "Hà Nội", "ga_den": "Đà Nẵng"}},
+      {"query": "Có thể đặt vé tàu SE2 như thế nào", "entities": {"ten_tau": "SE2"}},
+      {"query": "Quy định đổi vé tàu thế nào", "entities": {}},
+      {"query": "Làm sao để hủy vé đã đặt", "entities": {}},
+      {"query": "Khuyến mãi vé tàu dịp lễ", "entities": {}}
+    ]
+  },
+  "responses": {
+    "greeting": [
+      "Xin chào! Tôi có thể giúp gì cho bạn về lịch trình tàu hỏa?",
+      "Chào bạn! Bạn cần tìm thông tin gì về lịch trình tàu?",
+      "Xin chào! Tôi là trợ lý ảo. Bạn cần hỗ trợ thông tin gì về tàu hỏa?"
+    ],
+    "thanks": [
+      "Không có gì! Rất vui khi được giúp bạn.",
+      "Không có chi! Bạn cần hỗ trợ gì thêm không?",
+      "Rất vui khi được hỗ trợ bạn. Bạn còn câu hỏi nào khác không?"
+    ],
+    "goodbye": [
+      "Tạm biệt! Rất vui được hỗ trợ bạn.",
+      "Chúc bạn một ngày tốt lành! Hẹn gặp lại.",
+      "Tạm biệt và hẹn gặp lại. Khi cần thông tin về lịch trình tàu, hãy quay lại nhé!"
+    ],
+    "schedule_query": [
+      "Đây là lịch trình tàu từ {ga_di} đến {ga_den} mà bạn yêu cầu.",
+      "Tôi đã tìm thấy các lịch trình sau từ {ga_di} đến {ga_den}.",
+      "Dưới đây là thông tin lịch trình tàu từ {ga_di} đến {ga_den} mà bạn cần."
+    ],
+    "status_query": [
+      "Thông tin trạng thái của tàu {ten_tau} hiện tại là: ",
+      "Tàu {ten_tau} hiện đang ở trạng thái: ",
+      "Tình trạng hiện tại của tàu {ten_tau}: "
+    ],
+    "station_query": [
+      "Đây là thông tin về ga {ga} mà bạn yêu cầu.",
+      "Ga {ga} có địa chỉ và thông tin liên hệ như sau:",
+      "Tôi đã tìm thấy thông tin về ga {ga} cho bạn."
+    ],
+    "train_query": [
+      "Thông tin về tàu {ten_tau}: ",
+      "Tàu {ten_tau} có các chi tiết sau: ",
+      "Dưới đây là thông tin về tàu {ten_tau} mà bạn yêu cầu."
+    ],
+    "ticket_query": [
+      "Thông tin về vé tàu mà bạn yêu cầu: ",
+      "Dưới đây là thông tin về giá vé và cách đặt vé: ",
+      "Tôi đã tìm thấy thông tin vé tàu theo yêu cầu của bạn: "
+    ],
+    "fallback": [
+      "Xin lỗi, tôi không hiểu ý bạn. Bạn có thể nói rõ hơn được không?",
+      "Tôi chưa được đào tạo để hiểu câu hỏi này. Bạn có thể hỏi về lịch trình tàu, trạng thái tàu, hoặc thông tin ga.",
+      "Tôi không chắc tôi hiểu ý bạn. Bạn có thể thử hỏi theo cách khác không?"
+    ]
+  }
+}

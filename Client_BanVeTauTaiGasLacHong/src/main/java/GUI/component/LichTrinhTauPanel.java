@@ -1,6 +1,5 @@
 package GUI.component;
 
-
 import com.toedter.calendar.JDateChooser;
 import dao.LichTrinhTauDAO;
 import dao.TauDAO;
@@ -28,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -1029,21 +1029,28 @@ public class LichTrinhTauPanel extends JPanel {
                     // Cập nhật dòng đang hover
                     hoverRow[0] = currentRow;
 
+                    // Kiểm tra tính hợp lệ của chỉ số hàng
+                    boolean isValidRow = currentRow >= 0 && currentRow < scheduleTable.getRowCount();
+                    boolean isPermanentSelectionValid = permanentSelectedRow[0] >= 0 && permanentSelectedRow[0] < scheduleTable.getRowCount();
+
                     // Nếu người dùng đã có lựa chọn chính thức, chỉ hiển thị hiệu ứng hover
-                    if (isUserSelection[0] && permanentSelectedRow[0] >= 0) {
+                    if (isUserSelection[0] && isPermanentSelectionValid) {
                         // Nạp lại chọn chính thức
                         scheduleTable.setSelectionBackground(new Color(66, 139, 202));
                         scheduleTable.setSelectionForeground(Color.WHITE);
                         scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
 
-                        // Vẽ hiệu ứng hover cho dòng hiện tại (có thể thực hiện qua custom renderer)
+                        // Vẽ hiệu ứng hover cho dòng hiện tại
                         scheduleTable.repaint();
                     }
-                    // Nếu không có lựa chọn chính thức, áp dụng hiệu ứng hover như lựa chọn
-                    else if (currentRow >= 0) {
+                    // Nếu không có lựa chọn chính thức và có hàng hợp lệ, áp dụng hiệu ứng hover
+                    else if (isValidRow) {
                         scheduleTable.setSelectionBackground(new Color(173, 216, 230)); // Màu xanh nhạt cho hover
                         scheduleTable.setSelectionForeground(Color.BLACK);
                         scheduleTable.setRowSelectionInterval(currentRow, currentRow);
+                    } else {
+                        // Không có hàng hợp lệ để hover, xóa lựa chọn
+                        scheduleTable.clearSelection();
                     }
                 }
             }
@@ -1055,8 +1062,12 @@ public class LichTrinhTauPanel extends JPanel {
             public void mouseExited(java.awt.event.MouseEvent e) {
                 hoverRow[0] = -1; // Xóa trạng thái hover
 
-                // Nếu có lựa chọn chính thức, giữ nguyên lựa chọn đó
-                if (isUserSelection[0] && permanentSelectedRow[0] >= 0) {
+                // Kiểm tra tính hợp lệ của lựa chọn chính thức
+                boolean isPermanentSelectionValid = permanentSelectedRow[0] >= 0 &&
+                        permanentSelectedRow[0] < scheduleTable.getRowCount();
+
+                // Nếu có lựa chọn chính thức và hợp lệ, giữ nguyên lựa chọn đó
+                if (isUserSelection[0] && isPermanentSelectionValid) {
                     scheduleTable.setSelectionBackground(new Color(66, 139, 202));
                     scheduleTable.setSelectionForeground(Color.WHITE);
                     scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
@@ -1070,7 +1081,7 @@ public class LichTrinhTauPanel extends JPanel {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 int row = scheduleTable.getSelectedRow();
-                if (row >= 0) {
+                if (row >= 0 && row < scheduleTable.getRowCount()) {
                     // Lưu lựa chọn chính thức
                     permanentSelectedRow[0] = row;
                     isUserSelection[0] = true;
@@ -1086,11 +1097,23 @@ public class LichTrinhTauPanel extends JPanel {
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = scheduleTable.getSelectedRow();
+
+                // Kiểm tra tính hợp lệ của lựa chọn chính thức
+                boolean isPermanentSelectionValid = permanentSelectedRow[0] >= 0 &&
+                        permanentSelectedRow[0] < scheduleTable.getRowCount();
+
                 // Nếu người dùng đã chọn một dòng nhưng bây giờ không có dòng nào được chọn,
                 // và chọn cuối cùng vẫn hợp lệ, thì khôi phục lựa chọn đó
-                if (selectedRow == -1 && isUserSelection[0] && permanentSelectedRow[0] >= 0 &&
-                        permanentSelectedRow[0] < scheduleTable.getRowCount()) {
-                    scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
+                if (selectedRow == -1 && isUserSelection[0] && isPermanentSelectionValid) {
+                    try {
+                        scheduleTable.setRowSelectionInterval(permanentSelectedRow[0], permanentSelectedRow[0]);
+                    } catch (IllegalArgumentException ex) {
+                        // Xử lý trường hợp chỉ số hàng không hợp lệ
+                        LOGGER.warning("Không thể khôi phục lựa chọn hàng: " + ex.getMessage());
+                        // Đặt lại các biến trạng thái
+                        isUserSelection[0] = false;
+                        permanentSelectedRow[0] = -1;
+                    }
                 }
             }
         });
@@ -1625,7 +1648,7 @@ public class LichTrinhTauPanel extends JPanel {
         // Tạo dialog cho việc thêm nhiều lịch trình
         JDialog batchDialog = new JDialog();
         batchDialog.setTitle("Tạo nhiều lịch trình tự động");
-        batchDialog.setSize(650, 500);
+        batchDialog.setSize(650, 600);
         batchDialog.setLocationRelativeTo(this);
         batchDialog.setModal(true);
         batchDialog.setLayout(new BorderLayout(10, 10));
@@ -3167,7 +3190,7 @@ public class LichTrinhTauPanel extends JPanel {
 
                     // Lấy trạng thái
                     String selectedStatus = statusComboBox.getSelectedItem().toString();
-                    TrangThai status = TrangThai.fromValue(selectedStatus);
+                    TrangThai status = (TrangThai) statusComboBox.getSelectedItem();
 
                     // Cập nhật thông tin lịch trình
                     lichTrinh.setTau(selectedTrain);
@@ -3310,6 +3333,16 @@ public class LichTrinhTauPanel extends JPanel {
         String scheduleTime = tableModel.getValueAt(modelRow, 4).toString();
         String scheduleStatus = tableModel.getValueAt(modelRow, 6).toString();
 
+        // Kiểm tra trạng thái lịch trình - chỉ cho phép xóa lịch trình có trạng thái "Chưa khởi hành"
+        if (!scheduleStatus.equals("Chưa khởi hành")) {
+            JOptionPane.showMessageDialog(this,
+                    "Chỉ được phép xóa các lịch trình có trạng thái 'Chưa khởi hành'.\n" +
+                            "Lịch trình đã chọn có trạng thái: " + scheduleStatus,
+                    "Không thể xóa",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         // Tạo thông báo xác nhận với đầy đủ thông tin chi tiết
         StringBuilder confirmMsg = new StringBuilder();
         confirmMsg.append("Bạn có chắc chắn muốn xóa lịch trình sau?\n\n");
@@ -3417,7 +3450,27 @@ public class LichTrinhTauPanel extends JPanel {
             // Chỉ kiểm tra nếu trạng thái không phải "Đã khởi hành" hoặc "Đã hủy"
             if (!scheduleStatus.equals("Đã khởi hành") && !scheduleStatus.equals("Đã hủy")) {
                 // Chuyển đổi chuỗi ngày và giờ đi thành LocalDateTime
-                LocalDate date = LocalDate.parse(scheduleDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                LocalDate date = null;
+                DateTimeFormatter[] formatters = new DateTimeFormatter[] {
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                        DateTimeFormatter.ofPattern("MM/dd/yyyy")
+                };
+
+                for (DateTimeFormatter formatter : formatters) {
+                    try {
+                        date = LocalDate.parse(scheduleDate, formatter);
+                        break; // Thoát khỏi vòng lặp nếu phân tích thành công
+                    } catch (DateTimeParseException e) {
+                        // Tiếp tục thử với định dạng tiếp theo
+                    }
+                }
+
+                if (date == null) {
+                    LOGGER.warning("Không thể phân tích chuỗi ngày: " + scheduleDate);
+                    // Xử lý trường hợp không thể phân tích ngày
+                    return;
+                }
                 LocalTime time = LocalTime.parse(scheduleDepartTime, DateTimeFormatter.ofPattern("HH:mm"));
                 LocalDateTime departureDateTime = LocalDateTime.of(date, time);
 
