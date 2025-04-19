@@ -36,7 +36,9 @@ public class KhachHang implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "ma_loai_khach_hang", nullable = false)
+    @ToString.Exclude
     private LoaiKhachHang loaiKhachHang;
+
     @ToString.Exclude
     @OneToMany(mappedBy = "khachHang")
     private Set<HoaDon> hoaDons;

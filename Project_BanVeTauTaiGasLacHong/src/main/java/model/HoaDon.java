@@ -50,6 +50,7 @@ public class HoaDon implements Serializable {
 //            inverseJoinColumns = @JoinColumn(name = "ma_ve"))
 //    private Set<VeTau> veTaus;
 
-    @OneToMany(mappedBy = "hoaDon", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "hoaDon")
+    @ToString.Exclude
     private Set<ChiTietHoaDon> chiTietHoaDons;
 }
