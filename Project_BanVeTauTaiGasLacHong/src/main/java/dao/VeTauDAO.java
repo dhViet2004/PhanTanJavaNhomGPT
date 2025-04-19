@@ -19,4 +19,7 @@ public interface VeTauDAO extends Remote {
     boolean update(VeTau veTau) throws RemoteException;
     boolean delete(String id) throws RemoteException;
     List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException;
+
+    boolean updateStatusToReturned(String ticketId) throws RemoteException;
+
 }

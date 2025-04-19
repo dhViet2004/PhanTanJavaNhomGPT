@@ -3,6 +3,7 @@ package dao.impl;
 import dao.VeTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import model.TrangThaiVeTau;
 import model.VeTau;
 import util.JPAUtil;
 
@@ -91,11 +92,6 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
 
     @Override
     public List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException {
-//        EntityManager em = JPAUtil.getEntityManager();
-//        String query = "SELECT vt FROM VeTau vt WHERE vt.hoaDon.maHD = :invoiceId";
-//        return em.createQuery(query, VeTau.class)
-//                .setParameter("invoiceId", invoiceId)
-//                .getResultList();
             EntityManager em = JPAUtil.getEntityManager();
             EntityTransaction tx = em.getTransaction();
             List<VeTau> list = null;
@@ -123,4 +119,37 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
             }
             return list;
     }
+
+    @Override
+    public boolean updateStatusToReturned(String ticketId) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+            // Tìm vé tàu theo maVe
+            VeTau veTau = em.find(VeTau.class, ticketId);
+            if (veTau != null) {
+                // Cập nhật trạng thái vé
+                veTau.setTrangThai(TrangThaiVeTau.DA_TRA);
+                em.merge(veTau); // Lưu thay đổi vào database
+                tx.commit();
+                return true;
+            } else {
+                System.err.println("Không tìm thấy vé với mã: " + ticketId);
+            }
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi cập nhật trạng thái vé tàu: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return false;
+    }
+
+
 }
