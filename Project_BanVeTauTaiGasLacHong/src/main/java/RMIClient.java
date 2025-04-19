@@ -9,7 +9,7 @@ public class RMIClient {
     public static void main(String[] args) throws Exception {
 
         Context context = new InitialContext();
-       LichTrinhTauDAO lichTrinhTauDAO = (LichTrinhTauDAO) context.lookup("rmi://LAPTOP-LOVAL8V5/lichTrinhTauDAO");
+       LichTrinhTauDAO lichTrinhTauDAO = (LichTrinhTauDAO) context.lookup("rmi://MSI:9090/lichTrinhTauDAO");
                 System.out.println("Client is ready!!!");
        lichTrinhTauDAO.getListLichTrinhTauByDate(LocalDate.of(2025,01,24))
                .forEach(st -> System.out.println(st));
