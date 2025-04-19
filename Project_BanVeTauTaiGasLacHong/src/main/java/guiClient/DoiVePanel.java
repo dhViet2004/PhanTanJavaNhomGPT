@@ -10,9 +10,9 @@ import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
@@ -32,6 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class DoiVePanel extends JPanel {
+    // Địa chỉ IP và port của RMI server
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     // Thêm các biến cho preloading
     private boolean isPreloadingData = false;
     private SwingWorker<Map<String, List<LichTrinhTau>>, Void> preloadWorker;
@@ -115,7 +118,7 @@ public class DoiVePanel extends JPanel {
         try {
             updateStatus(LOADING_TEXT, true);
 
-            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             doiVeDAO = (DoiVeDAO) registry.lookup("doiVeDAO");
             lichTrinhTauDAO = (LichTrinhTauDAO) registry.lookup("lichTrinhTauDAO");
 //            khuyenMaiDAO = (KhuyenMaiDAO) registry.lookup("khuyenMaiDAO");
@@ -637,7 +640,7 @@ public class DoiVePanel extends JPanel {
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
 
-        // Tạo model cho bảng lịch sử
+        // Tạo model cho bảng lịch sử - FIXED: Added Trạng Thái Cũ and Trạng Thái Mới columns
         String[] columnNames = {"Mã Vé", "Ngày Đổi", "Trạng Thái Cũ", "Trạng Thái Mới"};
         modelLichSu = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -648,6 +651,67 @@ public class DoiVePanel extends JPanel {
 
         tblLichSu = new JTable(modelLichSu);
         customizeTable(tblLichSu);
+
+        // Tùy chỉnh renderer cho cột trạng thái thanh toán
+        // FIXED: Changed index from 4 to 3 (Trạng Thái Mới column)
+        tblLichSu.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                JLabel label = (JLabel) c;
+
+                if (value != null) {
+                    TrangThaiVeTau trangThai = (TrangThaiVeTau) value;
+                    switch (trangThai) {
+                        case DA_THANH_TOAN:
+                            label.setForeground(successColor);
+                            label.setIcon(createPaymentIcon(14, 14, successColor));
+                            break;
+                        case CHO_XAC_NHAN:
+                            label.setForeground(warningColor);
+                            label.setIcon(createPendingIcon(14, 14, warningColor));
+                            break;
+                        default:
+                            label.setForeground(darkTextColor);
+                            label.setIcon(null);
+                    }
+                }
+
+                label.setHorizontalAlignment(JLabel.CENTER);
+                return label;
+            }
+        });
+
+        // Also apply custom renderer for the old status column (index 2)
+        tblLichSu.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                JLabel label = (JLabel) c;
+
+                if (value != null) {
+                    TrangThaiVeTau trangThai = (TrangThaiVeTau) value;
+                    switch (trangThai) {
+                        case DA_THANH_TOAN:
+                            label.setForeground(successColor);
+                            label.setIcon(createPaymentIcon(14, 14, successColor));
+                            break;
+                        case CHO_XAC_NHAN:
+                            label.setForeground(warningColor);
+                            label.setIcon(createPendingIcon(14, 14, warningColor));
+                            break;
+                        default:
+                            label.setForeground(darkTextColor);
+                            label.setIcon(null);
+                    }
+                }
+
+                label.setHorizontalAlignment(JLabel.CENTER);
+                return label;
+            }
+        });
 
         JScrollPane scrollPane = new JScrollPane(tblLichSu);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -664,38 +728,31 @@ public class DoiVePanel extends JPanel {
         searchHistoryPanel.add(lblSearch);
 
         JTextField txtSearch = new JTextField(15);
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            private void search() {
+                String searchText = txtSearch.getText().toLowerCase();
+                TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(modelLichSu);
+                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
+                tblLichSu.setRowSorter(sorter);
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) { search(); }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) { search(); }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) { search(); }
+        });
         searchHistoryPanel.add(txtSearch);
 
         // Tạo JButton tùy chỉnh cho tìm kiếm lịch sử
-        JButton btnSearch = new JButton("Tìm") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                if (isEnabled()) {
-                    if (getModel().isPressed()) {
-                        g2.setColor(primaryColor.darker().darker());
-                    } else if (getModel().isRollover()) {
-                        g2.setColor(primaryColor.darker());
-                    } else {
-                        g2.setColor(primaryColor);
-                    }
-                } else {
-                    g2.setColor(new Color(200, 200, 200)); // Màu khi nút bị vô hiệu hóa
-                }
-
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.dispose();
-
-                super.paintComponent(g);
-            }
-        };
-
+        JButton btnSearch = new JButton("Tìm");
         btnSearch.setFont(new Font("Arial", Font.PLAIN, 12));
         btnSearch.setForeground(Color.WHITE);
+        btnSearch.setBackground(primaryColor);
         btnSearch.setBorderPainted(false);
-        btnSearch.setContentAreaFilled(false);
         btnSearch.setFocusPainted(false);
         btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnSearch.setIcon(createSearchIcon(12, 12, Color.WHITE));
@@ -703,25 +760,23 @@ public class DoiVePanel extends JPanel {
         // Thêm hiệu ứng hover
         btnSearch.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (btnSearch.isEnabled()) {
-                    btnSearch.repaint(); // Trigger repaint để hiển thị màu hover
-                }
+                btnSearch.setBackground(primaryColor.darker());
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (btnSearch.isEnabled()) {
-                    btnSearch.repaint(); // Trigger repaint để trở về màu bình thường
-                }
+                btnSearch.setBackground(primaryColor);
             }
         });
 
-        btnSearch.addActionListener(e -> {
-            // TODO: Thực hiện tìm kiếm trong lịch sử
-        });
-
         searchHistoryPanel.add(btnSearch);
-
         rightPanel.add(searchHistoryPanel, BorderLayout.NORTH);
+
+        // Đặt độ rộng cho các cột
+        TableColumnModel columnModel = tblLichSu.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(80);  // Mã Vé
+        columnModel.getColumn(1).setPreferredWidth(120); // Ngày Đổi
+        columnModel.getColumn(2).setPreferredWidth(100); // Trạng Thái Cũ
+        columnModel.getColumn(3).setPreferredWidth(100); // Trạng Thái Mới
 
         return rightPanel;
     }
@@ -1162,17 +1217,40 @@ public class DoiVePanel extends JPanel {
     }
 
     private void updateLichSuAndShowSuccess(TrangThaiVeTau trangThaiCu) {
-        // Thêm vào lịch sử đổi vé
+        // Existing code for updating history...
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String ngayGio = sdf.format(new Date());
+
+        TrangThaiVeTau trangThaiThanhToan = TrangThaiVeTau.CHO_XAC_NHAN;
+        if (veTauHienTai.getTrangThai() == TrangThaiVeTau.DA_THANH_TOAN) {
+            trangThaiThanhToan = TrangThaiVeTau.DA_THANH_TOAN;
+        }
+
         modelLichSu.addRow(new Object[]{
                 veTauHienTai.getMaVe(),
                 ngayGio,
                 trangThaiCu,
-                veTauHienTai.getTrangThai()
+                trangThaiThanhToan
         });
 
-        // Hiển thị chi tiết vé đã đổi
+        // Create payment dialog
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán đổi vé", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(500, 600);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
+        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Icon panel
+        JLabel lblIcon = new JLabel(createSuccessTickIcon(64, 64, successColor));
+        lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
+        pnlContent.add(lblIcon, BorderLayout.NORTH);
+
+        // Information panel
+        JPanel pnlInfo = new JPanel(new BorderLayout(10, 10));
+
+        // Ticket details
         String thongTinVe = "Thông tin vé đã đổi:\n\n" +
                 "- Mã vé: " + veTauHienTai.getMaVe() + "\n" +
                 "- Tên khách hàng: " + veTauHienTai.getTenKhachHang() + "\n" +
@@ -1186,24 +1264,8 @@ public class DoiVePanel extends JPanel {
                 "- Loại chỗ: " + veTauHienTai.getChoNgoi().getLoaiCho().getTenLoai() + "\n" +
                 "- Đối tượng: " + veTauHienTai.getDoiTuong() + "\n" +
                 "- Giá vé: " + currencyFormatter.format(veTauHienTai.getGiaVe()) + "\n\n" +
-                "- Trạng thái: " + veTauHienTai.getTrangThai().getValue() + "\n\n" +
-                "Vui lòng thanh toán để hoàn tất đổi vé.";
+                "- Trạng thái: " + veTauHienTai.getTrangThai().getValue();
 
-        // Tạo dialog hiển thị thông tin vé đẹp hơn
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Đổi vé thành công", true);
-        dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setSize(450, 500);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
-        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Tạo icon thành công
-        JLabel lblIcon = new JLabel(createSuccessTickIcon(64, 64, successColor));
-        lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
-        pnlContent.add(lblIcon, BorderLayout.NORTH);
-
-        // Tạo panel thông tin vé
         JTextArea txtThongTin = new JTextArea(thongTinVe);
         txtThongTin.setEditable(false);
         txtThongTin.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -1215,64 +1277,219 @@ public class DoiVePanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(txtThongTin);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        pnlContent.add(scrollPane, BorderLayout.CENTER);
+        pnlInfo.add(scrollPane, BorderLayout.CENTER);
 
-        // Tạo panel nút bấm
+        // Payment panel
+        JPanel pnlPayment = new JPanel(new GridBagLayout());
+        pnlPayment.setBorder(BorderFactory.createTitledBorder("Thông tin thanh toán"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Total amount
+        gbc.gridx = 0; gbc.gridy = 0;
+        pnlPayment.add(new JLabel("Tổng tiền:"), gbc);
+
+        gbc.gridx = 1;
+        JLabel lblTotalAmount = new JLabel(currencyFormatter.format(veTauHienTai.getGiaVe()));
+        lblTotalAmount.setFont(new Font("Arial", Font.BOLD, 14));
+        pnlPayment.add(lblTotalAmount, gbc);
+
+        // Customer payment
+        gbc.gridx = 0; gbc.gridy = 1;
+        pnlPayment.add(new JLabel("Tiền khách đưa:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField txtCustomerPayment = new JTextField(15);
+        txtCustomerPayment.setFont(new Font("Arial", Font.PLAIN, 14));
+        pnlPayment.add(txtCustomerPayment, gbc);
+
+        // Change amount
+        gbc.gridx = 0; gbc.gridy = 2;
+        pnlPayment.add(new JLabel("Tiền thối lại:"), gbc);
+
+        gbc.gridx = 1;
+        JLabel lblChange = new JLabel("0 VNĐ");
+        lblChange.setFont(new Font("Arial", Font.BOLD, 14));
+        pnlPayment.add(lblChange, gbc);
+
+        // Add document listener for automatic change calculation
+        txtCustomerPayment.getDocument().addDocumentListener(new DocumentListener() {
+            private void updateChange() {
+                try {
+                    String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
+                    if (!input.isEmpty()) {
+                        double customerPayment = Double.parseDouble(input);
+                        double change = customerPayment - veTauHienTai.getGiaVe();
+                        lblChange.setText(currencyFormatter.format(Math.max(0, change)));
+                    } else {
+                        lblChange.setText("0 VNĐ");
+                    }
+                } catch (NumberFormatException e) {
+                    lblChange.setText("0 VNĐ");
+                }
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) { updateChange(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { updateChange(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { updateChange(); }
+        });
+
+        pnlInfo.add(pnlPayment, BorderLayout.SOUTH);
+        pnlContent.add(pnlInfo, BorderLayout.CENTER);
+
+        // Button panel
         JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        pnlButtons.setBackground(Color.WHITE); // Đặt màu nền cho panel
+        pnlButtons.setBackground(Color.WHITE);
 
-// Tạo button với class Anonymous để ghi đè phương thức vẽ
-        JButton btnOK = new JButton("Xác nhận") {
+        // Payment button
+        JButton btnThanhToan = new JButton("Thanh toán") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Vẽ nền button với màu primaryColor
                 g2.setColor(getModel().isPressed() ? primaryColor.darker().darker() :
                         getModel().isRollover() ? primaryColor.darker() : primaryColor);
                 g2.fillRect(0, 0, getWidth(), getHeight());
-
                 g2.dispose();
-
-                // Vẽ text và icon
                 super.paintComponent(g);
             }
         };
 
-// Cấu hình button
-        btnOK.setForeground(Color.WHITE);
-        btnOK.setFont(new Font("Arial", Font.BOLD, 12));
-        btnOK.setBorderPainted(false);     // Quan trọng: Tắt việc vẽ viền
-        btnOK.setContentAreaFilled(false); // Quan trọng: Tắt việc fill nội dung mặc định
-        btnOK.setFocusPainted(false);      // Tắt hiệu ứng focus
-        btnOK.setIcon(createCheckIcon(16, 16, Color.WHITE));
-        btnOK.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnOK.setPreferredSize(new Dimension(120, 30)); // Đặt kích thước cố định
+        btnThanhToan.setForeground(Color.WHITE);
+        btnThanhToan.setFont(new Font("Arial", Font.BOLD, 12));
+        btnThanhToan.setBorderPainted(false);
+        btnThanhToan.setContentAreaFilled(false);
+        btnThanhToan.setFocusPainted(false);
+        btnThanhToan.setIcon(createPaymentIcon(16, 16, Color.WHITE));
+        btnThanhToan.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnThanhToan.setPreferredSize(new Dimension(120, 30));
 
-// Thêm hiệu ứng hover
-        btnOK.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btnOK.repaint(); // Kích hoạt vẽ lại khi chuột vào
-            }
+        btnThanhToan.addActionListener(e -> {
+            try {
+                String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
+                if (input.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Vui lòng nhập số tiền khách đưa",
+                            "Thông báo", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
 
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btnOK.repaint(); // Kích hoạt vẽ lại khi chuột ra
+                double customerPayment = Double.parseDouble(input);
+                if (customerPayment < veTauHienTai.getGiaVe()) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Số tiền khách đưa không đủ",
+                            "Thông báo", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Cập nhật trạng thái vé thành ĐÃ_THANH_TOAN
+                veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
+
+                // Gọi API để cập nhật trạng thái vé
+                boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
+
+                if (success) {
+                    double change = customerPayment - veTauHienTai.getGiaVe();
+                    showPaymentSuccessDialog(change);
+                    dialog.dispose();
+                    updateStatus(SUCCESS_TEXT, false);
+
+                    // Cập nhật lại trạng thái trên giao diện
+                    lblTrangThai.setText(veTauHienTai.getTrangThai().toString());
+                    setTrangThaiColor(lblTrangThai, veTauHienTai.getTrangThai());
+
+                    // Cập nhật lại bảng lịch sử
+                    DefaultTableModel model = (DefaultTableModel) tblLichSu.getModel();
+                    int rowCount = model.getRowCount();
+                    if (rowCount > 0) {
+                        // Cập nhật dòng cuối cùng (vừa thêm)
+                        model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
+                    }
+
+                    lamMoi();
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Không thể cập nhật trạng thái vé",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Số tiền không hợp lệ",
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(dialog,
+                        "Lỗi khi thanh toán: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-// Thêm hành động
-        btnOK.addActionListener(e -> dialog.dispose());
-
-// Thêm vào panel và content
-        pnlButtons.add(btnOK);
+        pnlButtons.add(btnThanhToan);
         pnlContent.add(pnlButtons, BorderLayout.SOUTH);
 
         dialog.add(pnlContent);
         dialog.setVisible(true);
+    }
 
-        updateStatus(SUCCESS_TEXT, false);
-        lamMoi();
+    private void showPaymentSuccessDialog(double change) {
+        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Thanh toán thành công", true);
+        successDialog.setLayout(new BorderLayout(10, 10));
+        successDialog.setSize(300, 200);
+        successDialog.setLocationRelativeTo(this);
+
+        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
+        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Success message
+        JLabel lblMessage = new JLabel("Thanh toán thành công!");
+        lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
+        lblMessage.setFont(new Font("Arial", Font.BOLD, 16));
+        pnlContent.add(lblMessage, BorderLayout.NORTH);
+
+        // Change amount
+        JLabel lblChange = new JLabel("Tiền thối lại: " + currencyFormatter.format(change));
+        lblChange.setHorizontalAlignment(SwingConstants.CENTER);
+        lblChange.setFont(new Font("Arial", Font.PLAIN, 14));
+        pnlContent.add(lblChange, BorderLayout.CENTER);
+
+        // OK button
+        JButton btnOK = new JButton("Đóng");
+        btnOK.addActionListener(e -> successDialog.dispose());
+        JPanel pnlButton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlButton.add(btnOK);
+        pnlContent.add(pnlButton, BorderLayout.SOUTH);
+
+        successDialog.add(pnlContent);
+        successDialog.setVisible(true);
+    }
+
+    private Icon createPaymentIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+
+        // Vẽ biểu tượng tiền
+        g2.setStroke(new BasicStroke(1.5f));
+
+        // Vẽ đồng xu
+        g2.drawOval(2, 2, width - 4, height - 4);
+
+        // Vẽ ký hiệu đồng (₫)
+        Font font = new Font("SansSerif", Font.BOLD, height - 6);
+        g2.setFont(font);
+        FontMetrics fm = g2.getFontMetrics();
+        int x = (width - fm.stringWidth("₫")) / 2;
+        int y = ((height - fm.getHeight()) / 2) + fm.getAscent();
+        g2.drawString("₫", x, y);
+
+        g2.dispose();
+        return new ImageIcon(image);
     }
 
     private void lamMoi() {

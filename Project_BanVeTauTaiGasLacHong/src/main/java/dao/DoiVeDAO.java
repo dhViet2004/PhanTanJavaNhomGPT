@@ -19,4 +19,5 @@ public interface DoiVeDAO extends Remote {
     boolean datVe(VeTau veTau, String choNgoiId) throws RemoteException;
     boolean huyVe(String maVe) throws RemoteException;
     boolean thanhToanVe(String maVe) throws RemoteException;
+    boolean capNhatTrangThaiVe(String maVe, TrangThaiVeTau trangThai) throws RemoteException;
 }

@@ -512,22 +512,26 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
     }
 
     @Override
-    public List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai trangThai) throws RemoteException {
+    public List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai... trangThai) throws RemoteException {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tx = em.getTransaction();
         List<LichTrinhTau> list = new ArrayList<>();
 
         try {
             tx.begin();
+
             // Sử dụng JOIN FETCH để tránh lỗi LazyInitializationException
             String jpql = "SELECT ltt FROM LichTrinhTau ltt " +
                     "JOIN FETCH ltt.tau t " +
                     "JOIN FETCH t.tuyenTau tt " +
-                    "WHERE ltt.trangThai = :trangThai " +
+                    "WHERE ltt.trangThai IN :trangThaiList " +
                     "ORDER BY ltt.ngayDi, ltt.gioDi";
 
+            // Chuyển danh sách trạng thái thành danh sách để sử dụng trong query
+            List<TrangThai> trangThaiList = List.of(trangThai);
+
             list = em.createQuery(jpql, LichTrinhTau.class)
-                    .setParameter("trangThai", trangThai)
+                    .setParameter("trangThaiList", trangThaiList)
                     .getResultList();
 
             tx.commit();

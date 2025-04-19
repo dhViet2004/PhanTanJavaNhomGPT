@@ -434,4 +434,40 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
             }
         }
     }
+
+    @Override
+    public boolean capNhatTrangThaiVe(String maVe, TrangThaiVeTau trangThai) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // Kiểm tra vé có tồn tại không
+            VeTau veTau = em.find(VeTau.class, maVe);
+            if (veTau == null) {
+                tx.rollback();
+                return false;
+            }
+
+            // Cập nhật trạng thái vé
+            veTau.setTrangThai(trangThai);
+            em.merge(veTau);
+
+            tx.commit();
+            return true;
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi cập nhật trạng thái vé: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi cập nhật trạng thái vé: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
 }

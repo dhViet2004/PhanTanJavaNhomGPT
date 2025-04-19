@@ -44,6 +44,9 @@ import java.util.stream.Collectors;
 public class LichTrinhTauPanel extends JPanel {
 
     private static final Logger LOGGER = Logger.getLogger(LichTrinhTauPanel.class.getName());
+    // Địa chỉ IP và port của RMI server
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
     private JDateChooser dateChooser;
@@ -438,7 +441,7 @@ public class LichTrinhTauPanel extends JPanel {
             System.out.println("Đang kết nối đến RMI server...");
 
             // Sử dụng trực tiếp RMI registry thay vì JNDI
-            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             lichTrinhTauDAO = (LichTrinhTauDAO) registry.lookup("lichTrinhTauDAO");
 
             // Kiểm tra kết nối đến cơ sở dữ liệu
@@ -1936,7 +1939,7 @@ public class LichTrinhTauPanel extends JPanel {
         // Tải danh sách tàu từ TauDAO
         try {
             // Tạo kết nối đến RMI server
-            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             TauDAO tauDAO = (TauDAO) registry.lookup("tauDAO");
 
             // Lấy danh sách tàu và thêm vào combobox
@@ -2687,7 +2690,7 @@ public class LichTrinhTauPanel extends JPanel {
         // Tải danh sách tàu từ TauDAO
         try {
             // Tạo kết nối đến RMI server
-            Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             TauDAO tauDAO = (TauDAO) registry.lookup("tauDAO");
 
             // Lấy danh sách tàu và thêm vào combobox
@@ -3115,7 +3118,7 @@ public class LichTrinhTauPanel extends JPanel {
 
             // Tải danh sách tàu
             try {
-                Registry registry = LocateRegistry.getRegistry("127.0.0.1", 9090);
+                Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
                 TauDAO tauDAO = (TauDAO) registry.lookup("tauDAO");
                 List<Tau> trainList = tauDAO.getAllListT();
 

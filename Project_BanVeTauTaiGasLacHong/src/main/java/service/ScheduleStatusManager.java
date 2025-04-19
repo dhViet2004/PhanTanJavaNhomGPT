@@ -66,69 +66,27 @@ public class ScheduleStatusManager {
             LocalDateTime now = LocalDateTime.now();
 
             // Lấy danh sách lịch trình chưa khởi hành
-            List<LichTrinhTau> pendingSchedules = lichTrinhTauDAO.getListLichTrinhTauByTrangThai(TrangThai.CHUA_KHOI_HANH);
+            List<LichTrinhTau> pendingSchedules = lichTrinhTauDAO.getListLichTrinhTauByTrangThai(TrangThai.CHUA_KHOI_HANH, TrangThai.HOAT_DONG);
 
             if (pendingSchedules == null || pendingSchedules.isEmpty()) {
                 LOGGER.info("Không có lịch trình nào cần cập nhật trạng thái");
                 return;
             }
 
-            LOGGER.info("Đang kiểm tra " + pendingSchedules.size() + " lịch trình chưa khởi hành");
+            LOGGER.info("Đang kiểm tra " + pendingSchedules.size() + " lịch trình chưa khởi hành hoặc đang hoạt động");
 
-            // Số lượng lịch trình đã cập nhật
-            int updatedToOperatingCount = 0;
-            int updatedToDepartedCount = 0;
+            int totalUpdated = 0;
 
             for (LichTrinhTau schedule : pendingSchedules) {
-                // Tạo LocalDateTime từ ngày và giờ của lịch trình
-                LocalDateTime departureTime = LocalDateTime.of(schedule.getNgayDi(), schedule.getGioDi());
-
-                // Tính toán thời gian còn lại đến lúc khởi hành (tính bằng phút)
-                long minutesToDeparture = java.time.Duration.between(now, departureTime).toMinutes();
-
-                // Nếu thời gian khởi hành đã qua
-                if (departureTime.isBefore(now)) {
-                    LOGGER.info("Cập nhật lịch trình " + schedule.getMaLich() +
-                            " có thời gian khởi hành " + departureTime +
-                            " thành trạng thái Đã khởi hành");
-
-                    // Cập nhật trạng thái thành "Đã khởi hành"
-                    schedule.setTrangThai(TrangThai.DA_KHOI_HANH);
-
-                    // Lưu vào CSDL
-                    boolean updated = lichTrinhTauDAO.update(schedule);
-                    if (updated) {
-                        updatedToDepartedCount++;
-                        LOGGER.info("Đã cập nhật thành công lịch trình " + schedule.getMaLich() + " thành Đã khởi hành");
-                    } else {
-                        LOGGER.warning("Không thể cập nhật lịch trình " + schedule.getMaLich());
-                    }
-                }
-                // Nếu thời gian khởi hành còn không quá 30 phút
-                else if (minutesToDeparture <= 30 && minutesToDeparture >= 0) {
-                    LOGGER.info("Cập nhật lịch trình " + schedule.getMaLich() +
-                            " có thời gian khởi hành " + departureTime +
-                            " (còn " + minutesToDeparture + " phút) thành trạng thái Hoạt động");
-
-                    // Cập nhật trạng thái thành "Hoạt động"
-                    schedule.setTrangThai(TrangThai.HOAT_DONG);
-
-                    // Lưu vào CSDL
-                    boolean updated = lichTrinhTauDAO.update(schedule);
-                    if (updated) {
-                        updatedToOperatingCount++;
-                        LOGGER.info("Đã cập nhật thành công lịch trình " + schedule.getMaLich() + " thành Hoạt động");
-                    } else {
-                        LOGGER.warning("Không thể cập nhật lịch trình " + schedule.getMaLich());
-                    }
+                // Gọi phương thức checkAndUpdateSingleSchedule
+                boolean updated = checkAndUpdateSingleSchedule(schedule.getMaLich());
+                if (updated) {
+                    totalUpdated++;
                 }
             }
 
-            // Log kết quả
-            int totalUpdated = updatedToOperatingCount + updatedToDepartedCount;
             if (totalUpdated > 0) {
-                LOGGER.info("Đã cập nhật tổng cộng " + totalUpdated + " lịch trình " +
-                        "(Hoạt động: " + updatedToOperatingCount + ", Đã khởi hành: " + updatedToDepartedCount + ")");
+                LOGGER.info("Đã cập nhật tổng cộng " + totalUpdated + " lịch trình");
 
                 // Gọi callback để làm mới giao diện
                 if (refreshCallback != null) {
@@ -199,8 +157,8 @@ public class ScheduleStatusManager {
             if (departureTime.isBefore(now)) {
                 newStatus = TrangThai.DA_KHOI_HANH;
             }
-            // Nếu thời gian khởi hành còn không quá 30 phút và lịch trình chưa ở trạng thái Hoạt động
-            else if (minutesToDeparture <= 30 && minutesToDeparture >= 0 &&
+            // Nếu thời gian khởi hành còn từ 0 đến 30 phút
+            else if (minutesToDeparture <= 30 && minutesToDeparture > 0 &&
                     schedule.getTrangThai() != TrangThai.HOAT_DONG) {
                 newStatus = TrangThai.HOAT_DONG;
             }

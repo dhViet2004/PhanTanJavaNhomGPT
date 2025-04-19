@@ -26,6 +26,6 @@ public interface LichTrinhTauDAO extends Remote {
     List<LichTrinhTau> getListLichTrinhTauByDateRange(LocalDate startDate, LocalDate endDate) throws RemoteException;
 
     List<String> getAllStations() throws RemoteException;
-    List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai trangThai) throws RemoteException;
+    List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai... trangThai) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByMaTauAndNgayDi(String maTau, LocalDate ngayDi) throws RemoteException;
 }
