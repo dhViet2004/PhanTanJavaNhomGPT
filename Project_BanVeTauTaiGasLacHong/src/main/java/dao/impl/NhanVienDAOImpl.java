@@ -7,6 +7,8 @@ import model.NhanVien;
 import model.TaiKhoan;
 import util.JPAUtil;
 
+import java.util.List;
+
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
  * @Class: NhanVienDAO
@@ -14,16 +16,18 @@ import util.JPAUtil;
  * @Tác giả: Nguyen Huu Sang
  */
 @AllArgsConstructor
-public class NhanVienDAOImpl {
+public class NhanVienDAOImpl implements dao.NhanVienDAO {
     private EntityManager em;
     public NhanVienDAOImpl() {
         this.em = JPAUtil.getEntityManager();;
     }
+    @Override
     public NhanVien getnhanvienById(String id) {
         EntityTransaction tr = em.getTransaction();
         return em.find(NhanVien.class, id);
     }
 
+    @Override
     public boolean save(NhanVien nv) {
         EntityTransaction tr = em.getTransaction();
         try {
@@ -46,6 +50,7 @@ public class NhanVienDAOImpl {
         return false;
     }
 
+    @Override
     public boolean update(NhanVien nv) {
         EntityTransaction tr = em.getTransaction();
         try {
@@ -60,6 +65,7 @@ public class NhanVienDAOImpl {
         return false;
     }
 
+    @Override
     public boolean delete(String id) {
         EntityTransaction tr = em.getTransaction();
         try {
@@ -81,5 +87,11 @@ public class NhanVienDAOImpl {
         }
         return false;
     }
+
+    @Override
+    public List<NhanVien> getAllNhanVien() {
+        return em.createQuery("from NhanVien nv", NhanVien.class).getResultList();
+    }
+
 
 }

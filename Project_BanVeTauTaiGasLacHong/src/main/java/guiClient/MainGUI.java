@@ -1,7 +1,11 @@
 package guiClient;
 
+<<<<<<< Updated upstream
 import dao.DoiVeDAO;
 import dao.impl.DoiVeDAOImpl;
+=======
+import model.NhanVien;
+>>>>>>> Stashed changes
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,8 +24,14 @@ public class MainGUI extends JFrame {
     private CardLayout cardLayout; // CardLayout for switching panels
     private Map<String, JPanel> panelMap; // Cache for panels
     private LichTrinhTauPanel lichTrinhTauPanel;
+<<<<<<< Updated upstream
 
     public MainGUI() {
+=======
+    private NhanVien nhanVien;
+    public MainGUI(NhanVien nv) {
+        nhanVien = nv;
+>>>>>>> Stashed changes
         setTitle("Quản lý tàu hỏa");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -100,7 +110,11 @@ public class MainGUI extends JFrame {
 
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
+<<<<<<< Updated upstream
                 "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống", "Đổi vé", "Trả vé"
+=======
+                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống","Đổi vé", "Quản lý nhân viên"
+>>>>>>> Stashed changes
         };
 
         for (String item : menuItems) {
@@ -285,13 +299,83 @@ public class MainGUI extends JFrame {
                     }
                 };
 
+<<<<<<< Updated upstream
                 worker.execute();
                 return; // Thoát sớm
             } else {
+=======
+                        @Override
+                        protected void done() {
+                            try {
+                                // Lấy panel sau khi đã tạo xong
+                                DoiVePanel panel = get();
+
+                                // Thêm vào cache và hiển thị
+                                contentPanel.add(panel, panelName);
+                                panelMap.put(panelName, panel);
+                                cardLayout.show(contentPanel, panelName);
+
+                                // Xóa panel loading
+                                contentPanel.remove(loadingPanel);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                JOptionPane.showMessageDialog(MainGUI.this,
+                                        "Không thể tải dữ liệu: " + e.getMessage(),
+                                        "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                                cardLayout.show(contentPanel, "Trang chủ");
+                            }
+                        }
+                    };
+
+                    worker.execute();
+                    return; // Thoát sớm
+            }
+            else if(panelName.equals("Quản lý nhân viên")){
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý nhân viên...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel quản lý vé trong luồng riêng
+                SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected QuanLyNhanVienPanel doInBackground() {
+                        return new QuanLyNhanVienPanel();
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            QuanLyNhanVienPanel panel = get();
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+
+            }
+        else {
+>>>>>>> Stashed changes
                 newPanel = createPlaceholderPanel(panelName);
                 contentPanel.add(newPanel, panelName);
                 panelMap.put(panelName, newPanel);
             }
+<<<<<<< Updated upstream
         } else if (panelName.equals("Trả vé")) {
             // Hiển thị giao diện tải dữ liệu
             JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu trả vé...");
@@ -330,6 +414,9 @@ public class MainGUI extends JFrame {
 
             worker.execute();
             return; // Thoát sớm
+=======
+
+>>>>>>> Stashed changes
         }
 
         // Show the panel
@@ -389,7 +476,7 @@ public class MainGUI extends JFrame {
                 e.printStackTrace();
             }
 
-            new MainGUI().setVisible(true);
+            new MainGUI(new NhanVien()).setVisible(true);
         });
     }
 }
