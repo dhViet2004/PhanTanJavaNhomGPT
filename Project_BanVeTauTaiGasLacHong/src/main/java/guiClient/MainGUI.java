@@ -1,11 +1,8 @@
 package guiClient;
 
-<<<<<<< Updated upstream
 import dao.DoiVeDAO;
 import dao.impl.DoiVeDAOImpl;
-=======
 import model.NhanVien;
->>>>>>> Stashed changes
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,14 +21,10 @@ public class MainGUI extends JFrame {
     private CardLayout cardLayout; // CardLayout for switching panels
     private Map<String, JPanel> panelMap; // Cache for panels
     private LichTrinhTauPanel lichTrinhTauPanel;
-<<<<<<< Updated upstream
-
-    public MainGUI() {
-=======
     private NhanVien nhanVien;
+
     public MainGUI(NhanVien nv) {
         nhanVien = nv;
->>>>>>> Stashed changes
         setTitle("Quản lý tàu hỏa");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -110,11 +103,7 @@ public class MainGUI extends JFrame {
 
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
-<<<<<<< Updated upstream
-                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống", "Đổi vé", "Trả vé"
-=======
                 "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống","Đổi vé", "Quản lý nhân viên"
->>>>>>> Stashed changes
         };
 
         for (String item : menuItems) {
@@ -262,8 +251,7 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm, không thực hiện phần còn lại của method
-            }       // THÊM ĐOẠN NÀY
-            else if (panelName.equals("Đổi vé")) {
+            } else if (panelName.equals("Đổi vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -299,47 +287,18 @@ public class MainGUI extends JFrame {
                     }
                 };
 
-<<<<<<< Updated upstream
                 worker.execute();
                 return; // Thoát sớm
-            } else {
-=======
-                        @Override
-                        protected void done() {
-                            try {
-                                // Lấy panel sau khi đã tạo xong
-                                DoiVePanel panel = get();
-
-                                // Thêm vào cache và hiển thị
-                                contentPanel.add(panel, panelName);
-                                panelMap.put(panelName, panel);
-                                cardLayout.show(contentPanel, panelName);
-
-                                // Xóa panel loading
-                                contentPanel.remove(loadingPanel);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                JOptionPane.showMessageDialog(MainGUI.this,
-                                        "Không thể tải dữ liệu: " + e.getMessage(),
-                                        "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
-                                cardLayout.show(contentPanel, "Trang chủ");
-                            }
-                        }
-                    };
-
-                    worker.execute();
-                    return; // Thoát sớm
-            }
-            else if(panelName.equals("Quản lý nhân viên")){
+            } else if(panelName.equals("Quản lý nhân viên")) {
                 // Hiển thị giao diện tải dữ liệu
-                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý nhân viên...");
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu nhân viên...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
                 cardLayout.show(contentPanel, "Loading_" + panelName);
 
-                // Tạo panel quản lý vé trong luồng riêng
+                // Tạo panel quản lý nhân viên trong luồng riêng
                 SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
                     @Override
-                    protected QuanLyNhanVienPanel doInBackground() {
+                    protected QuanLyNhanVienPanel doInBackground() throws Exception {
                         return new QuanLyNhanVienPanel();
                     }
 
@@ -348,6 +307,7 @@ public class MainGUI extends JFrame {
                         try {
                             // Lấy panel sau khi đã tạo xong
                             QuanLyNhanVienPanel panel = get();
+
                             // Thêm vào cache và hiển thị
                             contentPanel.add(panel, panelName);
                             panelMap.put(panelName, panel);
@@ -366,60 +326,15 @@ public class MainGUI extends JFrame {
                 };
 
                 worker.execute();
-                return; // Thoát sớm
-
+                return; // Exit early
             }
-        else {
->>>>>>> Stashed changes
-                newPanel = createPlaceholderPanel(panelName);
-                contentPanel.add(newPanel, panelName);
-                panelMap.put(panelName, newPanel);
-            }
-<<<<<<< Updated upstream
-        } else if (panelName.equals("Trả vé")) {
-            // Hiển thị giao diện tải dữ liệu
-            JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu trả vé...");
-            contentPanel.add(loadingPanel, "Loading_" + panelName);
-            cardLayout.show(contentPanel, "Loading_" + panelName);
 
-            // Tạo panel trả vé trong luồng riêng
-            SwingWorker<TraVePanel, Void> worker = new SwingWorker<>() {
-                @Override
-                protected TraVePanel doInBackground() {
-                    return new TraVePanel(); // TraVePanel sẽ tự kết nối RMI
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        // Lấy panel sau khi đã tạo xong
-                        TraVePanel panel = get();
-
-                        // Thêm vào cache và hiển thị
-                        contentPanel.add(panel, panelName);
-                        panelMap.put(panelName, panel);
-                        cardLayout.show(contentPanel, panelName);
-
-                        // Xóa panel loading
-                        contentPanel.remove(loadingPanel);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        JOptionPane.showMessageDialog(MainGUI.this,
-                                "Không thể tải dữ liệu trả vé: " + e.getMessage(),
-                                "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
-                        cardLayout.show(contentPanel, "Trang chủ");
-                    }
-                }
-            };
-
-            worker.execute();
-            return; // Thoát sớm
-=======
-
->>>>>>> Stashed changes
+            newPanel = createPlaceholderPanel(panelName);
+            contentPanel.add(newPanel, panelName);
+            panelMap.put(panelName, newPanel);
         }
 
-        // Show the panel
+        // Switch to the panel
         cardLayout.show(contentPanel, panelName);
     }
 
@@ -427,32 +342,11 @@ public class MainGUI extends JFrame {
         JPanel loadingPanel = new JPanel(new BorderLayout());
         loadingPanel.setBackground(Color.WHITE);
 
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setBackground(Color.WHITE);
+        JLabel loadingLabel = new JLabel(message, JLabel.CENTER);
+        loadingLabel.setFont(new Font("Arial", Font.ITALIC, 18));
+        loadingLabel.setForeground(Color.GRAY);
 
-        // Tạo panel chứa spinner và thông báo
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(Color.WHITE);
-
-        // Tạo spinner
-        JLabel spinnerLabel = new JLabel(new ImageIcon(createLoadingSpinnerGif()));
-        spinnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Tạo thông báo
-        JLabel messageLabel = new JLabel(message);
-        messageLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-
-        // Thêm spinner và thông báo vào panel
-        contentPanel.add(spinnerLabel);
-        contentPanel.add(messageLabel);
-
-        // Thêm vào center panel để căn chỉnh giữa màn hình
-        centerPanel.add(contentPanel);
-        loadingPanel.add(centerPanel, BorderLayout.CENTER);
-
+        loadingPanel.add(loadingLabel, BorderLayout.CENTER);
         return loadingPanel;
     }
 
