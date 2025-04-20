@@ -2,6 +2,9 @@ package GUI.ui.main;
 
 import GUI.component.*;
 import GUI.ui.menu.MenuEvent;
+import dao.NhanVienDAO;
+import dao.impl.NhanVienDAOImpl;
+import model.NhanVien;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,7 +34,9 @@ public class Main extends javax.swing.JFrame {
                 else if (index == 3){
                     showForm(new LichTrinhTauPanel());
                 } else if (index == 2 && subIndex == 1) {
-                    showForm(new DoiVePanel());
+                    NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+                    NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
+                    showForm(new DoiVePanel(nhanVien));
                 } else if (index == 6) {
                     showForm(new QuanLyNhanVienPanel());
                 }

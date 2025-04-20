@@ -33,15 +33,16 @@ CREATE TABLE IF NOT EXISTS `chitiet_hoadon` (
   CONSTRAINT `FKieetal8aqcqg1qfe7sp197876` FOREIGN KEY (`ma_hd`) REFERENCES `hoadon` (`ma_hd`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.chitiet_hoadon: ~7 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.chitiet_hoadon: ~8 rows (approximately)
 INSERT INTO `chitiet_hoadon` (`ma_hd`, `ma_ve`, `VAT`, `so_luong`, `thanh_tien`, `tien_thue`) VALUES
-	('HD202504180001', 'LLT20250418192106-013-001', 10, 1, 220000, 22000),
+	('HD202504180001', 'LLT20250418192106-013-004', 10, 1, 220000, 22000),
 	('HD202504180001', 'LLT20250418192106-013-006', 10, 1, 379.07, 37.91),
 	('HD202504180001', 'LLT20250418192106-013-007', 10, 1, 261.87, 26.19),
 	('HD202504180001', 'LLT20250418192106-013-008', 10, 1, 415.46, 41.55),
 	('HD202504180001', 'LLT20250418192106-013-009', 10, 1, 404.74, 40.47),
 	('HD202504180001', 'LLT20250418192106-013-010', 10, 1, 205.27, 20.53),
-	('HD202504180001', 'LLT20250418192106-013-011', 10, 1, 254.76, 25.48);
+	('HD202504180001', 'LLT20250418192106-013-011', 10, 1, 254.76, 25.48),
+	('HD202504205256', 'LLT20250418192106-013-004', 0.1, 1, 208.615, 20.861500000000003);
 
 -- Dumping structure for table quanlybanvetaugalachong.cho_ngoi
 CREATE TABLE IF NOT EXISTS `cho_ngoi` (
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `cho_ngoi` (
   CONSTRAINT `FKqu207u3ea1hc4q31s2hptpquo` FOREIGN KEY (`loaicho_maloai`) REFERENCES `loaicho` (`ma_loai`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.cho_ngoi: ~10,838 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.cho_ngoi: ~10,987 rows (approximately)
 INSERT INTO `cho_ngoi` (`ma_cho`, `gia_tien`, `ten_cho`, `tinh_trang`, `loaicho_maloai`, `toa_tau_ma_toa`) VALUES
 	('CN10AT101', 381.5, '10A', b'1', 'LC02', 'T101'),
 	('CN10AT1010', 103.52, '10A', b'1', 'LC02', 'T1010'),
@@ -11067,10 +11068,13 @@ CREATE TABLE IF NOT EXISTS `hoadon` (
   CONSTRAINT `FKme9f6r7nut5ffkmxatcgoxxqb` FOREIGN KEY (`ma_khach_hang`) REFERENCES `khachhang` (`ma_khach_hang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.hoadon: ~2 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.hoadon: ~5 rows (approximately)
 INSERT INTO `hoadon` (`ma_hd`, `ngay_lap`, `tien_giam`, `tong_tien`, `ma_khach_hang`, `ma_loai_hd`, `ma_nhan_vien`) VALUES
-	('HD202504180001', '2025-04-18 09:30:00', 50, 350000, 'KH180420250001', 'LKH003', 'NV202504180001'),
-	('HD202504180002', '2025-04-18 10:00:00', 20, 500000, 'KH180420250002', 'LKH003', 'NV202504180002');
+	('HD202504180001', '2025-04-18 09:30:00', 50, 350000, 'KH180420250001', 'LHD003', 'NV202504180001'),
+	('HD202504180002', '2025-04-18 10:00:00', 20, 500000, 'KH180420250002', 'LHD003', 'NV202504180002'),
+	('HD202504202288', '2025-04-20 10:53:20', 160.645, 47.97, 'KH180420250001', 'LHD001', 'NV0003'),
+	('HD202504205256', '2025-04-20 11:02:45', -160.645, 208.615, 'KH180420250001', 'LHD001', 'NV0003'),
+	('HD202504206590', '2025-04-20 10:34:37', -160.645, 208.615, 'KH180420250001', 'LHD001', 'NV0003');
 
 -- Dumping structure for table quanlybanvetaugalachong.khachhang
 CREATE TABLE IF NOT EXISTS `khachhang` (
@@ -11144,27 +11148,27 @@ CREATE TABLE IF NOT EXISTS `lichtrinhtau` (
   CONSTRAINT `FKsb855y65r06uf4c172yqvfisy` FOREIGN KEY (`tau_ma_tau`) REFERENCES `tau` (`ma_tau`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.lichtrinhtau: ~39 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.lichtrinhtau: ~91 rows (approximately)
 INSERT INTO `lichtrinhtau` (`ma_lich`, `gio_di`, `ngay_di`, `trang_thai`, `tau_ma_tau`) VALUES
 	('LLT20241221101234-001', '20:26:00', '2025-01-24', 'DA_KHOI_HANH', 'T1'),
 	('LLT20250416191425-001', '06:00:00', '2025-04-16', 'DA_KHOI_HANH', 'T5'),
 	('LLT20250417000114-001', '00:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T2'),
 	('LLT20250417101245-002', '08:00:00', '2025-04-18', 'DA_HUY', 'T1'),
-	('LLT20250417101245-004', '08:00:00', '2025-04-20', 'CHUA_KHOI_HANH', 'T1'),
+	('LLT20250417101245-004', '08:00:00', '2025-04-20', 'DA_KHOI_HANH', 'T1'),
 	('LLT20250417101245-005', '08:00:00', '2025-04-21', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250417101246-006', '08:00:00', '2025-04-22', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250417101246-007', '08:00:00', '2025-04-23', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250417101246-008', '08:00:00', '2025-04-24', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250417101537-001', '10:17:00', '2025-04-17', 'DA_KHOI_HANH', 'T10'),
 	('LLT20250417101537-002', '10:17:00', '2025-04-18', 'DA_KHOI_HANH', 'T10'),
-	('LLT20250417101538-003', '10:17:00', '2025-04-19', 'CHUA_KHOI_HANH', 'T10'),
-	('LLT20250417101538-004', '10:17:00', '2025-04-20', 'CHUA_KHOI_HANH', 'T10'),
+	('LLT20250417101538-003', '10:17:00', '2025-04-19', 'DA_KHOI_HANH', 'T10'),
+	('LLT20250417101538-004', '10:17:00', '2025-04-20', 'DA_KHOI_HANH', 'T10'),
 	('LLT20250417101538-005', '10:17:00', '2025-04-21', 'CHUA_KHOI_HANH', 'T10'),
 	('LLT20250417194026-002', '00:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T6'),
 	('LLT20250417200212-001', '20:33:00', '2025-04-17', 'DA_KHOI_HANH', 'T6'),
 	('LLT20250417200632-002', '00:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T1'),
 	('LLT20250417200701-003', '08:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T6'),
-	('LLT20250417200701-005', '08:00:00', '2025-04-20', 'CHUA_KHOI_HANH', 'T6'),
+	('LLT20250417200701-005', '08:00:00', '2025-04-20', 'DA_KHOI_HANH', 'T6'),
 	('LLT20250417200701-006', '08:00:00', '2025-04-21', 'CHUA_KHOI_HANH', 'T6'),
 	('LLT20250417200701-007', '08:00:00', '2025-04-22', 'CHUA_KHOI_HANH', 'T6'),
 	('LLT20250417200701-008', '08:00:00', '2025-04-23', 'CHUA_KHOI_HANH', 'T6'),
@@ -11177,8 +11181,7 @@ INSERT INTO `lichtrinhtau` (`ma_lich`, `gio_di`, `ngay_di`, `trang_thai`, `tau_m
 	('LLT20250417215442-001', '00:00:00', '2025-04-30', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250417215451-001', '00:00:00', '2025-04-30', 'CHUA_KHOI_HANH', 'T1'),
 	('LLT20250418001750-001', '10:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T1'),
-	('LLT20250418001809-002', '14:00:00', '2025-04-18', 'HOAT_DONG', 'T9'),
-	('LLT20250418001809-003', '14:00:00', '2025-04-19', 'CHUA_KHOI_HANH', 'T9'),
+	('LLT20250418001809-003', '14:00:00', '2025-04-19', 'DA_KHOI_HANH', 'T9'),
 	('LLT20250418001809-004', '14:00:00', '2025-04-20', 'CHUA_KHOI_HANH', 'T9'),
 	('LLT20250418001809-005', '14:00:00', '2025-04-21', 'CHUA_KHOI_HANH', 'T9'),
 	('LLT20250418001809-006', '14:00:00', '2025-04-22', 'CHUA_KHOI_HANH', 'T9'),
@@ -11186,8 +11189,8 @@ INSERT INTO `lichtrinhtau` (`ma_lich`, `gio_di`, `ngay_di`, `trang_thai`, `tau_m
 	('LLT20250418001809-008', '14:00:00', '2025-04-24', 'DA_HUY', 'T9'),
 	('LLT20250418104306-001', '11:14:00', '2025-04-18', 'DA_KHOI_HANH', 'T1'),
 	('LLT20250418192105-001', '08:00:00', '2025-04-18', 'DA_KHOI_HANH', 'T10'),
-	('LLT20250418192105-002', '08:00:00', '2025-04-19', 'CHUA_KHOI_HANH', 'T10'),
-	('LLT20250418192105-003', '08:00:00', '2025-04-20', 'CHUA_KHOI_HANH', 'T10'),
+	('LLT20250418192105-002', '08:00:00', '2025-04-19', 'DA_KHOI_HANH', 'T10'),
+	('LLT20250418192105-003', '08:00:00', '2025-04-20', 'DA_KHOI_HANH', 'T10'),
 	('LLT20250418192105-004', '08:00:00', '2025-04-21', 'CHUA_KHOI_HANH', 'T10'),
 	('LLT20250418192105-005', '08:00:00', '2025-04-22', 'CHUA_KHOI_HANH', 'T10'),
 	('LLT20250418192105-006', '08:00:00', '2025-04-23', 'CHUA_KHOI_HANH', 'T10'),
@@ -11228,7 +11231,16 @@ INSERT INTO `lichtrinhtau` (`ma_lich`, `gio_di`, `ngay_di`, `trang_thai`, `tau_m
 	('LLT20250418192107-041', '08:00:00', '2025-05-28', 'CHUA_KHOI_HANH', 'T10'),
 	('LLT20250418192107-042', '08:00:00', '2025-05-29', 'CHUA_KHOI_HANH', 'T10'),
 	('LLT20250418192107-043', '08:00:00', '2025-05-30', 'CHUA_KHOI_HANH', 'T10'),
-	('LLT20250418192107-044', '08:00:00', '2025-05-31', 'CHUA_KHOI_HANH', 'T10');
+	('LLT20250418192107-044', '08:00:00', '2025-05-31', 'CHUA_KHOI_HANH', 'T10'),
+	('LLT20250419141707-001', '14:48:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419142531-001', '02:56:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419142558-002', '14:56:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419142626-003', '14:57:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419142704-004', '15:00:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419213041-001', '22:00:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419213124-002', '22:02:00', '2025-04-19', 'DA_KHOI_HANH', 'T1'),
+	('LLT20250419214954-001', '21:51:00', '2025-04-19', 'DA_KHOI_HANH', 'T10'),
+	('LLT20250419222650-001', '22:57:00', '2025-04-19', 'DA_KHOI_HANH', 'T1');
 
 -- Dumping structure for table quanlybanvetaugalachong.loaicho
 CREATE TABLE IF NOT EXISTS `loaicho` (
@@ -11250,11 +11262,11 @@ CREATE TABLE IF NOT EXISTS `loaihoadon` (
   PRIMARY KEY (`ma_loai_hd`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.loaihoadon: ~0 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.loaihoadon: ~3 rows (approximately)
 INSERT INTO `loaihoadon` (`ma_loai_hd`, `ten_loai_hd`) VALUES
-	('LKH001', 'Đã đổi'),
-	('LKH002', 'Đã trả'),
-	('LKH003', 'Đã thanh toán');
+	('LHD001', 'Đã đổi'),
+	('LHD002', 'Đã trả'),
+	('LHD003', 'Đã thanh toán');
 
 -- Dumping structure for table quanlybanvetaugalachong.loaikhachhang
 CREATE TABLE IF NOT EXISTS `loaikhachhang` (
@@ -11263,7 +11275,7 @@ CREATE TABLE IF NOT EXISTS `loaikhachhang` (
   PRIMARY KEY (`ma_loai_khach_hang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.loaikhachhang: ~0 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.loaikhachhang: ~2 rows (approximately)
 INSERT INTO `loaikhachhang` (`ma_loai_khach_hang`, `ten_loai_khach_hang`) VALUES
 	('LKH001', 'Khách VIP'),
 	('LKH002', 'Khách vãng lai');
@@ -11302,8 +11314,9 @@ CREATE TABLE IF NOT EXISTS `nhanvien` (
   PRIMARY KEY (`ma_nv`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.nhanvien: ~0 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.nhanvien: ~3 rows (approximately)
 INSERT INTO `nhanvien` (`ma_nv`, `avata`, `cccd`, `chuc_vu`, `dia_chi`, `ngay_vao_lam`, `so_dt`, `ten_nv`, `trang_thai`) VALUES
+	('NV0003', '', '03209230932', 'Nhân viên', 'Bến Tre', '2025-04-20', '083204001958', 'Đặng Hoàng Việt', 'Hoạt động'),
 	('NV202504180001', 'avatar1.jpg', 'CCCD12345', 'Quản lý', 'Hà Nội', '2025-04-01', '0900123456', 'Lê Văn A', 'Hoạt động'),
 	('NV202504180002', 'avatar2.jpg', 'CCCD67890', 'Nhân viên bán vé', 'Hà Nội', '2025-04-05', '0900765432', 'Trần Thị B', 'Hoạt động');
 
@@ -11315,7 +11328,9 @@ CREATE TABLE IF NOT EXISTS `taikhoan` (
   CONSTRAINT `FKg7pi7n7iout3nxj2bkjb96o1l` FOREIGN KEY (`ma_nv`) REFERENCES `nhanvien` (`ma_nv`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table quanlybanvetaugalachong.taikhoan: ~0 rows (approximately)
+-- Dumping data for table quanlybanvetaugalachong.taikhoan: ~1 rows (approximately)
+INSERT INTO `taikhoan` (`ma_nv`, `password`) VALUES
+	('NV0003', 'Abc123.');
 
 -- Dumping structure for table quanlybanvetaugalachong.tau
 CREATE TABLE IF NOT EXISTS `tau` (
@@ -11606,9 +11621,9 @@ CREATE TABLE IF NOT EXISTS `vetau` (
 
 -- Dumping data for table quanlybanvetaugalachong.vetau: ~10 rows (approximately)
 INSERT INTO `vetau` (`ma_ve`, `doi_tuong`, `gia_ve`, `giay_to`, `ngay_di`, `ten_khach_hang`, `trang_thai`, `cho_ngoi_ma_cho`, `khuyen_mai_ma_km`, `lich_trinh_tau_ma_lich`) VALUES
-	('LLT20250418192106-013-001', 'Sinh viên', 340.79, '012345678', '2025-04-18', 'Nguyễn Văn A', 'DA_THANH_TOAN', 'CN1AT11', NULL, 'LLT20250417101245-002'),
-	('LLT20250418192106-013-003', 'Người lớn', 417.23, '012345680', '2025-04-18', 'Nguyễn Văn C', 'DA_THANH_TOAN', 'CN10BT101', NULL, 'LLT20250418192106-013'),
-	('LLT20250418192106-013-004', 'Trẻ em', 95.94, '012345681', '2025-04-18', 'Nguyễn Văn D', 'DA_THANH_TOAN', 'CN10CT101', NULL, 'LLT20250418192106-013'),
+	('LLT20250418192106-013-001', 'Sinh viên', 395.8, '012345678', '2025-04-18', 'Nguyễn Văn A', 'DA_TRA', 'CN10AT91', NULL, 'LLT20250418001809-003'),
+	('LLT20250418192106-013-003', 'Người lớn', 381.5, '012345680', '2025-04-18', 'Nguyễn Văn A', 'DA_THANH_TOAN', 'CN10AT101', NULL, 'LLT20250418192106-013'),
+	('LLT20250418192106-013-004', 'Trẻ em', 208.615, '012345681', '2025-04-18', 'Nguyễn Văn D', 'DA_THANH_TOAN', 'CN10BT101', NULL, 'LLT20250418192106-013'),
 	('LLT20250418192106-013-005', 'Người lớn', 141.09, '012345682', '2025-04-18', 'Nguyễn Văn E', 'DA_THANH_TOAN', 'CN10DT101', NULL, 'LLT20250418192106-013'),
 	('LLT20250418192106-013-006', 'Sinh viên', 379.07, '012345683', '2025-04-18', 'Nguyễn Văn F', 'DA_THANH_TOAN', 'CN11AT101', NULL, 'LLT20250418192106-013'),
 	('LLT20250418192106-013-007', 'Trẻ em', 261.87, '012345684', '2025-04-18', 'Nguyễn Văn G', 'DA_THANH_TOAN', 'CN11BT101', NULL, 'LLT20250418192106-013'),

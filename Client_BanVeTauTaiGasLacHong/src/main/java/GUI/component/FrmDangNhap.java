@@ -6,7 +6,7 @@ import dao.TaiKhoanDAO;
 import dao.impl.LichLamViecDAOImpl;
 import dao.impl.TaiKhoanDAOImpl;
 import guiClient.MainGUI;
-import model.EmailSender;
+//import model.EmailSender;
 import model.LichLamViec;
 import model.NhanVien;
 
@@ -267,12 +267,12 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 if (password == null) {
                     JOptionPane.showMessageDialog(this, "Email không tồn tại trong hệ thống", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 } else {
-                    boolean emailSent = EmailSender.sendPasswordEmail(email, password);
-                    if (emailSent) {
-                        JOptionPane.showMessageDialog(this, "Mật khẩu đã được gửi đến email của bạn.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Gửi email thất bại. Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                    }
+//                    boolean emailSent = EmailSender.sendPasswordEmail(email, password);
+//                    if (emailSent) {
+//                        JOptionPane.showMessageDialog(this, "Mật khẩu đã được gửi đến email của bạn.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+//                    } else {
+//                        JOptionPane.showMessageDialog(this, "Gửi email thất bại. Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+//                    }
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
