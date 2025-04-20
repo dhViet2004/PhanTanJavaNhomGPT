@@ -22,8 +22,10 @@ public class MainGUI extends JFrame {
     private CardLayout cardLayout; // CardLayout for switching panels
     private Map<String, JPanel> panelMap; // Cache for panels
     private LichTrinhTauPanel lichTrinhTauPanel;
+    private NhanVien nhanVien;
 
-    public MainGUI() {
+    public MainGUI(NhanVien nv) {
+        nhanVien = nv;
         setTitle("Quản lý tàu hỏa");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -102,7 +104,7 @@ public class MainGUI extends JFrame {
 
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
-                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống", "Đổi vé", "Trả vé"
+                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Cài đặt hệ thống","Đổi vé", "Quản lý nhân viên"
         };
 
         for (String item : menuItems) {
@@ -342,32 +344,11 @@ public class MainGUI extends JFrame {
         JPanel loadingPanel = new JPanel(new BorderLayout());
         loadingPanel.setBackground(Color.WHITE);
 
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setBackground(Color.WHITE);
+        JLabel loadingLabel = new JLabel(message, JLabel.CENTER);
+        loadingLabel.setFont(new Font("Arial", Font.ITALIC, 18));
+        loadingLabel.setForeground(Color.GRAY);
 
-        // Tạo panel chứa spinner và thông báo
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(Color.WHITE);
-
-        // Tạo spinner
-        JLabel spinnerLabel = new JLabel(new ImageIcon(createLoadingSpinnerGif()));
-        spinnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Tạo thông báo
-        JLabel messageLabel = new JLabel(message);
-        messageLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-
-        // Thêm spinner và thông báo vào panel
-        contentPanel.add(spinnerLabel);
-        contentPanel.add(messageLabel);
-
-        // Thêm vào center panel để căn chỉnh giữa màn hình
-        centerPanel.add(contentPanel);
-        loadingPanel.add(centerPanel, BorderLayout.CENTER);
-
+        loadingPanel.add(loadingLabel, BorderLayout.CENTER);
         return loadingPanel;
     }
 
@@ -391,7 +372,7 @@ public class MainGUI extends JFrame {
                 e.printStackTrace();
             }
 
-            new MainGUI().setVisible(true);
+            new MainGUI(new NhanVien()).setVisible(true);
         });
     }
 }

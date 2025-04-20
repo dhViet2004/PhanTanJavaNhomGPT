@@ -1,9 +1,7 @@
 package model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -18,6 +16,8 @@ import java.util.Set;
 @Entity
 @Table(name = "nhanvien")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@AllArgsConstructor
+@NoArgsConstructor
 @NamedNativeQueries({
         @NamedNativeQuery(name = "NhanVien.findByMaNV",
                 query = "select * from nhanvien where ma_nv = :maNV",

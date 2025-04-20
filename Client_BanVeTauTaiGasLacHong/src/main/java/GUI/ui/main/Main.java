@@ -1,8 +1,6 @@
 package GUI.ui.main;
 
-import GUI.component.DoiVePanel;
-import GUI.component.HomeForm;
-import GUI.component.LichTrinhTauPanel;
+import GUI.component.*;
 import GUI.ui.menu.MenuEvent;
 
 import javax.swing.*;
@@ -34,8 +32,8 @@ public class Main extends javax.swing.JFrame {
                     showForm(new LichTrinhTauPanel());
                 } else if (index == 2 && subIndex == 1) {
                     showForm(new DoiVePanel());
-                } else {
-
+                } else if (index == 6) {
+                    showForm(new QuanLyNhanVienPanel());
                 }
             }
         });
@@ -172,7 +170,11 @@ public class Main extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new Main().setVisible(true);
+
+//                new Main().setVisible(true);
+                Loading loading  = new Loading();
+                loading.setVisible(true);
+
             }
         });
     }
