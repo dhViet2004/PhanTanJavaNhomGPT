@@ -1556,7 +1556,6 @@ public class TraCuuVePanel extends JPanel {
 
         // Thêm hiệu ứng hover
         addHoverEffect(btnQuetQR);
-
         buttonPanel.add(btnQuetQR);
 
         gbc.gridx = 2;

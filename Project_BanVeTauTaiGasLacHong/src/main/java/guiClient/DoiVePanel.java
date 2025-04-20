@@ -1,5 +1,10 @@
 package guiClient;
 
+import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamPanel;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import dao.*;
 import model.*;
 
@@ -11,6 +16,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.*;
 import java.awt.*;
+import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
@@ -27,6 +35,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class DoiVePanel extends JPanel {
@@ -352,8 +361,226 @@ public class DoiVePanel extends JPanel {
         });
 
         searchInputPanel.add(btnTimVe);
+
+        // Thêm nút quét mã QR
+        JButton btnQuetQR = new JButton("Quét QR");
+        btnQuetQR.setFont(new Font("Arial", Font.BOLD, 12));
+        btnQuetQR.setBackground(new Color(0, 153, 153)); // Màu xanh ngọc
+        btnQuetQR.setForeground(Color.WHITE);
+        btnQuetQR.setOpaque(true);
+        btnQuetQR.setBorderPainted(false);
+        btnQuetQR.setFocusPainted(false);
+        btnQuetQR.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnQuetQR.setIcon(createQRCodeIcon(16, 16, Color.WHITE));
+        btnQuetQR.addActionListener(e -> quetQRTuWebcam());
+
+        // Thêm hiệu ứng hover cho nút quét QR
+        btnQuetQR.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnQuetQR.setBackground(new Color(0, 130, 130)); // Màu xanh ngọc đậm hơn khi hover
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnQuetQR.setBackground(new Color(0, 153, 153)); // Trở về màu ban đầu
+            }
+        });
+
+        searchInputPanel.add(btnQuetQR);
+
         searchPanel.add(searchInputPanel, BorderLayout.CENTER);
         return searchPanel;
+    }
+
+    // Thêm phương thức tạo icon mã QR
+    private ImageIcon createQRCodeIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+
+        // Vẽ hình vuông ngoài
+        g2d.drawRect(0, 0, width - 1, height - 1);
+
+        // Vẽ các ô vuông nhỏ tượng trưng cho mã QR
+        int cellSize = width / 5;
+
+        // Góc trên trái
+        g2d.fillRect(2, 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(cellSize, cellSize, cellSize, cellSize);
+        g2d.setColor(color);
+
+        // Góc trên phải
+        g2d.fillRect(width - 3*cellSize - 2, 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(width - 2*cellSize - 2, cellSize, cellSize, cellSize);
+        g2d.setColor(color);
+
+        // Góc dưới trái
+        g2d.fillRect(2, height - 3*cellSize - 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(cellSize, height - 2*cellSize - 2, cellSize, cellSize);
+
+        // Một số ô ngẫu nhiên trong mã QR
+        g2d.setColor(color);
+        g2d.fillRect(width/2, height/2, cellSize, cellSize);
+        g2d.fillRect(width/2 - cellSize, height/2 + cellSize, cellSize, cellSize);
+
+        g2d.dispose();
+
+        return new ImageIcon(image);
+    }
+
+    // Phương thức quét mã QR
+    private void quetQRTuWebcam() {
+        try {
+            // Hiển thị dialog chờ khi đang khởi tạo webcam
+            JDialog loadingDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Đang khởi tạo webcam...", true);
+            loadingDialog.setSize(250, 100);
+            loadingDialog.setLayout(new FlowLayout(FlowLayout.CENTER));
+            loadingDialog.add(new JLabel("Đang khởi tạo webcam, vui lòng chờ..."));
+            loadingDialog.setLocationRelativeTo(this);
+
+            // Khởi tạo webcam trong một luồng riêng
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() {
+                    try {
+                        // Khởi tạo webcam
+                        Webcam webcam = Webcam.getDefault();
+                        if (webcam == null) {
+                            throw new Exception("Không tìm thấy webcam trên thiết bị");
+                        }
+
+                        // Đặt kích thước hình ảnh webcam
+                        webcam.setViewSize(new Dimension(640, 480));
+                        webcam.open();
+
+                        // Tạo và hiển thị dialog quét QR
+                        JDialog qrDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(DoiVePanel.this), "Quét mã QR", true);
+                        qrDialog.setSize(700, 550);
+                        qrDialog.setLayout(new BorderLayout());
+
+                        // Panel hiển thị webcam
+                        WebcamPanel webcamPanel = new WebcamPanel(webcam);
+                        webcamPanel.setFPSDisplayed(true);
+                        webcamPanel.setMirrored(false);
+                        qrDialog.add(webcamPanel, BorderLayout.CENTER);
+
+                        // Panel nút điều khiển
+                        JPanel controlPanel = new JPanel();
+                        JButton cancelButton = new JButton("Hủy");
+                        cancelButton.addActionListener(e -> qrDialog.dispose());
+                        controlPanel.add(cancelButton);
+                        qrDialog.add(controlPanel, BorderLayout.SOUTH);
+
+                        // Xử lý khi đóng dialog
+                        qrDialog.addWindowListener(new WindowAdapter() {
+                            @Override
+                            public void windowClosing(WindowEvent e) {
+                                if (webcam != null && webcam.isOpen()) {
+                                    webcam.close();
+                                }
+                            }
+                        });
+
+                        // Đóng dialog loading
+                        SwingUtilities.invokeLater(() -> loadingDialog.dispose());
+
+                        // Khởi tạo luồng quét QR
+                        final AtomicBoolean qrFound = new AtomicBoolean(false);
+                        Thread qrScanThread = new Thread(() -> {
+                            try {
+                                while (!qrFound.get() && webcam.isOpen()) {
+                                    BufferedImage image = webcam.getImage();
+                                    if (image != null) {
+                                        try {
+                                            // Quét mã QR từ hình ảnh
+                                            LuminanceSource source = new BufferedImageLuminanceSource(image);
+                                            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+                                            Result result = new MultiFormatReader().decode(bitmap);
+                                            if (result != null && result.getText() != null) {
+                                                // Tìm thấy mã QR
+                                                final String qrText = result.getText();
+                                                qrFound.set(true);
+
+                                                // Xử lý mã QR tìm được trên EDT
+                                                SwingUtilities.invokeLater(() -> {
+                                                    // Đóng webcam và dialog
+                                                    webcam.close();
+                                                    qrDialog.dispose();
+
+                                                    // Cập nhật UI với mã QR tìm được
+                                                    txtMaVe.setText(qrText.trim());
+
+
+                                                    // Thông báo kết quả quét
+                                                    JOptionPane.showMessageDialog(DoiVePanel.this,
+                                                            "Đã quét được mã: " + qrText,
+                                                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+                                                    // Tự động kích hoạt tìm kiếm
+                                                    btnTimVe.doClick();
+                                                });
+
+                                                break;
+                                            }
+                                        } catch (NotFoundException ignore) {
+                                            // Không tìm thấy QR trong frame hiện tại, tiếp tục tìm
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
+                                    // Tạm dừng để giảm tải CPU
+                                    Thread.sleep(200);
+                                }
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                        qrScanThread.setDaemon(true);
+                        qrScanThread.start();
+
+                        // Hiển thị dialog quét QR
+                        qrDialog.setLocationRelativeTo(DoiVePanel.this);
+                        qrDialog.setVisible(true);
+
+                        // Khi dialog đóng, đảm bảo webcam cũng đóng
+                        if (webcam.isOpen()) {
+                            webcam.close();
+                        }
+
+                        // Đảm bảo luồng quét dừng lại
+                        if (qrScanThread.isAlive()) {
+                            qrScanThread.interrupt();
+                        }
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        SwingUtilities.invokeLater(() -> {
+                            loadingDialog.dispose();
+                            JOptionPane.showMessageDialog(DoiVePanel.this,
+                                    "Không thể khởi tạo webcam: " + ex.getMessage(),
+                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        });
+                    }
+                    return null;
+                }
+            };
+
+            worker.execute();
+            loadingDialog.setVisible(true); // Hiển thị dialog chờ (sẽ tự đóng khi webcam khởi tạo xong)
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi khởi tạo webcam: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createInfoPanel() {
