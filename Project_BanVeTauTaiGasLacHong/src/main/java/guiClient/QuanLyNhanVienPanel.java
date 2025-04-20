@@ -12,9 +12,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import static guiClient.IconFactory.createExchangeIcon;
 
 public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
@@ -39,7 +44,14 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     private boolean isEditMode = false;
     private NhanVien nhanVienDangSua; // thêm biến này ở lớp chứa actionPerformed
 
-
+    // Màu sắc chính
+    private Color primaryColor = new Color(41, 128, 185); // Màu xanh dương
+    private Color successColor = new Color(46, 204, 113); // Màu xanh lá
+    private Color warningColor = new Color(243, 156, 18); // Màu vàng cam
+    private Color dangerColor = new Color(231, 76, 60);   // Màu đỏ
+    private Color grayColor = new Color(108, 117, 125);   // Màu xám
+    private Color darkTextColor = new Color(52, 73, 94);  // Màu chữ tối
+    private Color lightBackground = new Color(240, 240, 240); // Màu nền nhạt
     public QuanLyNhanVienPanel() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
@@ -55,10 +67,11 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     }
 
     private void initUI() {
-        Font labelFont = new Font("Arial", Font.ITALIC, 18);
-        Font textFont = new Font("Arial", Font.PLAIN, 16);
+        Font labelFont = new Font("Arial", Font.BOLD, 16);
+        Font textFont = new Font("Arial", Font.PLAIN, 12);
         Font btnFont = new Font("Arial", Font.PLAIN, 16);
 
+        // DANH SÁCH BÊN TRÁI
         danhSachPanel = new JPanel();
         danhSachPanel.setLayout(new BoxLayout(danhSachPanel, BoxLayout.Y_AXIS));
         danhSachPanel.setBackground(Color.WHITE);
@@ -106,7 +119,9 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
             panelNhanVien.add(lblNV, BorderLayout.CENTER);
 
-            JButton btnXoaNV = taoButton("Xóa", Color.WHITE, Color.ORANGE);
+            JButton btnXoaNV = new JButton("Xóa");
+            styleButton(btnXoaNV, dangerColor, Color.WHITE, createDeleteIcon(10, 10, Color.WHITE));
+
             btnXoaNV.setActionCommand(nv.getMaNV());
             btnXoaNV.addActionListener(e -> {
                 String maNVCanXoa = e.getActionCommand();
@@ -148,6 +163,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         scrollPane.setPreferredSize(new Dimension(300, 0));
         add(scrollPane, BorderLayout.WEST);
 
+        // CHI TIẾT BÊN PHẢI
         JPanel chiTietPanel = new JPanel(new GridBagLayout());
         chiTietPanel.setBackground(new Color(245, 248, 255));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -156,25 +172,53 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        // TITLE
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.NORTH;
-        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weighty = 0;
-        gbc.insets = new Insets(0, 0, 10, 0);
+        gbc.insets = new Insets(0, 0, 5, 0);
 
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(new Color(41, 128, 185));
+        JLabel lblTitle = new JLabel("Quản lý nhân viên");
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTitle.setForeground(Color.WHITE);
+        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        titlePanel.add(lblTitle,BorderLayout.CENTER);
+        chiTietPanel.add(titlePanel, gbc);
+        // Thêm ngày giờ hiện tại vào bên phải
+        JLabel dateLabel = new JLabel();
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        dateLabel.setForeground(Color.WHITE);
+
+        // Cập nhật ngày giờ
+        Timer timer = new Timer(1000, e -> {
+            Date now = new Date();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+            dateLabel.setText(sdf.format(now));
+        });
+        timer.start();
+
+        titlePanel.add(dateLabel, BorderLayout.EAST);
+        // AVATAR (Cập nhật để đảm bảo JLabel không thay đổi kích thước khi ảnh được tải lên)
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(5, 0, 10, 0);
         lblAnh = new JLabel();
-        lblAnh.setPreferredSize(new Dimension(AVATAR_WIDTH, AVATAR_HEIGHT));
+        lblAnh.setPreferredSize(new Dimension(AVATAR_WIDTH, AVATAR_HEIGHT)); // Kích thước cố định cho JLabel
         lblAnh.setHorizontalAlignment(SwingConstants.CENTER);
         lblAnh.setVerticalAlignment(SwingConstants.TOP);
         lblAnh.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         chiTietPanel.add(lblAnh, gbc);
 
+        // CÁC TRƯỜNG THÔNG TIN
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weighty = 0;
-        gbc.insets = new Insets(5, 10, 5, 10); // Khoảng cách mặc định cho label
+        gbc.insets = new Insets(5, 10, 5, 10);
 
         String[] labels = {"Mã NV:", "Tên NV:", "SĐT:", "CCCD:", "Địa chỉ:", "Ngày vào:", "Chức vụ:", "Avatar:"};
         JComponent[] fields = {
@@ -190,14 +234,14 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
         for (int i = 0; i < labels.length; i++) {
             gbc.gridx = 0;
-            gbc.gridy = i + 1;
+            gbc.gridy = i + 2;
             JLabel label = new JLabel(labels[i]);
             label.setFont(labelFont);
             label.setForeground(Color.DARK_GRAY);
             chiTietPanel.add(label, gbc);
 
             gbc.gridx = 1;
-            gbc.insets = new Insets(5, 5, 5, 10); // Giảm khoảng cách bên trái cho field
+            gbc.insets = new Insets(5, 5, 5, 10);
             chiTietPanel.add(fields[i], gbc);
         }
 
@@ -244,11 +288,17 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
             }
         });
 
+        // BUTTONS
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 50));
-        btnThem = taoButton("Thêm", new Color(0x4CAF50), Color.WHITE);      // Xanh lá
-        btnSua = taoButton("Sửa", new Color(0xFFEB3B), Color.BLACK);        // Vàng
-        btnLamMoi = taoButton("Làm mới", new Color(0x03A9F4), Color.WHITE); // Xanh nước biển
-        btnLuu = taoButton("Lưu", new Color(0xE91E63), Color.WHITE);        // Hồng
+        btnThem = new JButton("Thêm");
+        styleButton(btnThem, successColor, Color.WHITE, createAddIcon(16, 16, Color.WHITE));
+        btnSua = new JButton("Sửa");
+        styleButton(btnSua, warningColor, Color.WHITE, createEditIcon(16, 16, Color.WHITE));
+        btnLamMoi = new JButton("Làm mới");
+        styleButton(btnLamMoi, grayColor, Color.WHITE, createRefreshIcon(16, 16, Color.WHITE));
+        btnLuu = new JButton("Lưu");
+        styleButton(btnLuu, primaryColor, Color.WHITE, createSaveIcon(16, 16, Color.WHITE));
+
 
         btnSua.addActionListener(e -> {
             String ma = txtMaNV.getText().trim();
@@ -257,13 +307,12 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
                 return;
             }
 
-            // Tìm nhân viên theo mã
             for (NhanVien nv : danhSachNhanVien) {
                 if (nv.getMaNV().equals(ma)) {
                     nhanVienDangSua = nv;
                     isEditMode = true;
                     setEditableFields(true);
-                    txtMaNV.setEditable(false); // không sửa mã
+                    txtMaNV.setEditable(false);
                     break;
                 }
             }
@@ -272,7 +321,6 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
                 JOptionPane.showMessageDialog(this, "Không tìm thấy nhân viên cần sửa!");
             }
         });
-
 
         btnLuu.addActionListener(this);
         btnThem.addActionListener(this);
@@ -284,7 +332,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         buttonPanel.add(btnLuu);
 
         gbc.gridx = 0;
-        gbc.gridy = labels.length + 1;
+        gbc.gridy = labels.length + 2;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -293,6 +341,150 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
         add(chiTietPanel, BorderLayout.CENTER);
     }
+    private ImageIcon createRefreshIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+
+        // Vẽ hình tròn cho nút refresh
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawArc(3, 3, width - 6, height - 6, 45, 270);
+
+        // Vẽ mũi tên
+        g2.fillPolygon(
+                new int[]{width - 3, width - 7, width},
+                new int[]{3, 7, 7},
+                3
+        );
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+    public  ImageIcon createAddIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(3f));
+
+        // Vẽ dấu cộng
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int size = Math.min(width, height) / 4;
+        g2.drawLine(centerX - size, centerY, centerX + size, centerY); // Horizontal line
+        g2.drawLine(centerX, centerY - size, centerX, centerY + size); // Vertical line
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+    public  ImageIcon createEditIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(2f));
+
+        // Vẽ cây viết
+        int[] xPoints = {width / 3, width / 2, width - 5};
+        int[] yPoints = {height / 2, height / 3, height / 2};
+        g2.fillPolygon(xPoints, yPoints, 3); // Vẽ ngòi bút (hình tam giác)
+
+        // Vẽ thân bút
+        g2.setStroke(new BasicStroke(3f));
+        g2.drawLine(width / 2, height / 3, width / 2, height); // Vẽ thân bút
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+    public  ImageIcon createSaveIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(2f));
+
+        // Vẽ hình giống như import
+        int[] xPoints1 = {5, width - 5, width - 5};
+        int[] yPoints1 = {height / 2, height / 2, height - 5};
+        g2.fillPolygon(xPoints1, yPoints1, 3); // Vẽ mũi tên dưới
+
+        g2.setStroke(new BasicStroke(3f));
+        g2.drawLine(width / 2, 5, width / 2, height / 2); // Vẽ đường lên trên
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+    public  ImageIcon createDeleteIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(4f)); // Tăng độ dày của đường vẽ
+
+        // Vẽ dấu X
+        g2.drawLine(5, 5, width - 5, height - 5);  // Vẽ đường chéo trái sang phải
+        g2.drawLine(width - 5, 5, 5, height - 5);  // Vẽ đường chéo phải sang trái
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+    public static ImageIcon createExportIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(3f));
+
+        // Vẽ mũi tên hướng lên
+        int arrowWidth = width / 3;
+        int arrowHeight = height / 2;
+
+        // Vẽ đường ngang
+        g2.drawLine(5, height - 5, width - 5, height - 5);
+
+        // Vẽ mũi tên hướng lên
+        g2.drawLine(width / 2, 5, width / 2, height - 5); // Đoạn thẳng đứng
+        g2.drawLine(width / 2 - 5, 15, width / 2 + 5, 15); // Đoạn mũi tên
+
+        g2.dispose();
+        return new ImageIcon(image);
+    }
+
+
+
+    private void styleButton(JButton button, Color bgColor, Color fgColor, Icon icon) {
+        button.setBackground(bgColor);
+        button.setForeground(fgColor);
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        button.setOpaque(true);     // Đảm bảo màu nền được hiển thị
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setIcon(icon);
+
+        // Hiệu ứng hover
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(bgColor.darker());
+                }
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(bgColor);
+                }
+            }
+        });
+    }
+
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -483,8 +675,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
     private JButton taoButtonTaiAnh(Font font) {
         JButton button = new JButton("Tải ảnh lên");
-        button.setFont(font);
-        button.setPreferredSize(new Dimension(150, 30));
+        styleButton(button, darkTextColor, Color.WHITE, createExportIcon(20, 10, Color.WHITE));
         button.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Chọn ảnh đại diện");
@@ -574,7 +765,8 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
             panelNhanVien.add(lblNV, BorderLayout.CENTER);
             panelNhanVien.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
 
-            btnXoaNV = taoButton("Xóa", Color.WHITE, Color.ORANGE);
+            btnXoaNV = new JButton("Xóa");
+            styleButton(btnXoaNV, dangerColor, Color.WHITE, createDeleteIcon(10, 10, Color.WHITE));
             btnXoaNV.setActionCommand(nv.getMaNV());
             btnXoaNV.addActionListener(e -> {
                 String maNVCanXoa = e.getActionCommand();

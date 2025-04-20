@@ -28,6 +28,7 @@ public class Menu extends JComponent {
             {"Quản lý lịch trình tàu"},
             {"Tra cứu", "Tra cứu vé", "Tra cứu theo tuyến", "Tra cứu hóa đơn", "Tra cứu theo chuyến"},
             {"Thống kê", "Doanh thu theo ca", "Lượng vé theo thời gian", "Doanh thu bán vé"},
+            {"Quản lý nhân viên"}
     };
 
     public Menu() {

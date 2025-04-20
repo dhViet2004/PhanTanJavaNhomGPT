@@ -2,6 +2,7 @@ package guiClient;
 
 import dao.DoiVeDAO;
 import dao.impl.DoiVeDAOImpl;
+import dao.impl.NhanVienDAOImpl;
 import model.NhanVien;
 
 import javax.swing.*;
@@ -251,7 +252,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm, không thực hiện phần còn lại của method
-            } else if (panelName.equals("Đổi vé")) {
+            }       // THÊM ĐOẠN NÀY
+            else if (panelName.equals("Đổi vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -261,7 +263,7 @@ public class MainGUI extends JFrame {
                 SwingWorker<DoiVePanel, Void> worker = new SwingWorker<>() {
                     @Override
                     protected DoiVePanel doInBackground() {
-                        return new DoiVePanel();
+                        return new DoiVePanel(nhanVien);
                     }
 
                     @Override
@@ -323,49 +325,45 @@ public class MainGUI extends JFrame {
                 };
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Quản lý nhân viên")) {
+            }
+        } else if (panelName.equals("Quản lý nhân viên")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu nhân viên...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
                 cardLayout.show(contentPanel, "Loading_" + panelName);
 
-                // Tạo panel quản lý nhân viên trong luồng riêng
-                SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected QuanLyNhanVienPanel doInBackground() throws Exception {
-                        return new QuanLyNhanVienPanel();
+            // Tạo panel trả vé trong luồng riêng
+            SwingWorker<TraVePanel, Void> worker = new SwingWorker<>() {
+                @Override
+                protected TraVePanel doInBackground() {
+                    return new TraVePanel(); // TraVePanel sẽ tự kết nối RMI
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        // Lấy panel sau khi đã tạo xong
+                        TraVePanel panel = get();
+
+                        // Thêm vào cache và hiển thị
+                        contentPanel.add(panel, panelName);
+                        panelMap.put(panelName, panel);
+                        cardLayout.show(contentPanel, panelName);
+
+                        // Xóa panel loading
+                        contentPanel.remove(loadingPanel);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(MainGUI.this,
+                                "Không thể tải dữ liệu trả vé: " + e.getMessage(),
+                                "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                        cardLayout.show(contentPanel, "Trang chủ");
                     }
+                }
+            };
 
-                    @Override
-                    protected void done() {
-                        try {
-                            // Lấy panel sau khi đã tạo xong
-                            QuanLyNhanVienPanel panel = get();
-
-                            // Thêm vào cache và hiển thị
-                            contentPanel.add(panel, panelName);
-                            panelMap.put(panelName, panel);
-                            cardLayout.show(contentPanel, panelName);
-
-                            // Xóa panel loading
-                            contentPanel.remove(loadingPanel);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            JOptionPane.showMessageDialog(MainGUI.this,
-                                    "Không thể tải dữ liệu: " + e.getMessage(),
-                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
-                            cardLayout.show(contentPanel, "Trang chủ");
-                        }
-                    }
-                };
-
-                worker.execute();
-                return; // Exit early
-            }
-
-            newPanel = createPlaceholderPanel(panelName);
-            contentPanel.add(newPanel, panelName);
-            panelMap.put(panelName, newPanel);
+            worker.execute();
+            return; // Thoát sớm
         }
 
         // Switch to the panel
