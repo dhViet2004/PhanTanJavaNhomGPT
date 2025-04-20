@@ -15,7 +15,7 @@ public class RMIServer {
             System.out.println("Khởi động RMI Server...");
 
             System.setProperty("java.rmi.server.hostname", "127.0.0.1");
-//            System.setProperty("java.rmi.server.hostname", "192.168.2.21");
+//            System.setProperty("java.rmi.server.hostname", "192.168.1.113");
             // Tạo đối tượng DAO
             LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
             TauDAO tauDAO = new TauDAOImpl();
@@ -30,6 +30,9 @@ public class RMIServer {
             ChoNgoiDoiVeDAO choNgoiDoiVeDAO = new ChoNgoiDoiVeDAOImpl();
             LoaiHoaDonDAO loaiHoaDonDAO = new LoaiHoaDonDAOImpl();
             ChiTietHoaDonDAO chiTietHoaDonDAO = new ChiTietHoaDonDAOImpl();
+            NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+            TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
+
             // Tạo registry
             Registry registry = LocateRegistry.createRegistry(9090);
 
@@ -48,6 +51,8 @@ public class RMIServer {
             registry.rebind("choNgoiDoiVeDAO", choNgoiDoiVeDAO);
             registry.rebind("loaiHoaDonDAO", loaiHoaDonDAO);
             registry.rebind("chiTietHoaDonDAO", chiTietHoaDonDAO);
+            registry.rebind("nhanVienDAO",nhanVienDAO);
+            registry.rebind("taiKhoanDAO",taiKhoanDAO);
 
             System.out.println("RMI Server đã sẵn sàng!");
             System.out.println("Registry đang chạy tại rmi://127.0.0.1:9090");
@@ -65,6 +70,8 @@ public class RMIServer {
             System.out.println("- choNgoiDAO");
             System.out.println("- LoaiHoaDonDAO");
             System.out.println("- chiTietHoaDonDAO");
+            System.out.println("- nhanVienDAO");
+            System.out.println("- taiKhoanDAO");
             System.out.println("Server đang lắng nghe...");
 
         } catch (Exception e) {

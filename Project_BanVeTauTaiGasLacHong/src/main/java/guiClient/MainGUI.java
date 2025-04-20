@@ -214,7 +214,7 @@ public class MainGUI extends JFrame {
                 return; // Exit early, don't execute the rest of the method
             }
 
-            if (panelName.equals("Quản lý lịch trình")) {
+            else if (panelName.equals("Quản lý lịch trình")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu lịch trình...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -292,7 +292,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Trả vé")) {
+            }
+            else if (panelName.equals("Trả vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 NhanVien nhanVien_1 = new NhanVien(
                         "NV202504180002",                           // maNV
@@ -342,45 +343,48 @@ public class MainGUI extends JFrame {
                 worker.execute();
                 return; // Thoát sớm
             }
-        } else if (panelName.equals("Quản lý nhân viên")) {
+            }
+            else if (panelName.equals("Quản lý nhân viên")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu nhân viên...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
                 cardLayout.show(contentPanel, "Loading_" + panelName);
 
-            // Tạo panel trả vé trong luồng riêng
-            SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
-                @Override
-                protected QuanLyNhanVienPanel doInBackground() {
-                    return new QuanLyNhanVienPanel(); // TraVePanel sẽ tự kết nối RMI
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        // Lấy panel sau khi đã tạo xong
-                        QuanLyNhanVienPanel panel = get();
-
-                        // Thêm vào cache và hiển thị
-                        contentPanel.add(panel, panelName);
-                        panelMap.put(panelName, panel);
-                        cardLayout.show(contentPanel, panelName);
-
-                        // Xóa panel loading
-                        contentPanel.remove(loadingPanel);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        JOptionPane.showMessageDialog(MainGUI.this,
-                                "Không thể tải dữ liệu trả vé: " + e.getMessage(),
-                                "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
-                        cardLayout.show(contentPanel, "Trang chủ");
+                // Tạo panel trả vé trong luồng riêng
+                SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected QuanLyNhanVienPanel doInBackground() throws RemoteException {
+                        return new QuanLyNhanVienPanel(); // TraVePanel sẽ tự kết nối RMI
                     }
-                }
-            };
 
-            worker.execute();
-            return; // Thoát sớm
-        }
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            QuanLyNhanVienPanel panel = get();
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu nhân viên: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+            }
+
+
 
         // Switch to the panel
         cardLayout.show(contentPanel, panelName);
