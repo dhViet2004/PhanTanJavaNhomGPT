@@ -1043,7 +1043,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         return !txtTenNV.getText().isEmpty() && !txtSoDT.getText().isEmpty() && !txtCCCD.getText().isEmpty() && !txtDiaChi.getText().isEmpty();
     }
 
-    @SneakyThrows
+//    @SneakyThrows
     public void taiLaiDanhSachNhanVien() {
         danhSachPanel.removeAll();
 
