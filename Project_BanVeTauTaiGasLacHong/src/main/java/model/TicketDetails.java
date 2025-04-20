@@ -1,9 +1,10 @@
 package model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public class TicketDetails {
+public class TicketDetails implements Serializable {
     // Class để lưu thông tin chi tiết vé
         private String hoTen;
         private String doiTuong;

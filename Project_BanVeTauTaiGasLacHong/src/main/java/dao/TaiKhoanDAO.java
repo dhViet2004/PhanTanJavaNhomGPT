@@ -3,9 +3,10 @@ package dao;
 import model.NhanVien;
 import model.TaiKhoan;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface TaiKhoanDAO {
+public interface TaiKhoanDAO  extends Remote {
     TaiKhoan getTaiKhoanById(String id) throws RemoteException;
 
     boolean save(TaiKhoan tk) throws RemoteException;

@@ -9,6 +9,7 @@ import dao.impl.TraVeDAOImpl;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class TicketHTMLGenerator {
+public class TicketHTMLGenerator implements Serializable {
 
     public static void generateTicketHtml(String fileName, List<TicketDetails> ticketDetailsList, List<ChiTietHoaDon> chiTietHoaDonList) {
         try (FileWriter writer = new FileWriter(fileName)) {

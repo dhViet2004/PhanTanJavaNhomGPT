@@ -8,12 +8,13 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.swing.*;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 
-public class EmailSender {
+public class EmailSender implements Serializable {
 
     // Phương thức tạo vé HTML và gửi email
     public static void generateAndSendTicketEmail(List<TicketDetails> ticketDetailsList, List<ChiTietHoaDon> chiTietHoaDonList, String toEmail, String subject) {
