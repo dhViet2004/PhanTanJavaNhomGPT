@@ -1389,35 +1389,40 @@ public class DoiVePanel extends JPanel {
                             "Thông báo", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
+                if(xuLyThanhToan()){
+                    // Cập nhật trạng thái vé thành ĐÃ_THANH_TOAN
+                    veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
 
-                // Cập nhật trạng thái vé thành ĐÃ_THANH_TOAN
-                veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
+                    // Gọi API để cập nhật trạng thái vé
+                    boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
 
-                // Gọi API để cập nhật trạng thái vé
-                boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
+                    if (success) {
+                        double change = customerPayment - veTauHienTai.getGiaVe();
+                        showPaymentSuccessDialog(change);
+                        dialog.dispose();
+                        updateStatus(SUCCESS_TEXT, false);
 
-                if (success) {
-                    double change = customerPayment - veTauHienTai.getGiaVe();
-                    showPaymentSuccessDialog(change);
-                    dialog.dispose();
-                    updateStatus(SUCCESS_TEXT, false);
+                        // Cập nhật lại trạng thái trên giao diện
+                        lblTrangThai.setText(veTauHienTai.getTrangThai().toString());
+                        setTrangThaiColor(lblTrangThai, veTauHienTai.getTrangThai());
 
-                    // Cập nhật lại trạng thái trên giao diện
-                    lblTrangThai.setText(veTauHienTai.getTrangThai().toString());
-                    setTrangThaiColor(lblTrangThai, veTauHienTai.getTrangThai());
+                        // Cập nhật lại bảng lịch sử
+                        DefaultTableModel model = (DefaultTableModel) tblLichSu.getModel();
+                        int rowCount = model.getRowCount();
+                        if (rowCount > 0) {
+                            // Cập nhật dòng cuối cùng (vừa thêm)
+                            model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
+                        }
 
-                    // Cập nhật lại bảng lịch sử
-                    DefaultTableModel model = (DefaultTableModel) tblLichSu.getModel();
-                    int rowCount = model.getRowCount();
-                    if (rowCount > 0) {
-                        // Cập nhật dòng cuối cùng (vừa thêm)
-                        model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
+                        lamMoi();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Không thể cập nhật trạng thái vé",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
                     }
-                    xuLyThanhToan(customerPayment);
-                    lamMoi();
-                } else {
+                }else{
                     JOptionPane.showMessageDialog(dialog,
-                            "Không thể cập nhật trạng thái vé",
+                            "Thanh toán không thành công",
                             "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
@@ -1885,7 +1890,7 @@ public class DoiVePanel extends JPanel {
         g2.dispose();
         return new ImageIcon(image);
     }
-    private void xuLyThanhToan(double tienKhachDua) throws RemoteException {
+    private boolean xuLyThanhToan() throws RemoteException {
         try {
             // 1. Tìm khách hàng từ mã vé
             KhachHang khachHang = doiVeDAO.getKhachHangByMaVe(veTauHienTai.getMaVe());
@@ -1903,11 +1908,6 @@ public class DoiVePanel extends JPanel {
             hoaDon.setTienGiam(giaVeBanDau - veTauHienTai.getGiaVe());
             hoaDon.setTongTien(veTauHienTai.getGiaVe());
             hoaDon.setKhachHang(khachHang);
-
-            // Make sure nhanVienPanel is correctly set - This might be the issue!
-            // If nhanVienPanel is not a NhanVien object, you need to get the actual NhanVien
-            // Assuming you have the current logged in NhanVien in a variable called currentNhanVien:
-            // hoaDon.setNv(currentNhanVien);
 
             // Debugging the NhanVien reference
             if (nhanVienPanel == null) {
@@ -1935,8 +1935,47 @@ public class DoiVePanel extends JPanel {
             }
             System.out.println("HoaDon saved successfully!");
 
-            // Continue with the rest of your method...
-            // (The rest of your code looks fine)
+            // 4. Tạo chi tiết hóa đơn mới
+            ChiTietHoaDon chiTietHoaDon = new ChiTietHoaDon();
+
+            // Tạo ID cho chi tiết hóa đơn
+            ChiTietHoaDonId chiTietId = new ChiTietHoaDonId();
+            chiTietId.setMaHD(maHD);
+            chiTietId.setMaVe(veTauHienTai.getMaVe());
+            chiTietHoaDon.setId(chiTietId);
+
+            // Thiết lập các tham chiếu
+            chiTietHoaDon.setHoaDon(hoaDon);
+            chiTietHoaDon.setVeTau(veTauHienTai);
+
+            // Thiết lập các giá trị tài chính
+            double vat = 0.1; // VAT 8% - Điều chỉnh theo quy định của bạn
+            chiTietHoaDon.setSoLuong(1); // Mỗi vé được tính là 1 đơn vị
+            chiTietHoaDon.setVAT(vat);
+
+            // Tính toán thành tiền và tiền thuế
+            double thanhTien = veTauHienTai.getGiaVe(); // Giá vé sau khi đã giảm giá
+            double tienThue = thanhTien * vat;
+
+            chiTietHoaDon.setThanhTien(thanhTien);
+            chiTietHoaDon.setTienThue(tienThue);
+
+            // 5. Lưu chi tiết hóa đơn
+            boolean savedChiTiet = chiTietHoaDonDAO.save(chiTietHoaDon);
+            if (!savedChiTiet) {
+                // Xóa hóa đơn đã tạo nếu không thể lưu chi tiết
+                // hoaDonDAO.delete(maHD); // Giả định có phương thức delete
+                throw new Exception("Không thể lưu chi tiết hóa đơn!");
+            }
+
+            System.out.println("Đã tìm thấy KhachHang: " + khachHang.getMaKhachHang());
+            System.out.println("Generated MaHD: " + maHD);
+            System.out.println("NhanVien info: " + nhanVienPanel.getClass().getName());
+            System.out.println("Found LoaiHoaDon: " + loaiHoaDon.getMaLoaiHoaDon());
+            System.out.println("HoaDon saved successfully!");
+            System.out.println("ChiTietHoaDon saved successfully!");
+
+            return true;
 
         } catch (Exception e) {
             System.err.println("Error in xuLyThanhToan: " + e.getMessage());
