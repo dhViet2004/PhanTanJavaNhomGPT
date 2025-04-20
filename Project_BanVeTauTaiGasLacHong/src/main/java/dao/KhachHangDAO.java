@@ -36,5 +36,8 @@ public interface KhachHangDAO extends Remote {
 
     boolean testConnection() throws RemoteException;
 
+    boolean add(KhachHang newCustomer) throws RemoteException;
+
+
 //    KhachHang getById(String id);
 }

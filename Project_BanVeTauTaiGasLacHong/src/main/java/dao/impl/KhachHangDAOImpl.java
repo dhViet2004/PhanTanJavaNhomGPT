@@ -321,6 +321,64 @@ public List<KhachHang> filterByType(String typeName) throws RemoteException {
             }
         }
     }
+
+    @Override
+    public boolean add(KhachHang newCustomer) throws RemoteException {
+        // Kiểm tra xem newCustomer có null không
+        if (newCustomer == null) {
+            return false;
+        }
+
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // Tạo mã khách hàng tự động nếu chưa có
+            if (newCustomer.getMaKhachHang() == null || newCustomer.getMaKhachHang().trim().isEmpty()) {
+                // Tạo mã khách hàng tự động với định dạng KH + timestamp
+                String customerId = "KH" + System.currentTimeMillis();
+                newCustomer.setMaKhachHang(customerId);
+            }
+
+            // Khởi tạo điểm tích lũy mặc định là 0 nếu chưa được thiết lập
+            if (newCustomer.getDiemTichLuy() == 0) {
+                newCustomer.setDiemTichLuy(0.0);
+            }
+
+            // Kiểm tra và đảm bảo liên kết với loại khách hàng
+            if (newCustomer.getLoaiKhachHang() != null &&
+                    newCustomer.getLoaiKhachHang().getMaLoaiKhachHang() != null) {
+                // Lấy lại đối tượng loại khách hàng từ database để đảm bảo tham chiếu đúng
+                newCustomer.setLoaiKhachHang(
+                        em.getReference(model.LoaiKhachHang.class,
+                                newCustomer.getLoaiKhachHang().getMaLoaiKhachHang())
+                );
+            }
+
+            // Lưu khách hàng mới vào cơ sở dữ liệu
+            em.persist(newCustomer);
+            tx.commit();
+
+            return true;
+        } catch (Exception e) {
+            // Rollback giao dịch nếu có lỗi
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+
+            System.err.println("Lỗi khi thêm khách hàng mới: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi thêm khách hàng mới", e);
+        } finally {
+            // Đóng EntityManager khi hoàn thành
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
 //    @Override
 //    public KhachHang getById(String id) {
 //        return null;

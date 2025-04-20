@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 public class QuanLyKhachHangPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(QuanLyKhachHangPanel.class.getName());
     private final JButton deleteButton, updateButton;
+    private final JButton addButton;
     private AITravelTimePredictor aiPredictor;
     private JTable customerTable, invoiceTable, ticketTable;
     private DefaultTableModel customerTableModel, invoiceTableModel, ticketTableModel;
@@ -175,6 +176,10 @@ public class QuanLyKhachHangPanel extends JPanel {
         leftPanel.add(customerTypeFilter);
         leftPanel.add(resetFilterButton);
 
+        // Thêm vào sau khi tạo các nút update và delete trong rightPanel
+        addButton = new JButton("Thêm mới");
+        rightPanel.add(addButton);
+
         rightPanel.add(Box.createHorizontalStrut(20)); // Khoảng cách giữa reset và 2 nút mới
         updateButton = new JButton("Cập nhật");
         deleteButton = new JButton("Xóa");
@@ -195,6 +200,10 @@ public class QuanLyKhachHangPanel extends JPanel {
         resetFilterButton.setPreferredSize(buttonSize);
 //        resetFilterButton.setBackground(new Color(255, 165, 0));
         resetFilterButton.setForeground(Color.BLACK);
+
+        addButton.setPreferredSize(buttonSize);
+        addButton.setBackground(new Color(65, 105, 225)); // Royal Blue
+        addButton.setForeground(Color.BLACK);
 
         updateButton.setPreferredSize(buttonSize);
         updateButton.setBackground(new Color(60, 179, 113));
@@ -318,6 +327,18 @@ public class QuanLyKhachHangPanel extends JPanel {
                 }
             }
         });
+
+        // Thêm xử lý sự kiện cho nút Thêm mới
+        addButton.addActionListener(e -> {
+            try {
+                showAddCustomerForm();
+            } catch (RemoteException ex) {
+                LOGGER.log(Level.SEVERE, "Lỗi khi thêm khách hàng mới", ex);
+                showErrorMessage("Không thể thêm khách hàng mới", ex);
+            }
+        });
+
+
         deleteButton.addActionListener(e -> {
             try {
                 int selectedRow = customerTable.getSelectedRow();
@@ -498,6 +519,227 @@ public class QuanLyKhachHangPanel extends JPanel {
 
     }
 
+    private void showAddCustomerForm() throws RemoteException{
+        // Fields
+        JTextField nameField = new JTextField(20);
+        JTextField phoneField = new JTextField(20);
+        JTextField addressField = new JTextField(20);
+        JTextField cmndField = new JTextField(20);
+
+        // Date Picker cho ngày sinh [// Các trường
+//        JTextField nameField = new JTextField(20); JTextField phoneField = new JTextField(20); JTextField addressField = new JTextField(20); JTextField cmndField = new JTextField(20); // Bộ chọn ngày cho ngày sinh
+        UtilDateModel dateModel = new UtilDateModel();
+        // Thiết lập ngày mặc định là hôm nay
+        Calendar today = Calendar.getInstance();
+        dateModel.setDate(
+                today.get(Calendar.YEAR),
+                today.get(Calendar.MONTH),
+                today.get(Calendar.DAY_OF_MONTH)
+        );
+        dateModel.setSelected(true);
+
+        Properties p = new Properties();
+        p.put("text.today", "Hôm nay");
+        p.put("text.month", "Tháng");
+        p.put("text.year", "Năm");
+
+        JDatePanelImpl datePanel = new JDatePanelImpl(dateModel, p);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
+        datePicker.getJFormattedTextField().setPreferredSize(new Dimension(160, 28));
+
+        // ComboBox loại khách hàng
+        JComboBox<String> typeComboBox = new JComboBox<>();
+        for (LoaiKhachHang type : customerTypeList) {
+            typeComboBox.addItem(type.getTenLoaiKhachHang());
+        }
+        if (typeComboBox.getItemCount() > 0) {
+            typeComboBox.setSelectedIndex(0);
+        }
+
+        // Title
+        JLabel titleLabel = new JLabel("THÊM KHÁCH HÀNG MỚI", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setForeground(Color.BLUE);
+
+        // Form Panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Labels
+        JLabel[] labels = {
+                new JLabel("Tên khách hàng:"),
+                new JLabel("Số điện thoại:"),
+                new JLabel("Địa chỉ:"),
+                new JLabel("CMND/CCCD:"),
+                new JLabel("Ngày sinh:"),
+                new JLabel("Hạng thành viên:")
+        };
+        for (JLabel lbl : labels) {
+            lbl.setFont(new Font("Arial", Font.BOLD, 14));
+        }
+
+        // Dòng 1
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        formPanel.add(labels[0], gbc);
+        gbc.gridx = 1;
+        formPanel.add(nameField, gbc);
+        // Dòng 2
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        formPanel.add(labels[1], gbc);
+        gbc.gridx = 1;
+        formPanel.add(phoneField, gbc);
+        // Dòng 3
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        formPanel.add(labels[2], gbc);
+        gbc.gridx = 1;
+        formPanel.add(addressField, gbc);
+        // Dòng 4
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(labels[3], gbc);
+        gbc.gridx = 1;
+        formPanel.add(cmndField, gbc);
+        // Dòng 5
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        formPanel.add(labels[4], gbc);
+        gbc.gridx = 1;
+        formPanel.add(datePicker, gbc);
+        // Dòng 6
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        formPanel.add(labels[5], gbc);
+        gbc.gridx = 1;
+        formPanel.add(typeComboBox, gbc);
+
+        // Main panel
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JButton saveButton = new JButton("Lưu");
+        saveButton.setBackground(new Color(60, 179, 113)); // Medium Sea Green
+        saveButton.setForeground(Color.BLACK);
+
+        JButton clearButton = new JButton("Xóa trắng");
+        clearButton.setBackground(new Color(255, 165, 0)); // Orange
+        clearButton.setForeground(Color.BLACK);
+
+        JButton cancelButton = new JButton("Hủy");
+        cancelButton.setBackground(new Color(220, 20, 60)); // Crimson
+        cancelButton.setForeground(Color.BLACK);
+
+        buttonPanel.add(saveButton);
+        buttonPanel.add(clearButton);
+        buttonPanel.add(cancelButton);
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Dialog
+        JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Thêm khách hàng mới", true);
+        dialog.setContentPane(mainPanel);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        // Button actions
+        saveButton.addActionListener(evt -> {
+            try {
+                // Validate input
+                String name = nameField.getText().trim();
+                String phone = phoneField.getText().trim();
+                String address = addressField.getText().trim();
+                String cmnd = cmndField.getText().trim();
+
+                if (name.isEmpty() || phone.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Tên khách hàng và số điện thoại không được để trống!",
+                            "Lỗi nhập liệu",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Create new customer object
+                KhachHang newCustomer = new KhachHang();
+                newCustomer.setTenKhachHang(name);
+                newCustomer.setSoDienThoai(phone);
+                newCustomer.setDiaChi(address);
+                newCustomer.setGiayTo(cmnd);
+
+                // Set date of birth
+                Date selectedDate = (Date) datePicker.getModel().getValue();
+                if (selectedDate != null) {
+                    Instant instant = selectedDate.toInstant();
+                    ZoneId zone = ZoneId.systemDefault();
+                    LocalDate dob = instant.atZone(zone).toLocalDate();
+                    newCustomer.setNgaySinh(dob);
+                }
+
+                // Set customer type
+                String selectedType = (String) typeComboBox.getSelectedItem();
+                LoaiKhachHang customerType = customerTypeList.stream()
+                        .filter(t -> t.getTenLoaiKhachHang().equals(selectedType))
+                        .findFirst()
+                        .orElse(null);
+                newCustomer.setLoaiKhachHang(customerType);
+
+                // Save to database
+                boolean success = khachHangDAO.add(newCustomer);
+                if (success) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Thêm khách hàng thành công!",
+                            "Thông báo",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Reload customer list
+                    loadCustomers();
+
+                    // Tìm kiếm khách hàng vừa tạo
+                    searchField.setText(phone);
+                    searchButton.doClick();
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Không thể thêm khách hàng! Vui lòng thử lại.",
+                            "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (RemoteException e) {
+                LOGGER.log(Level.SEVERE, "Lỗi khi thêm khách hàng mới", e);
+                JOptionPane.showMessageDialog(dialog,
+                        "Lỗi kết nối: " + e.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        clearButton.addActionListener(evt -> {
+            nameField.setText("");
+            phoneField.setText("");
+            addressField.setText("");
+            cmndField.setText("");
+            dateModel.setValue(null);
+            if (typeComboBox.getItemCount() > 0) {
+                typeComboBox.setSelectedIndex(0);
+            }
+            nameField.requestFocus();
+        });
+
+        cancelButton.addActionListener(evt -> dialog.dispose());
+
+        // Show dialog
+        dialog.setVisible(true);
+    }
+
 
     private void loadCustomerTypes() throws RemoteException {
 //        // Load customer types into the filter and form combo box
@@ -513,7 +755,7 @@ public class QuanLyKhachHangPanel extends JPanel {
 
         // Use Set to store unique customer type names
         Set<String> uniqueTypes = new HashSet<>();
-        customerTypeFilter.addItem("All");
+//        customerTypeFilter.addItem("All");
 
         for (LoaiKhachHang type : customerTypeList) {
             String typeName = type.getTenLoaiKhachHang();
@@ -523,10 +765,50 @@ public class QuanLyKhachHangPanel extends JPanel {
         }
     }
 
-    private void loadCustomers() throws RemoteException {
-        // Load all customers into the table
-        customerList = khachHangDAO.getAll();
+//    private void loadCustomers() throws RemoteException {
+//        // Load all customers into the table
+//        customerList = khachHangDAO.getAll();
+//        customerTableModel.setRowCount(0);
+//        for (KhachHang customer : customerList) {
+//            customerTableModel.addRow(new Object[]{
+//                    customer.getMaKhachHang(),
+//                    customer.getTenKhachHang(),
+//                    customer.getSoDienThoai(),
+//                    customer.getLoaiKhachHang().getTenLoaiKhachHang()
+//            });
+//        }
+//    }
+
+    private void loadCustomers(String searchPhone, String customerType) throws RemoteException {
+        List<KhachHang> filteredCustomers;
+
+        // Xóa dữ liệu cũ trước khi tải dữ liệu mới
         customerTableModel.setRowCount(0);
+
+        // Nếu không có tiêu chí tìm kiếm, hiển thị bảng trống và trả về
+        if ((searchPhone == null || searchPhone.trim().isEmpty()) &&
+                (customerType == null || customerType.trim().isEmpty())) {
+            // Có thể hiển thị thông báo hoặc để bảng trống
+            return;
+        }
+
+        // Tìm kiếm theo số điện thoại
+        if (searchPhone != null && !searchPhone.trim().isEmpty()) {
+            filteredCustomers = khachHangDAO.searchByPhone(searchPhone);
+        }
+        // Tìm kiếm theo loại khách hàng
+        else if (customerType != null && !customerType.trim().isEmpty()) {
+            filteredCustomers = khachHangDAO.filterByType(customerType);
+        }
+        // Trường hợp nào đó cả hai tham số đều null (không nên xảy ra theo logic trên)
+        else {
+            return;
+        }
+
+        // Lưu trữ danh sách khách hàng đã lọc
+        customerList = filteredCustomers;
+
+        // Hiển thị kết quả tìm kiếm lên bảng
         for (KhachHang customer : customerList) {
             customerTableModel.addRow(new Object[]{
                     customer.getMaKhachHang(),
@@ -536,6 +818,12 @@ public class QuanLyKhachHangPanel extends JPanel {
             });
         }
     }
+
+    private void loadCustomers() throws RemoteException {
+        // Gọi phương thức có tham số với các tham số null
+        loadCustomers(null, null);
+    }
+
 
     private void searchCustomerByPhone() throws RemoteException {
         // Search customers by phone number
