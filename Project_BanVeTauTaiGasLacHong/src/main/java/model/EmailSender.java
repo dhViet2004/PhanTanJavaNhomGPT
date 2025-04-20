@@ -20,7 +20,7 @@ public class EmailSender implements Serializable {
     public static void generateAndSendTicketEmail(List<TicketDetails> ticketDetailsList, List<ChiTietHoaDon> chiTietHoaDonList, String toEmail, String subject) {
         // Tạo file HTML cho vé
         String htmlFileName = "ticket.html";  // Tên file HTML sẽ được tạo
-        TicketHTMLGenerator.generateTicketHtml(htmlFileName, ticketDetailsList, chiTietHoaDonList);
+//        TicketHTMLGenerator.generateTicketHtml(htmlFileName, ticketDetailsList, chiTietHoaDonList);
 
         // Đọc nội dung file HTML
         String htmlContent = "";
@@ -50,7 +50,7 @@ public class EmailSender implements Serializable {
         String htmlFileName = "ticket.html";
 
         // Gọi phương thức tạo file HTML từ các thông tin vé và chi tiết hóa đơn
-        TicketHTMLGenerator.generateInvoiceHtml(htmlFileName, hoaDon, khachHang, chiTietHoaDonList, danhSachVe, tienvegoc, tau);
+//        TicketHTMLGenerator.generateInvoiceHtml(htmlFileName, hoaDon, khachHang, chiTietHoaDonList, danhSachVe, tienvegoc, tau);
 
         String htmlContent = "";
         try {
