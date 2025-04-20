@@ -3,6 +3,8 @@ package dao.impl;
 import dao.VeTauDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import model.HoaDon;
+import model.KhachHang;
 import model.TrangThaiVeTau;
 import model.VeTau;
 import util.JPAUtil;
@@ -149,6 +151,81 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
             }
         }
         return false;
+    }
+
+    @Override
+    public HoaDon getHoaDonThanhToanByMaVe(String maVe) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tr = em.getTransaction();
+
+        try {
+            tr.begin();
+
+            // Tìm hóa đơn thanh toán (có loại hóa đơn LHD003) liên quan đến vé
+            String jpql = "SELECT h FROM HoaDon h " +
+                    "JOIN FETCH h.chiTietHoaDons ct " +
+                    "JOIN FETCH h.khachHang " +
+                    "WHERE ct.veTau.maVe = :maVe " +
+                    "AND h.loaiHoaDon.maLoaiHoaDon = 'LHD003'";
+
+            List<HoaDon> hoaDons = em.createQuery(jpql, HoaDon.class)
+                    .setParameter("maVe", maVe)
+                    .getResultList();
+
+            tr.commit();
+
+            if (!hoaDons.isEmpty()) {
+                return hoaDons.get(0);  // Trả về hóa đơn đầu tiên (thông thường chỉ có 1)
+            }
+            return null;
+        } catch (Exception e) {
+            if (tr.isActive()) {
+                tr.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi tìm hóa đơn thanh toán: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    @Override
+    public KhachHang getKhachHangByMaVe(String maVe) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tr = em.getTransaction();
+
+        try {
+            tr.begin();
+
+            // Tìm khách hàng liên quan đến vé thông qua hóa đơn
+            String jpql = "SELECT kh FROM KhachHang kh " +
+                    "JOIN kh.hoaDons h " +
+                    "JOIN h.chiTietHoaDons ct " +
+                    "WHERE ct.veTau.maVe = :maVe";
+
+            List<KhachHang> khachHangs = em.createQuery(jpql, KhachHang.class)
+                    .setParameter("maVe", maVe)
+                    .getResultList();
+
+            tr.commit();
+
+            if (!khachHangs.isEmpty()) {
+                return khachHangs.get(0);
+            }
+            return null;
+        } catch (Exception e) {
+            if (tr.isActive()) {
+                tr.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi tìm khách hàng từ mã vé: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
 

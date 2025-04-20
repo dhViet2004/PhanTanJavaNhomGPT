@@ -1,5 +1,7 @@
 package dao;
 
+import model.HoaDon;
+import model.KhachHang;
 import model.VeTau;
 
 import java.rmi.Remote;
@@ -21,5 +23,6 @@ public interface VeTauDAO extends Remote {
     List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException;
 
     boolean updateStatusToReturned(String ticketId) throws RemoteException;
-
+    HoaDon getHoaDonThanhToanByMaVe(String maVe) throws RemoteException;
+    KhachHang getKhachHangByMaVe(String maVe) throws RemoteException;
 }

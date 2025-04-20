@@ -176,13 +176,15 @@ public class QuanLyKhachHangPanel extends JPanel {
         leftPanel.add(customerTypeFilter);
         leftPanel.add(resetFilterButton);
 
-        // Thêm vào sau khi tạo các nút update và delete trong rightPanel
-        addButton = new JButton("Thêm mới");
-        rightPanel.add(addButton);
+
 
         rightPanel.add(Box.createHorizontalStrut(20)); // Khoảng cách giữa reset và 2 nút mới
+
+        // Thêm vào sau khi tạo các nút update và delete trong rightPanel
+        addButton = new JButton("Thêm mới");
         updateButton = new JButton("Cập nhật");
         deleteButton = new JButton("Xóa");
+        rightPanel.add(addButton);
         rightPanel.add(updateButton);
         rightPanel.add(deleteButton);
 
@@ -191,14 +193,14 @@ public class QuanLyKhachHangPanel extends JPanel {
 
         add(topPanel, BorderLayout.NORTH);
 
-        Dimension buttonSize = new Dimension(100, 20);
+        Dimension buttonSize = new Dimension(80, 20);
 
         searchButton.setPreferredSize(buttonSize);
         searchButton.setBackground(new Color(30, 144, 255));
         searchButton.setForeground(Color.BLACK);
 
         resetFilterButton.setPreferredSize(buttonSize);
-//        resetFilterButton.setBackground(new Color(255, 165, 0));
+        resetFilterButton.setBackground(new Color(255, 165, 0));
         resetFilterButton.setForeground(Color.BLACK);
 
         addButton.setPreferredSize(buttonSize);
@@ -652,6 +654,77 @@ public class QuanLyKhachHangPanel extends JPanel {
         dialog.setResizable(false);
 
         // Button actions
+//        saveButton.addActionListener(evt -> {
+//            try {
+//                // Validate input
+//                String name = nameField.getText().trim();
+//                String phone = phoneField.getText().trim();
+//                String address = addressField.getText().trim();
+//                String cmnd = cmndField.getText().trim();
+//
+//                if (name.isEmpty() || phone.isEmpty()) {
+//                    JOptionPane.showMessageDialog(dialog,
+//                            "Tên khách hàng và số điện thoại không được để trống!",
+//                            "Lỗi nhập liệu",
+//                            JOptionPane.ERROR_MESSAGE);
+//                    return;
+//                }
+//
+//                // Create new customer object
+//                KhachHang newCustomer = new KhachHang();
+//                newCustomer.setTenKhachHang(name);
+//                newCustomer.setSoDienThoai(phone);
+//                newCustomer.setDiaChi(address);
+//                newCustomer.setGiayTo(cmnd);
+//
+//                // Set date of birth
+//                Date selectedDate = (Date) datePicker.getModel().getValue();
+//                if (selectedDate != null) {
+//                    Instant instant = selectedDate.toInstant();
+//                    ZoneId zone = ZoneId.systemDefault();
+//                    LocalDate dob = instant.atZone(zone).toLocalDate();
+//                    newCustomer.setNgaySinh(dob);
+//                }
+//
+//                // Set customer type
+//                String selectedType = (String) typeComboBox.getSelectedItem();
+//                LoaiKhachHang customerType = customerTypeList.stream()
+//                        .filter(t -> t.getTenLoaiKhachHang().equals(selectedType))
+//                        .findFirst()
+//                        .orElse(null);
+//                newCustomer.setLoaiKhachHang(customerType);
+//                System.out.println(newCustomer);
+//
+//                // Save to database
+//                boolean success = khachHangDAO.add(newCustomer);
+//                if (success) {
+//                    JOptionPane.showMessageDialog(dialog,
+//                            "Thêm khách hàng thành công!",
+//                            "Thông báo",
+//                            JOptionPane.INFORMATION_MESSAGE);
+//                    dialog.dispose();
+//
+//                    // Reload customer list
+//                    loadCustomers();
+//
+//                    // Tìm kiếm khách hàng vừa tạo
+//                    searchField.setText(phone);
+//                    searchButton.doClick();
+//                } else {
+//                    JOptionPane.showMessageDialog(dialog,
+//                            "Không thể thêm khách hàng! Vui lòng thử lại.",
+//                            "Lỗi",
+//                            JOptionPane.ERROR_MESSAGE);
+//                }
+//            } catch (RemoteException e) {
+//                LOGGER.log(Level.SEVERE, "Lỗi khi thêm khách hàng mới", e);
+//                JOptionPane.showMessageDialog(dialog,
+//                        "Lỗi kết nối: " + e.getMessage(),
+//                        "Lỗi",
+//                        JOptionPane.ERROR_MESSAGE);
+//            }
+//        });
+
         saveButton.addActionListener(evt -> {
             try {
                 // Validate input
@@ -675,6 +748,12 @@ public class QuanLyKhachHangPanel extends JPanel {
                 newCustomer.setDiaChi(address);
                 newCustomer.setGiayTo(cmnd);
 
+                // Thiết lập ngày tham gia là ngày hiện tại
+                newCustomer.setNgayThamgGia(LocalDate.now());
+
+                // Thiết lập điểm tích lũy ban đầu là 0
+                newCustomer.setDiemTichLuy(0.0);
+
                 // Set date of birth
                 Date selectedDate = (Date) datePicker.getModel().getValue();
                 if (selectedDate != null) {
@@ -690,7 +769,22 @@ public class QuanLyKhachHangPanel extends JPanel {
                         .filter(t -> t.getTenLoaiKhachHang().equals(selectedType))
                         .findFirst()
                         .orElse(null);
-                newCustomer.setLoaiKhachHang(customerType);
+
+                if (customerType != null) {
+                    newCustomer.setLoaiKhachHang(customerType);
+
+                    // Thiết lập hạng thành viên dựa trên loại khách hàng
+                    if (selectedType.toLowerCase().contains("vip")) {
+                        newCustomer.setHangThanhVien("VIP");
+                    }  else {
+                        newCustomer.setHangThanhVien("Vãng lai");  // Mặc định
+                    }
+                } else {
+                    // Nếu không tìm thấy loại khách hàng, đặt mặc định là Vãng lai
+                    newCustomer.setHangThanhVien("Vãng lai");
+                }
+
+//                System.out.println("Trước khi lưu: " + newCustomer);  // Debug log
 
                 // Save to database
                 boolean success = khachHangDAO.add(newCustomer);

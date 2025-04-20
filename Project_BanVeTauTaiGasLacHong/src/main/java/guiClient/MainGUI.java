@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.rmi.RemoteException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -293,6 +294,20 @@ public class MainGUI extends JFrame {
                 return; // Thoát sớm
             } else if (panelName.equals("Trả vé")) {
                 // Hiển thị giao diện tải dữ liệu
+                NhanVien nhanVien_1 = new NhanVien(
+                        "NV202504180002",                           // maNV
+                        "Nguyen Van A",                    // tenNV
+                        "0900765432",                      // soDT
+                        "Hoạt động",                       // trangThai
+                        "CCCD67890",                    // cccd
+                        "Ha Noi", // diaChi
+                        LocalDate.of(2025, 04, 05),         // ngayVaoLam
+                        "Nhân viên bán vé",               // chucVu
+                        "avatar2.jpg",              // avata
+                        null,                              // taiKhoan - sẽ thiết lập sau
+                        null,                              // danhSachLichLamViec - sẽ thiết lập sau
+                        null                               // danhSachHoaDon - sẽ thiết lập sau
+                );
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu trả vé...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
                 cardLayout.show(contentPanel, "Loading_" + panelName);
@@ -300,7 +315,8 @@ public class MainGUI extends JFrame {
                 SwingWorker<TraVePanel, Void> worker = new SwingWorker<>() {
                     @Override
                     protected TraVePanel doInBackground() {
-                        return new TraVePanel(); // TraVePanel sẽ tự kết nối RMI
+//                        return new TraVePanel(nhanVien); // TraVePanel sẽ tự kết nối RMI
+                        return new TraVePanel(nhanVien_1);
                     }
 
                     @Override
@@ -333,17 +349,17 @@ public class MainGUI extends JFrame {
                 cardLayout.show(contentPanel, "Loading_" + panelName);
 
             // Tạo panel trả vé trong luồng riêng
-            SwingWorker<TraVePanel, Void> worker = new SwingWorker<>() {
+            SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
                 @Override
-                protected TraVePanel doInBackground() {
-                    return new TraVePanel(); // TraVePanel sẽ tự kết nối RMI
+                protected QuanLyNhanVienPanel doInBackground() {
+                    return new QuanLyNhanVienPanel(); // TraVePanel sẽ tự kết nối RMI
                 }
 
                 @Override
                 protected void done() {
                     try {
                         // Lấy panel sau khi đã tạo xong
-                        TraVePanel panel = get();
+                        QuanLyNhanVienPanel panel = get();
 
                         // Thêm vào cache và hiển thị
                         contentPanel.add(panel, panelName);
