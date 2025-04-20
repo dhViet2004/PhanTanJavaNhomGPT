@@ -39,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
 public class TraVePanel extends JPanel {
     private VeTauDAO veTauDAO;
@@ -73,24 +74,7 @@ public class TraVePanel extends JPanel {
     private NumberFormat currencyFormatter;
     private JTextField txtDieuKienTraVe;
 
-//    public TraVePanel(NhanVien nv) {
-//        locale = new Locale("vi", "VN");
-//        currencyFormatter = NumberFormat.getCurrencyInstance(locale);
-//
-//        // Thiết lập layout và border
-//        setLayout(new BorderLayout(10, 10));
-//        setBorder(new EmptyBorder(15, 15, 15, 15));
-//        setBackground(Color.WHITE);
-//
-//        // Khởi tạo giao diện
-//        initializeUI(nv);
-//
-//        // Kết nối đến RMI server
-//        connectToServer();
-//
-//        // Thêm các event listener sau khi giao diện đã được khởi tạo
-//        addEventListeners(nv);
-//    }
+
 
     // Cập nhật constructor để lưu tham chiếu đến nhanVien
     public TraVePanel(NhanVien nv) {
@@ -910,8 +894,8 @@ public class TraVePanel extends JPanel {
             }
 
             // Tạo và lưu hóa đơn trả vé
-            System.out.println("Hóa đơn cũ");
-            System.out.println(hoaDonCu);
+//            System.out.println("Hóa đơn cũ");
+//            System.out.println(hoaDonCu);
             HoaDon hoaDonTraVe = taoHoaDonTraVe(veTau, khachHang, phiTraVe, tienTraLai);
 
 
@@ -923,8 +907,16 @@ public class TraVePanel extends JPanel {
                 return;
             }
 
+            // Trong phương thức traVe() trước khi gọi hienThiHoaDonTraVe()
+            Map<String, String> thongTinGa = null;
+            try {
+                thongTinGa = veTauDAO.getThongTinGaByMaVe(veTau.getMaVe());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             // Hiển thị hóa đơn trả vé
-            hienThiHoaDonTraVe(hoaDonTraVe, veTau, phiTraVe, tienTraLai);
+            hienThiHoaDonTraVe(hoaDonTraVe, veTau, phiTraVe, tienTraLai, thongTinGa);
 
             // Refresh thông tin vé trên giao diện
             veTau = veTauDAO.getById(maVe);  // Lấy lại vé với trạng thái mới
@@ -946,161 +938,6 @@ public class TraVePanel extends JPanel {
     }
 
     // Phương thức hiển thị hóa đơn trả vé
-//    private void hienThiHoaDonTraVe(HoaDon hoaDon, VeTau veTau, double phiTraVe, double tienTraLai) {
-//        // Tạo cửa sổ dialog mới để hiển thị hóa đơn
-//        JDialog hoaDonDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Hóa Đơn Trả Vé", true);
-//        hoaDonDialog.setSize(500, 600);
-//        hoaDonDialog.setLocationRelativeTo(null);
-//        hoaDonDialog.setResizable(false);
-//
-//        // Panel chứa nội dung hóa đơn
-//        JPanel contentPanel = new JPanel();
-//        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-//        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-//        contentPanel.setBackground(Color.WHITE);
-//
-//        // Tiêu đề hóa đơn
-//        JLabel lblTitle = new JLabel("HÓA ĐƠN TRẢ VÉ", JLabel.CENTER);
-//        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
-//        lblTitle.setForeground(primaryColor);
-//        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-//        contentPanel.add(lblTitle);
-//        contentPanel.add(Box.createVerticalStrut(10));
-//
-//        // Thông tin hóa đơn
-//        JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
-//        infoPanel.setBackground(Color.WHITE);
-//        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-//                BorderFactory.createMatteBorder(1, 0, 1, 0, Color.LIGHT_GRAY),
-//                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-//        ));
-//
-//        // Mã hóa đơn
-//        addLabelToPanel(infoPanel, "Mã hóa đơn:", hoaDon.getMaHD(), Font.BOLD);
-//
-//        // Ngày lập
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-//        addLabelToPanel(infoPanel, "Ngày lập:", hoaDon.getNgayLap().format(formatter), Font.PLAIN);
-//
-//        // Nhân viên lập
-//        addLabelToPanel(infoPanel, "Nhân viên:", hoaDon.getNv().getTenNV(), Font.PLAIN);
-//
-//        // Thông tin khách hàng
-//        addLabelToPanel(infoPanel, "Khách hàng:", veTau.getTenKhachHang(), Font.PLAIN);
-//        addLabelToPanel(infoPanel, "Giấy tờ:", veTau.getGiayTo(), Font.PLAIN);
-//
-//        contentPanel.add(infoPanel);
-//        contentPanel.add(Box.createVerticalStrut(15));
-//
-//        // Thông tin vé
-//        JLabel lblInfoVe = new JLabel("THÔNG TIN VÉ", JLabel.LEFT);
-//        lblInfoVe.setFont(new Font("Arial", Font.BOLD, 14));
-//        contentPanel.add(lblInfoVe);
-//        contentPanel.add(Box.createVerticalStrut(10));
-//
-//        JPanel vePanel = new JPanel(new GridLayout(0, 2, 10, 5));
-//        vePanel.setBackground(Color.WHITE);
-//
-//        // Mã vé
-//        addLabelToPanel(vePanel, "Mã vé:", veTau.getMaVe(), Font.BOLD);
-//
-//        // Lịch trình
-//        String maLichTrinh = "Không có";
-//        if (veTau.getLichTrinhTau() != null) {
-//            maLichTrinh = veTau.getLichTrinhTau().getMaLich();
-//        }
-//        addLabelToPanel(vePanel, "Lịch trình:", maLichTrinh, Font.PLAIN);
-//
-//        // Ngày đi
-//        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-//        addLabelToPanel(vePanel, "Ngày đi:", veTau.getNgayDi().format(dateFormatter), Font.PLAIN);
-//
-//        // Chỗ ngồi
-//        String choNgoi = "Không có";
-//        if (veTau.getChoNgoi() != null) {
-//            choNgoi = veTau.getChoNgoi().getMaCho();
-//        }
-//        addLabelToPanel(vePanel, "Chỗ ngồi:", choNgoi, Font.PLAIN);
-//
-//        contentPanel.add(vePanel);
-//        contentPanel.add(Box.createVerticalStrut(15));
-//
-//        // Thông tin thanh toán
-//        JLabel lblThanhToan = new JLabel("CHI TIẾT THANH TOÁN", JLabel.LEFT);
-//        lblThanhToan.setFont(new Font("Arial", Font.BOLD, 14));
-//        contentPanel.add(lblThanhToan);
-//        contentPanel.add(Box.createVerticalStrut(10));
-//
-//        JPanel thanhToanPanel = new JPanel(new GridLayout(0, 2, 10, 5));
-//        thanhToanPanel.setBackground(Color.WHITE);
-//        thanhToanPanel.setBorder(BorderFactory.createCompoundBorder(
-//                BorderFactory.createMatteBorder(1, 0, 1, 0, Color.LIGHT_GRAY),
-//                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-//        ));
-//
-//        // Giá vé
-//        addLabelToPanel(thanhToanPanel, "Giá vé:", currencyFormatter.format(veTau.getGiaVe()), Font.PLAIN);
-//
-//        // Phí trả vé
-//        addLabelToPanel(thanhToanPanel, "Phí trả vé:", currencyFormatter.format(phiTraVe), Font.PLAIN);
-//
-//        // Tiền trả lại
-//        JLabel lblTitleTienTra = new JLabel("Tiền trả lại:", JLabel.LEFT);
-//        lblTitleTienTra.setFont(new Font("Arial", Font.BOLD, 14));
-//
-//        JLabel lblValueTienTra = new JLabel(currencyFormatter.format(tienTraLai), JLabel.RIGHT);
-//        lblValueTienTra.setFont(new Font("Arial", Font.BOLD, 14));
-//        lblValueTienTra.setForeground(new Color(0, 128, 0));
-//
-//        thanhToanPanel.add(lblTitleTienTra);
-//        thanhToanPanel.add(lblValueTienTra);
-//
-//        contentPanel.add(thanhToanPanel);
-//        contentPanel.add(Box.createVerticalStrut(15));
-//
-//        // Ghi chú
-//        JLabel lblNote = new JLabel("Ghi chú: Vé đã trả không thể hoàn lại.", JLabel.LEFT);
-//        lblNote.setFont(new Font("Arial", Font.ITALIC, 12));
-//        contentPanel.add(lblNote);
-//        contentPanel.add(Box.createVerticalStrut(20));
-//
-//        // Nút in hóa đơn
-//        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-//        buttonPanel.setBackground(Color.WHITE);
-//
-//        JButton btnPrint = new JButton("In Hóa Đơn");
-//        btnPrint.setFont(new Font("Arial", Font.BOLD, 12));
-//        btnPrint.setBackground(primaryColor);
-//        btnPrint.setForeground(Color.WHITE);
-//        btnPrint.setBorderPainted(false);
-//        btnPrint.setFocusPainted(false);
-//
-//        btnPrint.addActionListener(e -> {
-//            // Đây là nơi thêm chức năng in hóa đơn thật
-//            JOptionPane.showMessageDialog(hoaDonDialog,
-//                    "Đang in hóa đơn...",
-//                    "Thông báo",
-//                    JOptionPane.INFORMATION_MESSAGE);
-//             hoaDonDialog.dispose();
-//        });
-//
-//        JButton btnClose = new JButton("Đóng");
-//        btnClose.setFont(new Font("Arial", Font.BOLD, 12));
-//        btnClose.setBackground(new Color(108, 122, 137));
-//        btnClose.setForeground(Color.WHITE);
-//        btnClose.setBorderPainted(false);
-//        btnClose.setFocusPainted(false);
-//
-//        btnClose.addActionListener(e -> hoaDonDialog.dispose());
-//
-//        buttonPanel.add(btnPrint);
-//        buttonPanel.add(btnClose);
-//        contentPanel.add(buttonPanel);
-//
-//        // Thêm panel vào dialog
-//        hoaDonDialog.getContentPane().add(contentPanel);
-//        hoaDonDialog.setVisible(true);
-//    }
 
 //    private void hienThiHoaDonTraVe(HoaDon hoaDon, VeTau veTau, double phiTraVe, double tienTraLai) {
 //        // Tạo cửa sổ dialog mới để hiển thị hóa đơn
@@ -1229,17 +1066,28 @@ public class TraVePanel extends JPanel {
 //            model.addColumn(columnName);
 //        }
 //
-//        // Thêm dữ liệu về vé vào bảng
-//        String tenDichVu = "Vé tàu, tuyến ";
-//        if (veTau.getLichTrinhTau() != null && veTau.getLichTrinhTau().getTau().getTuyenTau() != null) {
-//            tenDichVu += veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDi() + "-" +
-//                    veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDen();
+//        // Tạo thông tin vé an toàn không truy cập các đối tượng lazy loading
+//        // FIX: Tránh truy cập sâu vào các đối tượng lazy loading
+//        String tenDichVu = "Vé tàu";
+//
+//        // Lấy thông tin mã lịch trình nếu có
+//        if (veTau.getLichTrinhTau() != null) {
+//            tenDichVu += ", mã lịch: " + veTau.getLichTrinhTau().getMaLich();
+//
+//            // Thêm thông tin giờ đi nếu có
+//            if (veTau.getLichTrinhTau().getGioDi() != null) {
+//                tenDichVu += ", " + veTau.getLichTrinhTau().getGioDi().format(DateTimeFormatter.ofPattern("HH:mm"));
+//            }
 //        }
-//        tenDichVu += ", " + veTau.getNgayDi().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-//        if (veTau.getLichTrinhTau() != null && veTau.getLichTrinhTau().getGioDi() != null) {
-//            tenDichVu += ", " + veTau.getLichTrinhTau().getGioDi().format(DateTimeFormatter.ofPattern("HH:mm"));
-//        }
+//
+//        // Thêm ngày đi và đối tượng
+//        tenDichVu += ", ngày " + veTau.getNgayDi().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 //        tenDichVu += ", " + veTau.getDoiTuong();
+//
+//        // Thêm thông tin chỗ ngồi nếu có
+//        if (veTau.getChoNgoi() != null) {
+//            tenDichVu += ", chỗ " + veTau.getChoNgoi().getMaCho();
+//        }
 //
 //        Object[] rowData = {
 //                "1",
@@ -1381,7 +1229,7 @@ public class TraVePanel extends JPanel {
 //        hoaDonDialog.setVisible(true);
 //    }
 
-    private void hienThiHoaDonTraVe(HoaDon hoaDon, VeTau veTau, double phiTraVe, double tienTraLai) {
+    private void hienThiHoaDonTraVe(HoaDon hoaDon, VeTau veTau, double phiTraVe, double tienTraLai, Map<String, String> thongTinGa) {
         // Tạo cửa sổ dialog mới để hiển thị hóa đơn
         JDialog hoaDonDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Hóa Đơn Trả Vé", true);
         hoaDonDialog.setSize(600, 650);
@@ -1510,26 +1358,38 @@ public class TraVePanel extends JPanel {
 
         // Tạo thông tin vé an toàn không truy cập các đối tượng lazy loading
         // FIX: Tránh truy cập sâu vào các đối tượng lazy loading
-        String tenDichVu = "Vé tàu";
+        String tenDichVu = "<html>Vé tàu";
+
+        // Thêm ga đi và ga đến nếu có
+        if (thongTinGa != null) {
+            String gaDi = thongTinGa.get("gaDi");
+            String gaDen = thongTinGa.get("gaDen");
+
+            if (gaDi != null && gaDen != null) {
+                tenDichVu += "<br>Tuyến: " + gaDi + " - " + gaDen;
+            }
+        }
 
         // Lấy thông tin mã lịch trình nếu có
         if (veTau.getLichTrinhTau() != null) {
-            tenDichVu += ", mã lịch: " + veTau.getLichTrinhTau().getMaLich();
+            tenDichVu += "<br>Mã lịch: " + veTau.getLichTrinhTau().getMaLich();
 
             // Thêm thông tin giờ đi nếu có
             if (veTau.getLichTrinhTau().getGioDi() != null) {
-                tenDichVu += ", " + veTau.getLichTrinhTau().getGioDi().format(DateTimeFormatter.ofPattern("HH:mm"));
+                tenDichVu += "<br>Giờ khởi hành: " + veTau.getLichTrinhTau().getGioDi().format(DateTimeFormatter.ofPattern("HH:mm"));
             }
         }
 
         // Thêm ngày đi và đối tượng
-        tenDichVu += ", ngày " + veTau.getNgayDi().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        tenDichVu += ", " + veTau.getDoiTuong();
+        tenDichVu += "<br>Ngày đi: " + veTau.getNgayDi().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        tenDichVu += "<br>Đối tượng: " + veTau.getDoiTuong();
 
         // Thêm thông tin chỗ ngồi nếu có
         if (veTau.getChoNgoi() != null) {
-            tenDichVu += ", chỗ " + veTau.getChoNgoi().getMaCho();
+            tenDichVu += "<br>Chỗ ngồi: " + veTau.getChoNgoi().getMaCho();
         }
+
+        tenDichVu += "</html>";
 
         Object[] rowData = {
                 "1",
@@ -1544,7 +1404,24 @@ public class TraVePanel extends JPanel {
 
         // Tạo JTable với model
         JTable table = new JTable(model);
-        table.setRowHeight(30);
+
+        // Thiết lập độ cao hàng cho tự động xuống dòng
+        table.setRowHeight(100);  // Tăng độ cao mặc định của hàng
+
+        // Sử dụng interface TableCellRenderer tùy chỉnh để hiển thị text xuống dòng
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                if (c instanceof JLabel) {
+                    JLabel l = (JLabel) c;
+                    l.setVerticalAlignment(JLabel.TOP); // Căn lề trên cho text
+                }
+                return c;
+            }
+        };
+
         table.setFont(new Font("Arial", Font.PLAIN, 12));
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -1552,16 +1429,17 @@ public class TraVePanel extends JPanel {
         // Thiết lập độ rộng cột
         TableColumnModel columnModel = table.getColumnModel();
         columnModel.getColumn(0).setPreferredWidth(30);  // STT
-        columnModel.getColumn(1).setPreferredWidth(200); // Tên hàng hóa
-        columnModel.getColumn(2).setPreferredWidth(60);  // Đơn vị tính
+        columnModel.getColumn(1).setPreferredWidth(220); // Tên hàng hóa
+        columnModel.getColumn(2).setPreferredWidth(50);  // Đơn vị tính
         columnModel.getColumn(3).setPreferredWidth(50);  // Số lượng
-        columnModel.getColumn(4).setPreferredWidth(80);  // Đơn giá
-        columnModel.getColumn(5).setPreferredWidth(80);  // Phí trả vé
-        columnModel.getColumn(6).setPreferredWidth(100); // Thanh tiền
+        columnModel.getColumn(4).setPreferredWidth(70);  // Đơn giá
+        columnModel.getColumn(5).setPreferredWidth(70);  // Phí trả vé
+        columnModel.getColumn(6).setPreferredWidth(80);  // Thanh tiền
 
         // Căn giữa nội dung của các cột
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        centerRenderer.setVerticalAlignment(JLabel.TOP); // Căn lề trên khi căn giữa
         table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // STT
         table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); // Đơn vị tính
         table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer); // Số lượng
@@ -1569,13 +1447,20 @@ public class TraVePanel extends JPanel {
         // Căn phải cho cột tiền
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
         rightRenderer.setHorizontalAlignment(JLabel.RIGHT);
+        rightRenderer.setVerticalAlignment(JLabel.TOP); // Căn lề trên khi căn phải
         table.getColumnModel().getColumn(4).setCellRenderer(rightRenderer); // Đơn giá
         table.getColumnModel().getColumn(5).setCellRenderer(rightRenderer); // Phí trả vé
         table.getColumnModel().getColumn(6).setCellRenderer(rightRenderer); // Thanh tiền
 
+        // Thiết lập renderer cho cột tên dịch vụ
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(JLabel.LEFT);
+        leftRenderer.setVerticalAlignment(JLabel.TOP); // Căn lề trên
+        table.getColumnModel().getColumn(1).setCellRenderer(leftRenderer); // Tên hàng hóa
+
         // Thêm JScrollPane để có thanh cuộn khi cần
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(550, 70));
+        scrollPane.setPreferredSize(new Dimension(550, 120)); // Tăng kích thước cho bảng để hiển thị nội dung nhiều dòng
         contentPanel.add(scrollPane);
         contentPanel.add(Box.createVerticalStrut(10));
 

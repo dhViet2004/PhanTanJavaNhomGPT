@@ -212,9 +212,7 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Exit early, don't execute the rest of the method
-            }
-
-            else if (panelName.equals("Quản lý lịch trình")) {
+            } else if (panelName.equals("Quản lý lịch trình")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu lịch trình...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -292,8 +290,7 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            }
-            else if (panelName.equals("Trả vé")) {
+            } else if (panelName.equals("Trả vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 NhanVien nhanVien_1 = new NhanVien(
                         "NV202504180002",                           // maNV
@@ -343,7 +340,7 @@ public class MainGUI extends JFrame {
                 worker.execute();
                 return; // Thoát sớm
             }
-            }
+        }
             else if (panelName.equals("Quản lý nhân viên")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu nhân viên...");

@@ -11,7 +11,9 @@ import util.JPAUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
     public VeTauDAOImpl() throws RemoteException {
@@ -94,32 +96,32 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
 
     @Override
     public List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException {
-            EntityManager em = JPAUtil.getEntityManager();
-            EntityTransaction tx = em.getTransaction();
-            List<VeTau> list = null;
-            try {
-                tx.begin();
-                String query = "SELECT DISTINCT vt FROM VeTau vt " +
-                        "JOIN FETCH vt.chiTietHoaDons cthd " +
-                        "JOIN FETCH cthd.hoaDon hd " +
-                        "WHERE hd.maHD = :invoiceId";
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        List<VeTau> list = null;
+        try {
+            tx.begin();
+            String query = "SELECT DISTINCT vt FROM VeTau vt " +
+                    "JOIN FETCH vt.chiTietHoaDons cthd " +
+                    "JOIN FETCH cthd.hoaDon hd " +
+                    "WHERE hd.maHD = :invoiceId";
 
-                list = em.createQuery(query, VeTau.class)
-                        .setParameter("invoiceId", invoiceId)
-                        .getResultList();
-                tx.commit();
-            } catch (Exception e) {
-                if (tx != null && tx.isActive()) {
-                    tx.rollback();
-                }
-                System.err.println("Lỗi khi lấy danh sách vé theo hóa đơn: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                if (em != null && em.isOpen()) {
-                    em.close();
-                }
+            list = em.createQuery(query, VeTau.class)
+                    .setParameter("invoiceId", invoiceId)
+                    .getResultList();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
             }
-            return list;
+            System.err.println("Lỗi khi lấy danh sách vé theo hóa đơn: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return list;
     }
 
     @Override
@@ -225,6 +227,49 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
             if (em != null && em.isOpen()) {
                 em.close();
             }
+        }
+    }
+
+    @Override
+    public Map<String, String> getThongTinGaByMaVe(String maVe) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tr = em.getTransaction();
+
+        try {
+            tr.begin();
+
+            // Query để lấy thông tin ga đi và ga đến
+            String jpql = "SELECT tt.gaDi, tt.gaDen " +  // Chú ý: sử dụng tên trường đúng từ lớp TuyenTau
+                    "FROM VeTau v " +
+                    "JOIN v.lichTrinhTau l " +
+                    "JOIN l.tau t " +
+                    "JOIN t.tuyenTau tt " +
+                    "WHERE v.maVe = :maVe";
+
+            Object[] result = (Object[]) em.createQuery(jpql)
+                    .setParameter("maVe", maVe)
+                    .getSingleResult();
+
+            tr.commit();
+
+            Map<String, String> thongTinGa = new HashMap<>();
+            if (result != null && result.length == 2) {
+                thongTinGa.put("gaDi", (String) result[0]);
+                thongTinGa.put("gaDen", (String) result[1]);
+            }
+            return thongTinGa;
+
+        } catch (Exception e) {
+            if (tr.isActive()) {
+                tr.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy thông tin ga: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+
         }
     }
 
