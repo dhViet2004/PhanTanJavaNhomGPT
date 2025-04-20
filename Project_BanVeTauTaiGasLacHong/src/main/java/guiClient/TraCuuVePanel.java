@@ -987,7 +987,7 @@ public class TraCuuVePanel extends JPanel {
                             try {
                                 // Tạo tên file với timestamp để tránh ghi đè
                                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-                                String fileName = "Ve_" + maVe + "_" + timeStamp + ".pdf";
+                                String fileName = "VeTau.pdf";
 
                                 // Gọi phương thức tạo PDF vé
                                 TicketPDFGenerator.generateTicketPdf(fileName, ticketDetailsList, chiTietHoaDonList);
