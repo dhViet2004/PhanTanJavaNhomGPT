@@ -263,7 +263,7 @@ public class MainGUI extends JFrame {
                 SwingWorker<DoiVePanel, Void> worker = new SwingWorker<>() {
                     @Override
                     protected DoiVePanel doInBackground() {
-                        return new DoiVePanel(null);
+                        return new DoiVePanel(nhanVien);
                     }
 
                     @Override
