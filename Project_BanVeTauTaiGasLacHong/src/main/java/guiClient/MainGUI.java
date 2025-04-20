@@ -336,7 +336,7 @@ public class MainGUI extends JFrame {
                 // Tạo panel trả vé trong luồng riêng
                 SwingWorker<QuanLyNhanVienPanel, Void> worker = new SwingWorker<>() {
                     @Override
-                    protected QuanLyNhanVienPanel doInBackground() {
+                    protected QuanLyNhanVienPanel doInBackground() throws RemoteException {
                         return new QuanLyNhanVienPanel(); // TraVePanel sẽ tự kết nối RMI
                     }
 
@@ -356,7 +356,7 @@ public class MainGUI extends JFrame {
                         } catch (Exception e) {
                             e.printStackTrace();
                             JOptionPane.showMessageDialog(MainGUI.this,
-                                    "Không thể tải dữ liệu trả vé: " + e.getMessage(),
+                                    "Không thể tải dữ liệu nhân viên: " + e.getMessage(),
                                     "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
                             cardLayout.show(contentPanel, "Trang chủ");
                         }

@@ -8,6 +8,7 @@ import model.NhanVien;
 
 import javax.swing.*;
 import java.awt.*;
+import java.rmi.RemoteException;
 
 /**
  *
@@ -27,7 +28,7 @@ public class Main extends javax.swing.JFrame {
 
         menu1.setEvent(new MenuEvent() {
             @Override
-            public void selected(int index, int subIndex) {
+            public void selected(int index, int subIndex) throws RemoteException {
                 if (index == 0) {
                     showForm(new HomeForm());
                 }
