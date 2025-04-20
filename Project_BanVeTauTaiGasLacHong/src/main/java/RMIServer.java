@@ -1,8 +1,6 @@
 import dao.*;
 import dao.LoaiKhachHangDAO;
 import dao.impl.*;
-import dao.*;
-import dao.impl.*;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -30,6 +28,8 @@ public class RMIServer {
             DoiVeDAO doiVeDAO = new DoiVeDAOImpl(); // Thêm dòng này
             ToaTauDoiVeDAO toaTauDoiVeDAO = new ToaTauDoiVeDAOImpl();
             ChoNgoiDoiVeDAO choNgoiDoiVeDAO = new ChoNgoiDoiVeDAOImpl();
+            LoaiHoaDonDAO loaiHoaDonDAO = new LoaiHoaDonDAOImpl();
+            ChiTietHoaDonDAO chiTietHoaDonDAO = new ChiTietHoaDonDAOImpl();
             // Tạo registry
             Registry registry = LocateRegistry.createRegistry(9090);
 
@@ -46,6 +46,8 @@ public class RMIServer {
             registry.rebind("doiVeDAO", doiVeDAO); // Thêm dòng này
             registry.rebind("toaTauDoiVeDAO", toaTauDoiVeDAO);
             registry.rebind("choNgoiDoiVeDAO", choNgoiDoiVeDAO);
+            registry.rebind("loaiHoaDonDAO", loaiHoaDonDAO);
+            registry.rebind("chiTietHoaDonDAO", chiTietHoaDonDAO);
 
             System.out.println("RMI Server đã sẵn sàng!");
             System.out.println("Registry đang chạy tại rmi://127.0.0.1:9090");
@@ -61,6 +63,9 @@ public class RMIServer {
             System.out.println("- doiVeDAO");
             System.out.println("- toaTauDAO");
             System.out.println("- choNgoiDAO");
+            System.out.println("- LoaiHoaDonDAO");
+            System.out.println("- chiTietHoaDonDAO");
+            System.out.println("Server đang lắng nghe...");
 
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());

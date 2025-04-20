@@ -2,6 +2,8 @@ package guiClient;
 
 import dao.DoiVeDAO;
 import dao.impl.DoiVeDAOImpl;
+import dao.impl.NhanVienDAOImpl;
+import model.NhanVien;
 
 import javax.swing.*;
 import java.awt.*;
@@ -259,7 +261,7 @@ public class MainGUI extends JFrame {
                 SwingWorker<DoiVePanel, Void> worker = new SwingWorker<>() {
                     @Override
                     protected DoiVePanel doInBackground() {
-                        return new DoiVePanel();
+                        return new DoiVePanel(null);
                     }
 
                     @Override

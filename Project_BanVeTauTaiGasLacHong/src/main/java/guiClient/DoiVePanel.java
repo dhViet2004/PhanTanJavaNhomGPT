@@ -1,9 +1,6 @@
 package guiClient;
 
-import dao.ChoNgoiDoiVeDAO;
-import dao.DoiVeDAO;
-import dao.LichTrinhTauDAO;
-import dao.ToaTauDoiVeDAO;
+import dao.*;
 import model.*;
 
 import javax.swing.*;
@@ -24,6 +21,7 @@ import java.rmi.registry.Registry;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -44,7 +42,9 @@ public class DoiVePanel extends JPanel {
     private LichTrinhTauDAO lichTrinhTauDAO;
     private ToaTauDoiVeDAO toaTauDAO;
     private ChoNgoiDoiVeDAO choNgoiDAO;
-
+    private LoaiHoaDonDAO loaiHoaDonDAO;
+    private HoaDonDAO hoaDonDAO;
+    private ChiTietHoaDonDAO chiTietHoaDonDAO;
     // Màu sắc chính
     private Color primaryColor = new Color(41, 128, 185); // Màu xanh dương
     private Color successColor = new Color(46, 204, 113); // Màu xanh lá
@@ -81,17 +81,18 @@ public class DoiVePanel extends JPanel {
     private KhuyenMai khuyenMaiDaChon;
     private NumberFormat currencyFormatter;
     private Locale locale;
-
+    private NhanVien nhanVienPanel;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-
+    private Double giaVeBanDau;
     // Constants
     private final String LOADING_TEXT = "Đang tải dữ liệu...";
     private final String READY_TEXT = "Sẵn sàng";
     private final String ERROR_TEXT = "Đã xảy ra lỗi";
     private final String SUCCESS_TEXT = "Thao tác thành công";
 
-    public DoiVePanel() {
+    public DoiVePanel(NhanVien nhanVien) {
+        this.nhanVienPanel = nhanVien;
         locale = new Locale("vi", "VN");
         currencyFormatter = NumberFormat.getCurrencyInstance(locale);
 
@@ -124,7 +125,9 @@ public class DoiVePanel extends JPanel {
 //            khuyenMaiDAO = (KhuyenMaiDAO) registry.lookup("khuyenMaiDAO");
             toaTauDAO = (ToaTauDoiVeDAO) registry.lookup("toaTauDoiVeDAO");
             choNgoiDAO = (ChoNgoiDoiVeDAO) registry.lookup("choNgoiDoiVeDAO");
-
+            loaiHoaDonDAO = (LoaiHoaDonDAO) registry.lookup("loaiHoaDonDAO");
+            hoaDonDAO = (HoaDonDAO) registry.lookup("hoaDonDAO");
+            chiTietHoaDonDAO = (ChiTietHoaDonDAO) registry.lookup("chiTietHoaDonDAO");
             // Kiểm tra kết nối
             try {
                 if (doiVeDAO.testConnection()) {
@@ -902,6 +905,7 @@ public class DoiVePanel extends JPanel {
                                     "Thông báo", JOptionPane.WARNING_MESSAGE);
                             lamMoi();
                         } else {
+                            giaVeBanDau = veTauHienTai.getGiaVe();
                             hienThiThongTinVe();
 
                             // Kiểm tra xem có thể đổi vé không
@@ -1217,7 +1221,7 @@ public class DoiVePanel extends JPanel {
     }
 
     private void updateLichSuAndShowSuccess(TrangThaiVeTau trangThaiCu) {
-        // Existing code for updating history...
+
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String ngayGio = sdf.format(new Date());
 
@@ -1409,7 +1413,7 @@ public class DoiVePanel extends JPanel {
                         // Cập nhật dòng cuối cùng (vừa thêm)
                         model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
                     }
-
+                    xuLyThanhToan(customerPayment);
                     lamMoi();
                 } else {
                     JOptionPane.showMessageDialog(dialog,
@@ -1525,11 +1529,6 @@ public class DoiVePanel extends JPanel {
         cboDoiTuong.setEnabled(enabled);
         btnChonLichTrinh.setEnabled(enabled);
         btnChonChoNgoi.setEnabled(enabled);
-    }
-
-    // Giải phóng tài nguyên
-    public void shutdown() {
-        // Đóng kết nối hoặc giải phóng tài nguyên nếu cần
     }
 
     // ===== ICON CREATION METHODS =====
@@ -1886,5 +1885,71 @@ public class DoiVePanel extends JPanel {
         g2.dispose();
         return new ImageIcon(image);
     }
+    private void xuLyThanhToan(double tienKhachDua) throws RemoteException {
+        try {
+            // 1. Tìm khách hàng từ mã vé
+            KhachHang khachHang = doiVeDAO.getKhachHangByMaVe(veTauHienTai.getMaVe());
+            if (khachHang == null) {
+                throw new Exception("Không tìm thấy thông tin khách hàng!");
+            }
+            System.out.println("Đã tìm thấy KhachHang: " + khachHang.getMaKhachHang());
 
+            // 2. Tạo hóa đơn mới
+            HoaDon hoaDon = new HoaDon();
+            String maHD = generateMaHD();
+            System.out.println("Generated MaHD: " + maHD);
+            hoaDon.setMaHD(maHD);
+            hoaDon.setNgayLap(LocalDateTime.now());
+            hoaDon.setTienGiam(giaVeBanDau - veTauHienTai.getGiaVe());
+            hoaDon.setTongTien(veTauHienTai.getGiaVe());
+            hoaDon.setKhachHang(khachHang);
+
+            // Make sure nhanVienPanel is correctly set - This might be the issue!
+            // If nhanVienPanel is not a NhanVien object, you need to get the actual NhanVien
+            // Assuming you have the current logged in NhanVien in a variable called currentNhanVien:
+            // hoaDon.setNv(currentNhanVien);
+
+            // Debugging the NhanVien reference
+            if (nhanVienPanel == null) {
+                System.err.println("ERROR: nhanVienPanel is null");
+                throw new Exception("Thiếu thông tin nhân viên!");
+            }
+            System.out.println("NhanVien info: " + nhanVienPanel.getClass().getName());
+            hoaDon.setNv(nhanVienPanel);
+
+            // Get LoaiHoaDon and verify it exists
+            LoaiHoaDon loaiHoaDon = loaiHoaDonDAO.findById("LHD001");
+            if (loaiHoaDon == null) {
+                System.err.println("ERROR: Không tìm thấy loại hóa đơn LHD001");
+                throw new Exception("Không tìm thấy loại hóa đơn!");
+            }
+            System.out.println("Found LoaiHoaDon: " + loaiHoaDon.getMaLoaiHoaDon());
+            hoaDon.setLoaiHoaDon(loaiHoaDon);
+
+            // 3. Lưu hóa đơn
+            System.out.println("Attempting to save HoaDon...");
+            boolean savedHoaDon = hoaDonDAO.saveHoaDon(hoaDon);
+            if (!savedHoaDon) {
+                System.err.println("Failed to save HoaDon!");
+                throw new Exception("Không thể lưu hóa đơn!");
+            }
+            System.out.println("HoaDon saved successfully!");
+
+            // Continue with the rest of your method...
+            // (The rest of your code looks fine)
+
+        } catch (Exception e) {
+            System.err.println("Error in xuLyThanhToan: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi xử lý thanh toán: " + e.getMessage(), e);
+        }
+    }
+
+    private String generateMaHD() {
+        // Format: HD + yyyyMMdd + 4 số random
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String datePart = sdf.format(new Date());
+        String randomPart = String.format("%04d", new Random().nextInt(10000));
+        return "HD" + datePart + randomPart;
+    }
 }

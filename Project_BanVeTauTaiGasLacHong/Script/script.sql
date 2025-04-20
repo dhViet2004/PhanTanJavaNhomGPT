@@ -117,3 +117,9 @@ VALUES
     ('HD202504180001', 'LLT20250418192106-013-009', 1, 10, 404.74, 40.47),
     ('HD202504180001', 'LLT20250418192106-013-010', 1, 10, 205.27, 20.53),
     ('HD202504180001', 'LLT20250418192106-013-011', 1, 10, 254.76, 25.48);
+
+
+select hoadon.ma_khach_hang from chitiet_hoadon
+join hoadon on hoadon.ma_hd = chitiet_hoadon.ma_hd
+join khachhang on khachhang.ma_khach_hang = hoadon.ma_khach_hang
+where ma_ve = 'LLT20250418192106-013-004'
