@@ -14,11 +14,22 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NamedNativeQueries({
         @NamedNativeQuery(name = "TuyenTau.findByGaDiGaDen",
-                query = "select * from tuyentau where ga_di = ?1 and ga_den = ?2",
+                query = "select * from tuyentau where ga_di LIKE ?1 and ga_den LIKE ?2",
         resultClass = TuyenTau.class),
         @NamedNativeQuery(name = "TuyenTau.findAll",
                             query = "select * from tuyentau",
-        resultClass = TuyenTau.class)
+        resultClass = TuyenTau.class),
+        @NamedNativeQuery(
+                name = "TuyenTau.findByName",
+                query = "SELECT * FROM tuyentau WHERE ten_tuyen LIKE ?1",
+                resultClass = TuyenTau.class
+        ),
+        @NamedNativeQuery(
+                name = "TuyenTau.findByDiemDiDiemDen",
+                query = "SELECT * FROM tuyentau WHERE dia_diem_di LIKE ?1 and dia_diem_den LIKE ?2",
+                resultClass = TuyenTau.class
+        )
+
 })
 public class TuyenTau implements Serializable {
     @Id

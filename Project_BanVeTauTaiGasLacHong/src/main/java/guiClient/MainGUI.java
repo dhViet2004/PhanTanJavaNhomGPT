@@ -106,7 +106,8 @@ public class MainGUI extends JFrame {
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
                 "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên",
-                "Thống kê số lượng vé theo thời gian"
+                "Thống kê số lượng vé theo thời gian",
+                "Tra cứu tuyến"
         };
 
         for (String item : menuItems) {
@@ -213,7 +214,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Exit early, don't execute the rest of the method
-            } else if (panelName.equals("Quản lý lịch trình")) {
+            }
+            else if (panelName.equals("Quản lý lịch trình")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu lịch trình...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -291,7 +293,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Trả vé")) {
+            }
+            else if (panelName.equals("Trả vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 NhanVien nhanVien_1 = new NhanVien(
                         "NV202504180002",                           // maNV
@@ -340,7 +343,8 @@ public class MainGUI extends JFrame {
                 };
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Quản lý nhân viên")) {
+            }
+            else if (panelName.equals("Quản lý nhân viên")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu nhân viên...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -378,7 +382,47 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Tra cứu vé")) {
+            }
+            else if (panelName.equals("Tra cứu tuyến")) {
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu tuyến tàu...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel trả vé trong luồng riêng
+                SwingWorker<TraCuuTuyenPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected TraCuuTuyenPanel doInBackground() throws RemoteException {
+                        return new TraCuuTuyenPanel(); // TraVePanel sẽ tự kết nối RMI
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            TraCuuTuyenPanel panel = get();
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu tuyến tàu: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+            }
+            else if (panelName.equals("Tra cứu vé")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -416,7 +460,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            }else if (panelName.equals("Thống kê số lượng vé theo thời gian")) {
+            }
+            else if (panelName.equals("Thống kê số lượng vé theo thời gian")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);

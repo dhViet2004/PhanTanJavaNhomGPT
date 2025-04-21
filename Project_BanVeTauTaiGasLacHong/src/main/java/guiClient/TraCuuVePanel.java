@@ -1968,7 +1968,7 @@ public class TraCuuVePanel extends JPanel {
     }
 
     // Class tạo button có góc bo tròn
-    private class RoundedButton extends JButton {
+    class RoundedButton extends JButton {
         private final int arcWidth = 15;
         private final int arcHeight = 15;
 
