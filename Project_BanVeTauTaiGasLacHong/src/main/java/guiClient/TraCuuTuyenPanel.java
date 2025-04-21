@@ -33,12 +33,12 @@ public class TraCuuTuyenPanel extends JPanel implements ActionListener {
     private Color grayColor = new Color(108, 117, 125);   // Màu xám
     private Color darkTextColor = new Color(52, 73, 94);  // Màu chữ tối
     private Color hoverColor = new Color(66, 139, 202);
-
     private Color lightBackground = new Color(240, 240, 240); // Màu nền nhạt
     private Font labelFont = new Font("Segoe UI", Font.PLAIN, 12); // Font cho label
     private Dimension inputSize = new Dimension(200, 30); // Kích thước cho input
     private Font mediumFont = new Font("Segoe UI", Font.PLAIN, 14);
     private final Font boldFont;
+
     private IconFactory iconFactory = new IconFactory();
     private final int BUTTON_ICON_SIZE = 18;
     private final int BUTTON_HEIGHT = 30;

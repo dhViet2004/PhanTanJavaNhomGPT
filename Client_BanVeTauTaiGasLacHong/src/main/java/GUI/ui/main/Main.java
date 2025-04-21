@@ -43,6 +43,8 @@ public class Main extends javax.swing.JFrame {
                     showForm(new TraCuuVePanel());
                 } else if (index == 4 && subIndex == 2) {
                     showForm(new TraCuuTuyenPanel());
+                }else if (index == 5 && subIndex == 1) {
+                    showForm(new DoanhThuTheoCaPanel());
                 } else if (index == 5 && subIndex == 2) {
                     showForm(new ThongKeVePanel());
                 } else if (index == 6) {

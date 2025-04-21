@@ -1,8 +1,5 @@
 package guiClient;
 
-import dao.DoiVeDAO;
-import dao.impl.DoiVeDAOImpl;
-import dao.impl.NhanVienDAOImpl;
 import model.NhanVien;
 
 import javax.swing.*;
@@ -107,9 +104,10 @@ public class MainGUI extends JFrame {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
                 "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Tra cứu hóa đơn", "Đổi vé", "Trả vé", "Quản lý nhân viên",
                 "Thống kê số lượng vé theo thời gian", "Thống kê doanh thu bán vé theo thời gian",
-                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên",
-                "Thống kê số lượng vé theo thời gian",
-                "Tra cứu tuyến"
+//                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên",
+//                "Thống kê số lượng vé theo thời gian",
+                "Tra cứu tuyến",
+                "Thống kê doanh thu theo ca"
         };
 
         for (String item : menuItems) {
@@ -462,7 +460,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Tra cứu hóa đơn")) {
+            }
+            else if (panelName.equals("Tra cứu hóa đơn")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu tra cứu hóa đơn...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -500,9 +499,6 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            }
-
-            else if (panelName.equals("Thống kê số lượng vé theo thời gian")) {
             }
             else if (panelName.equals("Thống kê số lượng vé theo thời gian")) {
                 // Hiển thị giao diện tải dữ liệu
@@ -542,7 +538,8 @@ public class MainGUI extends JFrame {
 
                 worker.execute();
                 return; // Thoát sớm
-            } else if (panelName.equals("Thống kê doanh thu bán vé theo thời gian")) {
+            }
+            else if (panelName.equals("Thống kê doanh thu bán vé theo thời gian")) {
                 // Hiển thị giao diện tải dữ liệu
                 JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu thống kê doanh thu...");
                 contentPanel.add(loadingPanel, "Loading_" + panelName);
@@ -560,6 +557,45 @@ public class MainGUI extends JFrame {
                         try {
                             // Lấy panel sau khi đã tạo xong
                             ThongKeDoanhThuPanel panel = get();
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu thống kê doanh thu: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+            }
+            else if (panelName.equals("Thống kê doanh thu theo ca")) {
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu thống kê doanh thu...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel thống kê doanh thu trong luồng riêng
+                SwingWorker<DoanhThuTheoCaPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected DoanhThuTheoCaPanel doInBackground() throws RemoteException {
+                        return new DoanhThuTheoCaPanel();
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            DoanhThuTheoCaPanel panel = get();
 
                             // Thêm vào cache và hiển thị
                             contentPanel.add(panel, panelName);

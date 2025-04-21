@@ -458,4 +458,56 @@ public class HoaDonDAOImpl extends UnicastRemoteObject implements HoaDonDAO {
         }
     }
 
+    public List<HoaDon> getHoaDonsByDateRange(LocalDate startDate, LocalDate endDate) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            String jpql = "SELECT h FROM HoaDon h " +
+                    "JOIN FETCH h.nv " +
+                    "WHERE FUNCTION('DATE', h.ngayLap) BETWEEN :startDate AND :endDate";
+
+            return em.createQuery(jpql, HoaDon.class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy hóa đơn theo ngày: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) em.close();
+        }
+    }
+
+    public List<HoaDon> getHoaDonsByDateRangeAndShift(LocalDate startDate, LocalDate endDate, int ca) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            String jpql = "SELECT h FROM HoaDon h " +
+                    "JOIN FETCH h.nv " +
+                    "WHERE FUNCTION('DATE', h.ngayLap) BETWEEN :startDate AND :endDate ";
+
+            switch (ca) {
+                case 1:
+                    jpql += "AND FUNCTION('HOUR', h.ngayLap) BETWEEN 6 AND 13";
+                    break;
+                case 2:
+                    jpql += "AND FUNCTION('HOUR', h.ngayLap) BETWEEN 14 AND 21";
+                    break;
+                case 3:
+                    jpql += "AND (FUNCTION('HOUR', h.ngayLap) >= 22 OR FUNCTION('HOUR', h.ngayLap) <= 5)";
+                    break;
+            }
+
+            return em.createQuery(jpql, HoaDon.class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy hóa đơn theo ca: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) em.close();
+        }
+    }
+
+
+
 }
