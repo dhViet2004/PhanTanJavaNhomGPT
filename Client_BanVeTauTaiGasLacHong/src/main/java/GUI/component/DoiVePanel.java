@@ -1867,7 +1867,7 @@ public class DoiVePanel extends JPanel {
     // Phương thức hiển thị dialog thanh toán VNPay thành công
     private void showVnpaySuccessDialog() {
         JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán thành công", true);
-        successDialog.setSize(350, 200);
+        successDialog.setSize(350, 220);
         successDialog.setLocationRelativeTo(this);
         successDialog.setLayout(new BorderLayout());
 

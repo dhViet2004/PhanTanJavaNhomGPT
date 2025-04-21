@@ -80,7 +80,7 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
 
     private void initComponents() {
         setLayout(new BorderLayout(10, 10));
-        setSize(800, 600);
+        setSize(970, 670);
         setLocationRelativeTo(getOwner());
 
         // Panel chọn toa tàu
