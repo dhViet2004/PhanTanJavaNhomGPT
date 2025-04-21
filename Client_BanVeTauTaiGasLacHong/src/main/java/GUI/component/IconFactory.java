@@ -165,4 +165,14 @@ public class IconFactory {
         g2.dispose();
         return new ImageIcon(image);
     }
+
+    public static Icon getIcon(String iconName, int width, int height, Color color) {
+        switch (iconName.toLowerCase()) {
+            case "search":
+                return createSearchIcon(width, height, color);
+            // Thêm các case khác nếu cần
+            default:
+                return null;
+        }
+    }
 }

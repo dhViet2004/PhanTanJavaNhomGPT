@@ -38,8 +38,12 @@ public class Main extends javax.swing.JFrame {
                     NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
                     NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
                     showForm(new DoiVePanel(nhanVien));
+                } else if (index == 4 && subIndex == 1) {
+                    showForm(new TraCuuVePanel());
                 } else if (index == 6) {
                     showForm(new QuanLyNhanVienPanel());
+                } else if (index == 5 && subIndex == 2) {
+                    showForm(new ThongKeVePanel());
                 }
             }
         });

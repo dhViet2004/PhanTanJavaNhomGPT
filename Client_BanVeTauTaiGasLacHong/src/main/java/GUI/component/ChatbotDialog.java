@@ -1,7 +1,5 @@
 package GUI.component;
 
-import guiClient.AIAssistantPanel;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;

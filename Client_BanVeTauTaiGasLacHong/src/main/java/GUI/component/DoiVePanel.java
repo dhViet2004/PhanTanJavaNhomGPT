@@ -1,8 +1,17 @@
 package GUI.component;
 
+import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamPanel;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeWriter;
 import dao.*;
 import model.*;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.swing.Timer;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -10,8 +19,13 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.*;
+import java.awt.Dimension;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -25,6 +39,8 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class DoiVePanel extends JPanel {
@@ -350,8 +366,226 @@ public class DoiVePanel extends JPanel {
         });
 
         searchInputPanel.add(btnTimVe);
+
+        // Thêm nút quét mã QR
+        JButton btnQuetQR = new JButton("Quét QR");
+        btnQuetQR.setFont(new Font("Arial", Font.BOLD, 12));
+        btnQuetQR.setBackground(new Color(0, 153, 153)); // Màu xanh ngọc
+        btnQuetQR.setForeground(Color.WHITE);
+        btnQuetQR.setOpaque(true);
+        btnQuetQR.setBorderPainted(false);
+        btnQuetQR.setFocusPainted(false);
+        btnQuetQR.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnQuetQR.setIcon(createQRCodeIcon(16, 16, Color.WHITE));
+        btnQuetQR.addActionListener(e -> quetQRTuWebcam());
+
+        // Thêm hiệu ứng hover cho nút quét QR
+        btnQuetQR.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnQuetQR.setBackground(new Color(0, 130, 130)); // Màu xanh ngọc đậm hơn khi hover
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnQuetQR.setBackground(new Color(0, 153, 153)); // Trở về màu ban đầu
+            }
+        });
+
+        searchInputPanel.add(btnQuetQR);
+
         searchPanel.add(searchInputPanel, BorderLayout.CENTER);
         return searchPanel;
+    }
+
+    // Thêm phương thức tạo icon mã QR
+    private ImageIcon createQRCodeIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+
+        // Vẽ hình vuông ngoài
+        g2d.drawRect(0, 0, width - 1, height - 1);
+
+        // Vẽ các ô vuông nhỏ tượng trưng cho mã QR
+        int cellSize = width / 5;
+
+        // Góc trên trái
+        g2d.fillRect(2, 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(cellSize, cellSize, cellSize, cellSize);
+        g2d.setColor(color);
+
+        // Góc trên phải
+        g2d.fillRect(width - 3*cellSize - 2, 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(width - 2*cellSize - 2, cellSize, cellSize, cellSize);
+        g2d.setColor(color);
+
+        // Góc dưới trái
+        g2d.fillRect(2, height - 3*cellSize - 2, 3*cellSize, 3*cellSize);
+        g2d.setColor(new Color(0, 153, 153)); // Màu nền của nút
+        g2d.fillRect(cellSize, height - 2*cellSize - 2, cellSize, cellSize);
+
+        // Một số ô ngẫu nhiên trong mã QR
+        g2d.setColor(color);
+        g2d.fillRect(width/2, height/2, cellSize, cellSize);
+        g2d.fillRect(width/2 - cellSize, height/2 + cellSize, cellSize, cellSize);
+
+        g2d.dispose();
+
+        return new ImageIcon(image);
+    }
+
+    // Phương thức quét mã QR
+    private void quetQRTuWebcam() {
+        try {
+            // Hiển thị dialog chờ khi đang khởi tạo webcam
+            JDialog loadingDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Đang khởi tạo webcam...", true);
+            loadingDialog.setSize(250, 100);
+            loadingDialog.setLayout(new FlowLayout(FlowLayout.CENTER));
+            loadingDialog.add(new JLabel("Đang khởi tạo webcam, vui lòng chờ..."));
+            loadingDialog.setLocationRelativeTo(this);
+
+            // Khởi tạo webcam trong một luồng riêng
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() {
+                    try {
+                        // Khởi tạo webcam
+                        Webcam webcam = Webcam.getDefault();
+                        if (webcam == null) {
+                            throw new Exception("Không tìm thấy webcam trên thiết bị");
+                        }
+
+                        // Đặt kích thước hình ảnh webcam
+                        webcam.setViewSize(new Dimension(640, 480));
+                        webcam.open();
+
+                        // Tạo và hiển thị dialog quét QR
+                        JDialog qrDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(DoiVePanel.this), "Quét mã QR", true);
+                        qrDialog.setSize(700, 550);
+                        qrDialog.setLayout(new BorderLayout());
+
+                        // Panel hiển thị webcam
+                        WebcamPanel webcamPanel = new WebcamPanel(webcam);
+                        webcamPanel.setFPSDisplayed(true);
+                        webcamPanel.setMirrored(false);
+                        qrDialog.add(webcamPanel, BorderLayout.CENTER);
+
+                        // Panel nút điều khiển
+                        JPanel controlPanel = new JPanel();
+                        JButton cancelButton = new JButton("Hủy");
+                        cancelButton.addActionListener(e -> qrDialog.dispose());
+                        controlPanel.add(cancelButton);
+                        qrDialog.add(controlPanel, BorderLayout.SOUTH);
+
+                        // Xử lý khi đóng dialog
+                        qrDialog.addWindowListener(new WindowAdapter() {
+                            @Override
+                            public void windowClosing(WindowEvent e) {
+                                if (webcam != null && webcam.isOpen()) {
+                                    webcam.close();
+                                }
+                            }
+                        });
+
+                        // Đóng dialog loading
+                        SwingUtilities.invokeLater(() -> loadingDialog.dispose());
+
+                        // Khởi tạo luồng quét QR
+                        final AtomicBoolean qrFound = new AtomicBoolean(false);
+                        Thread qrScanThread = new Thread(() -> {
+                            try {
+                                while (!qrFound.get() && webcam.isOpen()) {
+                                    BufferedImage image = webcam.getImage();
+                                    if (image != null) {
+                                        try {
+                                            // Quét mã QR từ hình ảnh
+                                            LuminanceSource source = new BufferedImageLuminanceSource(image);
+                                            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+                                            Result result = new MultiFormatReader().decode(bitmap);
+                                            if (result != null && result.getText() != null) {
+                                                // Tìm thấy mã QR
+                                                final String qrText = result.getText();
+                                                qrFound.set(true);
+
+                                                // Xử lý mã QR tìm được trên EDT
+                                                SwingUtilities.invokeLater(() -> {
+                                                    // Đóng webcam và dialog
+                                                    webcam.close();
+                                                    qrDialog.dispose();
+
+                                                    // Cập nhật UI với mã QR tìm được
+                                                    txtMaVe.setText(qrText.trim());
+
+
+                                                    // Thông báo kết quả quét
+                                                    JOptionPane.showMessageDialog(DoiVePanel.this,
+                                                            "Đã quét được mã: " + qrText,
+                                                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+                                                    // Tự động kích hoạt tìm kiếm
+                                                    btnTimVe.doClick();
+                                                });
+
+                                                break;
+                                            }
+                                        } catch (NotFoundException ignore) {
+                                            // Không tìm thấy QR trong frame hiện tại, tiếp tục tìm
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
+                                    // Tạm dừng để giảm tải CPU
+                                    Thread.sleep(200);
+                                }
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                        qrScanThread.setDaemon(true);
+                        qrScanThread.start();
+
+                        // Hiển thị dialog quét QR
+                        qrDialog.setLocationRelativeTo(DoiVePanel.this);
+                        qrDialog.setVisible(true);
+
+                        // Khi dialog đóng, đảm bảo webcam cũng đóng
+                        if (webcam.isOpen()) {
+                            webcam.close();
+                        }
+
+                        // Đảm bảo luồng quét dừng lại
+                        if (qrScanThread.isAlive()) {
+                            qrScanThread.interrupt();
+                        }
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        SwingUtilities.invokeLater(() -> {
+                            loadingDialog.dispose();
+                            JOptionPane.showMessageDialog(DoiVePanel.this,
+                                    "Không thể khởi tạo webcam: " + ex.getMessage(),
+                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        });
+                    }
+                    return null;
+                }
+            };
+
+            worker.execute();
+            loadingDialog.setVisible(true); // Hiển thị dialog chờ (sẽ tự đóng khi webcam khởi tạo xong)
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi khi khởi tạo webcam: " + e.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createInfoPanel() {
@@ -856,13 +1090,13 @@ public class DoiVePanel extends JPanel {
                 // Cập nhật màu sắc và icon cho message
                 if (message.equals(LOADING_TEXT)) {
                     lblStatus.setForeground(primaryColor); // Blue
-                    lblStatus.setIcon(createLoadingIcon(16, 16, primaryColor));
+                    lblStatus.setIcon(createLoadingIcon(16, 16));
                 } else if (message.equals(ERROR_TEXT)) {
                     lblStatus.setForeground(dangerColor); // Red
-                    lblStatus.setIcon(createErrorIcon(16, 16, dangerColor));
+                    lblStatus.setIcon(createErrorIcon(16, 16));
                 } else if (message.equals(SUCCESS_TEXT)) {
                     lblStatus.setForeground(successColor); // Green
-                    lblStatus.setIcon(createSuccessIcon(16, 16, successColor));
+                    lblStatus.setIcon(createSuccessIcon(16, 16));
                 } else {
                     lblStatus.setForeground(darkTextColor); // Default
                     lblStatus.setIcon(createInfoIcon(16, 16, primaryColor));
@@ -1238,7 +1472,7 @@ public class DoiVePanel extends JPanel {
         // Create payment dialog
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán đổi vé", true);
         dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setSize(500, 600);
+        dialog.setSize(500, 650); // Tăng kích thước chiều cao để chứa thêm các thành phần mới
         dialog.setLocationRelativeTo(this);
 
         JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
@@ -1282,38 +1516,219 @@ public class DoiVePanel extends JPanel {
         pnlInfo.add(scrollPane, BorderLayout.CENTER);
 
         // Payment panel
-        JPanel pnlPayment = new JPanel(new GridBagLayout());
+        JPanel pnlPayment = new JPanel();
+        pnlPayment.setLayout(new BoxLayout(pnlPayment, BoxLayout.Y_AXIS));
         pnlPayment.setBorder(BorderFactory.createTitledBorder("Thông tin thanh toán"));
+
+        // Thêm panel chọn phương thức thanh toán
+        JPanel pnlPaymentMethod = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel lblPaymentMethod = new JLabel("Phương thức thanh toán:");
+        pnlPaymentMethod.add(lblPaymentMethod);
+
+        // Tạo radio button cho các phương thức thanh toán
+        JRadioButton radCash = new JRadioButton("Tiền mặt", true);
+        JRadioButton radTransfer = new JRadioButton("Chuyển khoản");
+
+        ButtonGroup paymentMethodGroup = new ButtonGroup();
+        paymentMethodGroup.add(radCash);
+        paymentMethodGroup.add(radTransfer);
+
+        // Thêm các radio button vào panel
+        pnlPaymentMethod.add(radCash);
+        pnlPaymentMethod.add(radTransfer);
+        pnlPayment.add(pnlPaymentMethod);
+
+        // Panel cho thanh toán tiền mặt
+        JPanel pnlCashPayment = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Total amount
         gbc.gridx = 0; gbc.gridy = 0;
-        pnlPayment.add(new JLabel("Tổng tiền:"), gbc);
+        pnlCashPayment.add(new JLabel("Tổng tiền:"), gbc);
 
         gbc.gridx = 1;
         JLabel lblTotalAmount = new JLabel(currencyFormatter.format(veTauHienTai.getGiaVe()));
         lblTotalAmount.setFont(new Font("Arial", Font.BOLD, 14));
-        pnlPayment.add(lblTotalAmount, gbc);
+        pnlCashPayment.add(lblTotalAmount, gbc);
 
         // Customer payment
         gbc.gridx = 0; gbc.gridy = 1;
-        pnlPayment.add(new JLabel("Tiền khách đưa:"), gbc);
+        pnlCashPayment.add(new JLabel("Tiền khách đưa:"), gbc);
 
         gbc.gridx = 1;
         JTextField txtCustomerPayment = new JTextField(15);
         txtCustomerPayment.setFont(new Font("Arial", Font.PLAIN, 14));
-        pnlPayment.add(txtCustomerPayment, gbc);
+        pnlCashPayment.add(txtCustomerPayment, gbc);
 
         // Change amount
         gbc.gridx = 0; gbc.gridy = 2;
-        pnlPayment.add(new JLabel("Tiền thối lại:"), gbc);
+        pnlCashPayment.add(new JLabel("Tiền thối lại:"), gbc);
 
         gbc.gridx = 1;
         JLabel lblChange = new JLabel("0 VNĐ");
         lblChange.setFont(new Font("Arial", Font.BOLD, 14));
-        pnlPayment.add(lblChange, gbc);
+        pnlCashPayment.add(lblChange, gbc);
+
+        // Panel cho thanh toán chuyển khoản
+        JPanel pnlTransferPayment = new JPanel();
+        pnlTransferPayment.setLayout(new BorderLayout(10, 10));
+
+        // Panel cho thông tin chuyển khoản
+        JPanel pnlTransferInfo = new JPanel(new GridBagLayout());
+        GridBagConstraints gbcTransfer = new GridBagConstraints();
+        gbcTransfer.insets = new Insets(5, 5, 5, 5);
+        gbcTransfer.fill = GridBagConstraints.HORIZONTAL;
+
+        // Số tiền cần chuyển
+        gbcTransfer.gridx = 0; gbcTransfer.gridy = 0;
+        pnlTransferInfo.add(new JLabel("Số tiền cần chuyển:"), gbcTransfer);
+
+        gbcTransfer.gridx = 1;
+        JLabel lblTransferAmount = new JLabel(currencyFormatter.format(veTauHienTai.getGiaVe()));
+        lblTransferAmount.setFont(new Font("Arial", Font.BOLD, 14));
+        pnlTransferInfo.add(lblTransferAmount, gbcTransfer);
+
+        // Phương thức thanh toán
+        gbcTransfer.gridx = 0; gbcTransfer.gridy = 1;
+        pnlTransferInfo.add(new JLabel("Chọn phương thức:"), gbcTransfer);
+
+        gbcTransfer.gridx = 1;
+        String[] paymentOptions = {"Chuyển khoản ngân hàng", "VNPay QR"};
+        JComboBox<String> cmbPaymentType = new JComboBox<>(paymentOptions);
+        pnlTransferInfo.add(cmbPaymentType, gbcTransfer);
+
+        // Tab panel cho các phương thức thanh toán
+        JPanel pnlPaymentTabs = new JPanel(new CardLayout());
+
+        // Tab 1: Chuyển khoản ngân hàng truyền thống
+        JPanel pnlBankTransfer = new JPanel();
+        pnlBankTransfer.setLayout(new BoxLayout(pnlBankTransfer, BoxLayout.Y_AXIS));
+
+        JPanel pnlAccountInfo = new JPanel();
+        pnlAccountInfo.setLayout(new BoxLayout(pnlAccountInfo, BoxLayout.Y_AXIS));
+        pnlAccountInfo.setBorder(BorderFactory.createTitledBorder("Thông tin chuyển khoản"));
+
+        JLabel lblBankName = new JLabel("• Ngân hàng: BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam");
+        JLabel lblAccountName = new JLabel("• Chủ tài khoản: CÔNG TY CỔ PHẦN VẬN TẢI ĐƯỜNG SẮT LẠC HỒNG");
+        JLabel lblAccountNumber = new JLabel("• Số tài khoản: 21410000123456");
+        JLabel lblTransferContent = new JLabel("• Nội dung chuyển khoản: " + veTauHienTai.getMaVe());
+
+        pnlAccountInfo.add(lblBankName);
+        pnlAccountInfo.add(Box.createVerticalStrut(5));
+        pnlAccountInfo.add(lblAccountName);
+        pnlAccountInfo.add(Box.createVerticalStrut(5));
+        pnlAccountInfo.add(lblAccountNumber);
+        pnlAccountInfo.add(Box.createVerticalStrut(5));
+        pnlAccountInfo.add(lblTransferContent);
+
+        pnlBankTransfer.add(pnlAccountInfo);
+
+        // Mã giao dịch
+        JPanel pnlTransactionId = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        pnlTransactionId.add(new JLabel("Mã giao dịch:"));
+        JTextField txtTransactionId = new JTextField(20);
+        txtTransactionId.setFont(new Font("Arial", Font.PLAIN, 14));
+        pnlTransactionId.add(txtTransactionId);
+        pnlBankTransfer.add(pnlTransactionId);
+
+        // Tab 2: VNPay QR
+        JPanel pnlVnpayQR = new JPanel(new BorderLayout(10, 10));
+        pnlVnpayQR.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Panel hiển thị mã QR
+        JPanel pnlQRDisplay = new JPanel(new BorderLayout());
+        pnlQRDisplay.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+        pnlQRDisplay.setBackground(Color.WHITE);
+        pnlQRDisplay.setPreferredSize(new Dimension(240, 240));
+
+        // Label để hiển thị mã QR (ban đầu chỉ hiển thị icon tải)
+        JLabel lblQRCode = new JLabel();
+        lblQRCode.setHorizontalAlignment(SwingConstants.CENTER);
+        lblQRCode.setIcon(createLoadingIcon(48, 48));
+        pnlQRDisplay.add(lblQRCode, BorderLayout.CENTER);
+
+        pnlVnpayQR.add(pnlQRDisplay, BorderLayout.CENTER);
+
+        // Panel hướng dẫn thanh toán QR
+        JPanel pnlQRGuide = new JPanel();
+        pnlQRGuide.setLayout(new BoxLayout(pnlQRGuide, BoxLayout.Y_AXIS));
+
+        JLabel lblQRGuide1 = new JLabel("1. Quét mã QR bằng ứng dụng ngân hàng hoặc VNPay");
+        JLabel lblQRGuide2 = new JLabel("2. Kiểm tra thông tin giao dịch và xác nhận thanh toán");
+        JLabel lblQRGuide3 = new JLabel("3. Hệ thống sẽ tự động cập nhật sau khi thanh toán thành công");
+
+        pnlQRGuide.add(lblQRGuide1);
+        pnlQRGuide.add(Box.createVerticalStrut(5));
+        pnlQRGuide.add(lblQRGuide2);
+        pnlQRGuide.add(Box.createVerticalStrut(5));
+        pnlQRGuide.add(lblQRGuide3);
+
+        // Thêm trạng thái thanh toán
+        JPanel pnlPaymentStatus = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel lblPaymentStatus = new JLabel("Đang chờ thanh toán...", createLoadingIcon(16, 16), JLabel.LEFT);
+        lblPaymentStatus.setForeground(new Color(255, 153, 0)); // Màu cam
+        pnlPaymentStatus.add(lblPaymentStatus);
+
+        // Panel cho nút làm mới trạng thái
+        JPanel pnlRefresh = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnRefreshStatus = new JButton("Kiểm tra trạng thái");
+        btnRefreshStatus.setIcon(createRefreshIcon(16, 16, Color.BLACK));
+        pnlRefresh.add(btnRefreshStatus);
+
+        JPanel pnlQRBottom = new JPanel(new BorderLayout());
+        pnlQRBottom.add(pnlQRGuide, BorderLayout.NORTH);
+        pnlQRBottom.add(pnlPaymentStatus, BorderLayout.CENTER);
+        pnlQRBottom.add(pnlRefresh, BorderLayout.SOUTH);
+
+        pnlVnpayQR.add(pnlQRBottom, BorderLayout.SOUTH);
+
+        // Thêm các tab vào panel chính
+        pnlPaymentTabs.add(pnlBankTransfer, "BANK_TRANSFER");
+        pnlPaymentTabs.add(pnlVnpayQR, "VNPAY_QR");
+
+        // Listener cho combobox để chuyển tab
+        cmbPaymentType.addActionListener(e -> {
+            CardLayout cl = (CardLayout) pnlPaymentTabs.getLayout();
+            int selectedIndex = cmbPaymentType.getSelectedIndex();
+            if (selectedIndex == 0) {
+                cl.show(pnlPaymentTabs, "BANK_TRANSFER");
+            } else {
+                cl.show(pnlPaymentTabs, "VNPAY_QR");
+                // Tạo QR code khi chọn tab VNPay
+                generateVnpayQRCode(lblQRCode, veTauHienTai.getMaVe(), veTauHienTai.getGiaVe(), lblPaymentStatus);
+            }
+        });
+
+        pnlTransferInfo.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        pnlTransferPayment.add(pnlTransferInfo, BorderLayout.NORTH);
+        pnlTransferPayment.add(pnlPaymentTabs, BorderLayout.CENTER);
+
+        // Nút làm mới trạng thái thanh toán
+        btnRefreshStatus.addActionListener(e -> {
+            checkVnpayPaymentStatus(veTauHienTai.getMaVe(), lblPaymentStatus, dialog);
+        });
+
+        // Hiển thị panel phương thức thanh toán ban đầu (mặc định là tiền mặt)
+        pnlPayment.add(pnlCashPayment);
+        pnlTransferPayment.setVisible(false);
+        pnlPayment.add(pnlTransferPayment);
+
+        // Thêm listener cho radio button để chuyển đổi giữa các phương thức thanh toán
+        radCash.addActionListener(e -> {
+            pnlCashPayment.setVisible(true);
+            pnlTransferPayment.setVisible(false);
+            dialog.revalidate();
+            dialog.repaint();
+        });
+
+        radTransfer.addActionListener(e -> {
+            pnlCashPayment.setVisible(false);
+            pnlTransferPayment.setVisible(true);
+            dialog.revalidate();
+            dialog.repaint();
+        });
 
         // Add document listener for automatic change calculation
         txtCustomerPayment.getDocument().addDocumentListener(new DocumentListener() {
@@ -1372,56 +1787,63 @@ public class DoiVePanel extends JPanel {
 
         btnThanhToan.addActionListener(e -> {
             try {
-                String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
-                if (input.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog,
-                            "Vui lòng nhập số tiền khách đưa",
-                            "Thông báo", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
+                if (radCash.isSelected()) {
+                    // Xử lý thanh toán tiền mặt
+                    String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
+                    if (input.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Vui lòng nhập số tiền khách đưa",
+                                "Thông báo", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
 
-                double customerPayment = Double.parseDouble(input);
-                if (customerPayment < veTauHienTai.getGiaVe()) {
-                    JOptionPane.showMessageDialog(dialog,
-                            "Số tiền khách đưa không đủ",
-                            "Thông báo", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                if(xuLyThanhToan()){
-                    // Cập nhật trạng thái vé thành ĐÃ_THANH_TOAN
-                    veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
+                    double customerPayment = Double.parseDouble(input);
+                    if (customerPayment < veTauHienTai.getGiaVe()) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Số tiền khách đưa không đủ",
+                                "Thông báo", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
 
-                    // Gọi API để cập nhật trạng thái vé
-                    boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
-
-                    if (success) {
+                    if (xuLyThanhToan("TIEN_MAT", "")) {
                         double change = customerPayment - veTauHienTai.getGiaVe();
                         showPaymentSuccessDialog(change);
-                        dialog.dispose();
-                        updateStatus(SUCCESS_TEXT, false);
+                        processAfterSuccessfulPayment(dialog);
+                    }
+                } else if (radTransfer.isSelected()) {
+                    // Xử lý thanh toán chuyển khoản
+                    int selectedPaymentType = cmbPaymentType.getSelectedIndex();
 
-                        // Cập nhật lại trạng thái trên giao diện
-                        lblTrangThai.setText(veTauHienTai.getTrangThai().toString());
-                        setTrangThaiColor(lblTrangThai, veTauHienTai.getTrangThai());
-
-                        // Cập nhật lại bảng lịch sử
-                        DefaultTableModel model = (DefaultTableModel) tblLichSu.getModel();
-                        int rowCount = model.getRowCount();
-                        if (rowCount > 0) {
-                            // Cập nhật dòng cuối cùng (vừa thêm)
-                            model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
+                    if (selectedPaymentType == 0) { // Chuyển khoản ngân hàng
+                        String transactionId = txtTransactionId.getText().trim();
+                        if (transactionId.isEmpty()) {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "Vui lòng nhập mã giao dịch",
+                                    "Thông báo", JOptionPane.WARNING_MESSAGE);
+                            return;
                         }
 
-                        lamMoi();
-                    } else {
-                        JOptionPane.showMessageDialog(dialog,
-                                "Không thể cập nhật trạng thái vé",
-                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        if (xuLyThanhToan("CHUYEN_KHOAN_NGAN_HANG", transactionId)) {
+                            showTransferSuccessDialog();
+                            processAfterSuccessfulPayment(dialog);
+                        } else {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "Không thể xác thực giao dịch. Vui lòng kiểm tra mã giao dịch.",
+                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } else { // VNPay QR
+                        // Xác thực lại trạng thái thanh toán một lần nữa
+                        boolean paymentSuccess = checkVnpayPaymentStatus(veTauHienTai.getMaVe(), lblPaymentStatus, null);
+
+                        if (paymentSuccess) {
+                            showVnpaySuccessDialog();
+                            processAfterSuccessfulPayment(dialog);
+                        } else {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "Chưa nhận được thông tin thanh toán. Vui lòng thanh toán hoặc kiểm tra lại.",
+                                    "Chưa thanh toán", JOptionPane.WARNING_MESSAGE);
+                        }
                     }
-                }else{
-                    JOptionPane.showMessageDialog(dialog,
-                            "Thanh toán không thành công",
-                            "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(dialog,
@@ -1442,38 +1864,478 @@ public class DoiVePanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void showPaymentSuccessDialog(double change) {
-        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                "Thanh toán thành công", true);
-        successDialog.setLayout(new BorderLayout(10, 10));
-        successDialog.setSize(300, 200);
+    // Phương thức hiển thị dialog thanh toán VNPay thành công
+    private void showVnpaySuccessDialog() {
+        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán thành công", true);
+        successDialog.setSize(350, 200);
         successDialog.setLocationRelativeTo(this);
+        successDialog.setLayout(new BorderLayout());
 
-        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
-        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Success message
-        JLabel lblMessage = new JLabel("Thanh toán thành công!");
-        lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
-        lblMessage.setFont(new Font("Arial", Font.BOLD, 16));
-        pnlContent.add(lblMessage, BorderLayout.NORTH);
+        // Thêm icon thành công
+        JLabel iconLabel = new JLabel(createSuccessTickIcon(64, 64, successColor));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(iconLabel);
+        panel.add(Box.createVerticalStrut(15));
 
-        // Change amount
-        JLabel lblChange = new JLabel("Tiền thối lại: " + currencyFormatter.format(change));
-        lblChange.setHorizontalAlignment(SwingConstants.CENTER);
-        lblChange.setFont(new Font("Arial", Font.PLAIN, 14));
-        pnlContent.add(lblChange, BorderLayout.CENTER);
+        // Thêm thông báo
+        JLabel messageLabel = new JLabel("Thanh toán VNPay thành công!");
+        messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(messageLabel);
+        panel.add(Box.createVerticalStrut(20));
 
-        // OK button
-        JButton btnOK = new JButton("Đóng");
-        btnOK.addActionListener(e -> successDialog.dispose());
-        JPanel pnlButton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pnlButton.add(btnOK);
-        pnlContent.add(pnlButton, BorderLayout.SOUTH);
+        // Thêm nút OK
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(e -> successDialog.dispose());
+        okButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        successDialog.add(pnlContent);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(okButton);
+        panel.add(buttonPanel);
+
+        successDialog.add(panel);
         successDialog.setVisible(true);
     }
+
+    // Phương thức kiểm tra trạng thái thanh toán VNPay
+    private boolean checkVnpayPaymentStatus(String maVe, JLabel lblStatus, JDialog parentDialog) {
+        // Tạo SwingWorker để không làm đơ giao diện
+        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Boolean doInBackground() {
+                try {
+                    // Trong môi trường thực tế, bạn sẽ gọi API VNPay để kiểm tra trạng thái giao dịch
+                    // Ở đây chúng ta sẽ mô phỏng việc kiểm tra, trả về ngẫu nhiên để demo
+                    // Trong thực tế, sẽ kiểm tra dựa trên mã giao dịch đã lưu
+
+                    // Mô phỏng gọi API kiểm tra trạng thái (50% cơ hội thành công)
+                    Thread.sleep(1500); // Mô phỏng thời gian gọi API
+                    return new Random().nextBoolean();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    boolean success = get();
+                    if (success) {
+                        lblStatus.setText("Thanh toán thành công!");
+                        lblStatus.setIcon(createSuccessIcon(16, 16));
+                        lblStatus.setForeground(new Color(0, 153, 0)); // Màu xanh lá
+
+                        // Hiển thị thông báo nếu được gọi từ nút Kiểm tra
+                        if (parentDialog != null) {
+                            JOptionPane.showMessageDialog(parentDialog,
+                                    "Thanh toán đã được xác nhận thành công!",
+                                    "Thanh toán thành công", JOptionPane.INFORMATION_MESSAGE,
+                                    createSuccessIcon(32, 32));
+                        }
+                    } else {
+                        lblStatus.setText("Chưa nhận được thanh toán");
+                        lblStatus.setIcon(createWarningIcon(16, 16));
+                        lblStatus.setForeground(new Color(255, 153, 0)); // Màu cam
+
+                        // Hiển thị thông báo nếu được gọi từ nút Kiểm tra
+                        if (parentDialog != null) {
+                            JOptionPane.showMessageDialog(parentDialog,
+                                    "Chưa nhận được thông tin thanh toán. Vui lòng thử lại sau.",
+                                    "Chờ thanh toán", JOptionPane.WARNING_MESSAGE);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    lblStatus.setText("Lỗi kiểm tra thanh toán");
+                    lblStatus.setForeground(Color.RED);
+
+                    if (parentDialog != null) {
+                        JOptionPane.showMessageDialog(parentDialog,
+                                "Lỗi khi kiểm tra trạng thái thanh toán: " + e.getMessage(),
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        };
+
+        worker.execute();
+
+        // Trong môi trường thực tế, bạn cần đợi kết quả từ worker hoặc sử dụng callback
+        // Ở đây chúng ta sẽ trả về giá trị giả định để demo
+        try {
+            return worker.get(3, TimeUnit.SECONDS); // Đợi tối đa 3 giây
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private ImageIcon createWarningIcon(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Vẽ hình tam giác cảnh báo
+        g2d.setColor(new Color(255, 153, 0));
+        int[] xPoints = {width / 2, width, 0};
+        int[] yPoints = {0, height, height};
+        g2d.fillPolygon(xPoints, yPoints, 3);
+
+        // Vẽ dấu chấm than
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(width / 2 - width / 10, height / 4, width / 5, height / 2);
+        g2d.fillOval(width / 2 - width / 10, height * 3 / 4, width / 5, width / 5);
+
+        g2d.dispose();
+        return new ImageIcon(image);
+    }
+
+    private void generateVnpayQRCode(JLabel lblQRCode, String maVe, double amount, JLabel lblStatus) {
+        // Tạo SwingWorker để không làm đơ giao diện
+        SwingWorker<ImageIcon, Void> worker = new SwingWorker<>() {
+            @Override
+            protected ImageIcon doInBackground() {
+                try {
+                    // Tạo tham số cho API VNPay
+                    String vnp_TxnRef = maVe + System.currentTimeMillis(); // Mã tham chiếu giao dịch
+                    String vnp_Amount = String.valueOf((long)(amount * 100)); // Số tiền * 100 (đơn vị xu)
+                    String vnp_OrderInfo = "Thanh toan hoa don ve tau " + maVe;
+
+                    // URL API tạo mã QR của VNPay (đây là URL giả định, bạn cần thay thế bằng URL thực)
+                    String apiUrl = "https://sandbox.vnpayment.vn/paymentv2/create_qr_code.html";
+
+                    // Tạo các tham số API
+                    Map<String, String> params = new HashMap<>();
+                    params.put("vnp_Version", "2.1.0");
+                    params.put("vnp_Command", "pay");
+                    params.put("vnp_TmnCode", "YOUR_TMN_CODE"); // Mã website tại VNPay
+                    params.put("vnp_Amount", vnp_Amount);
+                    params.put("vnp_CurrCode", "VND");
+                    params.put("vnp_TxnRef", vnp_TxnRef);
+                    params.put("vnp_OrderInfo", vnp_OrderInfo);
+                    params.put("vnp_OrderType", "250000"); // Mã danh mục hàng hóa
+                    params.put("vnp_Locale", "vn");
+                    params.put("vnp_ReturnUrl", "https://yourdomain.com/vnpay_return");
+
+                    // Thêm các tham số khác nếu cần
+
+                    // Thêm thời gian tạo giao dịch
+                    Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+                    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+                    String vnp_CreateDate = formatter.format(cld.getTime());
+                    params.put("vnp_CreateDate", vnp_CreateDate);
+
+                    // Tạo chuỗi hash để xác thực
+                    List<String> fieldNames = new ArrayList<>(params.keySet());
+                    Collections.sort(fieldNames);
+
+                    StringBuilder hashData = new StringBuilder();
+                    StringBuilder query = new StringBuilder();
+
+                    for (String field : fieldNames) {
+                        hashData.append(field).append('=').append(URLEncoder.encode(params.get(field), StandardCharsets.US_ASCII.toString()));
+                        query.append(URLEncoder.encode(field, StandardCharsets.US_ASCII.toString())).append('=')
+                                .append(URLEncoder.encode(params.get(field), StandardCharsets.US_ASCII.toString()));
+
+                        if (fieldNames.indexOf(field) < fieldNames.size() - 1) {
+                            hashData.append('&');
+                            query.append('&');
+                        }
+                    }
+
+                    String vnp_SecureHash = hmacSHA512("YOUR_SECRET_KEY", hashData.toString());
+                    query.append("&vnp_SecureHash=").append(vnp_SecureHash);
+
+                    String paymentUrl = apiUrl + "?" + query.toString();
+
+                    // Trong môi trường thực tế, bạn sẽ gọi API VNPay để lấy URL hoặc dữ liệu QR
+                    // Ở đây, chúng ta sẽ tạo mã QR từ URL thanh toán
+                    // Lưu thông tin này để tra cứu trạng thái thanh toán sau này
+                    saveVnpayTransaction(vnp_TxnRef, maVe, amount);
+
+                    // Tạo QR code từ URL thanh toán
+                    return generateQRCodeImage(paymentUrl, 200, 200);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ImageIcon qrIcon = get();
+                    if (qrIcon != null) {
+                        lblQRCode.setIcon(qrIcon);
+                        lblStatus.setText("Đang chờ thanh toán...");
+                        lblStatus.setForeground(new Color(255, 153, 0)); // Màu cam
+                    } else {
+                        lblQRCode.setIcon(createErrorIcon(48, 48));
+                        lblStatus.setText("Lỗi tạo mã QR");
+                        lblStatus.setForeground(Color.RED);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    lblQRCode.setIcon(createErrorIcon(48, 48));
+                    lblStatus.setText("Lỗi tạo mã QR");
+                    lblStatus.setForeground(Color.RED);
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
+    // Phương thức mã hóa chuỗi bằng HMAC SHA512
+    private String hmacSHA512(String key, String data) {
+        try {
+            Mac sha512Hmac = Mac.getInstance("HmacSHA512");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), "HmacSHA512");
+            sha512Hmac.init(secretKeySpec);
+            byte[] hmacData = sha512Hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hmacData);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    private ImageIcon generateQRCodeImage(String text, int width, int height) throws Exception {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height);
+
+        BufferedImage qrImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                qrImage.setRGB(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+            }
+        }
+
+        // Tạo logo VNPay ở giữa mã QR (tùy chọn)
+        BufferedImage logo = createVnpayLogo(width / 5, height / 5);
+        if (logo != null) {
+            Graphics2D g2d = qrImage.createGraphics();
+            int logoWidth = logo.getWidth();
+            int logoHeight = logo.getHeight();
+            int logoX = (width - logoWidth) / 2;
+            int logoY = (height - logoHeight) / 2;
+
+            g2d.drawImage(logo, logoX, logoY, null);
+            g2d.dispose();
+        }
+
+        return new ImageIcon(qrImage);
+    }
+    // Phương thức tạo logo VNPay (mô phỏng)
+    private BufferedImage createVnpayLogo(int width, int height) {
+        BufferedImage logo = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = logo.createGraphics();
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Vẽ nền tròn
+        g2d.setColor(Color.WHITE);
+        g2d.fillOval(0, 0, width, height);
+
+        // Vẽ viền
+        g2d.setColor(new Color(29, 118, 186));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawOval(0, 0, width - 1, height - 1);
+
+        // Vẽ chữ "VNPay" đơn giản
+        g2d.setFont(new Font("Arial", Font.BOLD, width / 4));
+        g2d.setColor(new Color(29, 118, 186));
+        FontMetrics fm = g2d.getFontMetrics();
+        String text = "VN";
+        int textX = (width - fm.stringWidth(text)) / 2;
+        int textY = ((height - fm.getHeight()) / 2) + fm.getAscent();
+        g2d.drawString(text, textX, textY);
+
+        g2d.dispose();
+        return logo;
+    }
+    // Phương thức lưu thông tin giao dịch VNPay
+    private void saveVnpayTransaction(String txnRef, String maVe, double amount) {
+        // Lưu thông tin giao dịch vào database hoặc bộ nhớ tạm
+        // Ở đây chỉ là mô phỏng, bạn cần thay thế bằng code thực tế
+        System.out.println("Đã lưu thông tin giao dịch VNPay: " + txnRef + ", Mã vé: " + maVe + ", Số tiền: " + amount);
+    }
+
+    // Phương thức xử lý sau khi thanh toán thành công
+    private void processAfterSuccessfulPayment(JDialog dialog) throws RemoteException {
+        // Cập nhật trạng thái vé thành ĐÃ_THANH_TOAN
+        veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
+
+        // Gọi API để cập nhật trạng thái vé
+        boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
+
+        if (success) {
+            dialog.dispose();
+            updateStatus(SUCCESS_TEXT, false);
+
+            // Cập nhật lại trạng thái trên giao diện
+            lblTrangThai.setText(veTauHienTai.getTrangThai().toString());
+            setTrangThaiColor(lblTrangThai, veTauHienTai.getTrangThai());
+
+            // Cập nhật lại bảng lịch sử
+            DefaultTableModel model = (DefaultTableModel) tblLichSu.getModel();
+            int rowCount = model.getRowCount();
+            if (rowCount > 0) {
+                // Cập nhật dòng cuối cùng (vừa thêm)
+                model.setValueAt(TrangThaiVeTau.DA_THANH_TOAN, rowCount - 1, 3);
+            }
+
+            lamMoi();
+        } else {
+            JOptionPane.showMessageDialog(dialog,
+                    "Không thể cập nhật trạng thái vé",
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Phương thức hiển thị thông báo thanh toán chuyển khoản thành công
+    private void showTransferSuccessDialog() {
+        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán thành công", true);
+        successDialog.setSize(350, 200);
+        successDialog.setLocationRelativeTo(this);
+        successDialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Thêm icon thành công
+        JLabel iconLabel = new JLabel(createSuccessTickIcon(64, 64, successColor));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(iconLabel);
+        panel.add(Box.createVerticalStrut(15));
+
+        // Thêm thông báo
+        JLabel messageLabel = new JLabel("Thanh toán chuyển khoản thành công!");
+        messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(messageLabel);
+        panel.add(Box.createVerticalStrut(20));
+
+        // Thêm nút OK
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(e -> successDialog.dispose());
+        okButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(okButton);
+        panel.add(buttonPanel);
+
+        successDialog.add(panel);
+        successDialog.setVisible(true);
+    }
+
+    // Phương thức xử lý thanh toán với thông tin về phương thức thanh toán và mã giao dịch (nếu có)
+    private boolean xuLyThanhToan(String phuongThucThanhToan, String maGiaoDich) {
+        try {
+            // Code xử lý thanh toán ở đây
+            // Lưu thông tin phương thức thanh toán và mã giao dịch vào cơ sở dữ liệu
+
+            // Giả sử phương thức này luôn trả về true nếu không có ngoại lệ
+            System.out.println("Xử lý thanh toán: " + phuongThucThanhToan + ", Mã giao dịch: " +
+                    (maGiaoDich.isEmpty() ? "Không có" : maGiaoDich));
+
+            return true;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    // Phương thức hiển thị thông báo thanh toán tiền mặt thành công
+    private void showPaymentSuccessDialog(double change) {
+        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán thành công", true);
+        successDialog.setSize(350, 240);
+        successDialog.setLocationRelativeTo(this);
+        successDialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Thêm icon thành công
+        JLabel iconLabel = new JLabel(createSuccessTickIcon(64, 64, successColor));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(iconLabel);
+        panel.add(Box.createVerticalStrut(15));
+
+        // Thêm thông báo
+        JLabel messageLabel = new JLabel("Thanh toán thành công!");
+        messageLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(messageLabel);
+        panel.add(Box.createVerticalStrut(10));
+
+        // Thêm thông tin tiền thối
+        JLabel changeLabel = new JLabel("Tiền thối: " + currencyFormatter.format(change));
+        changeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(changeLabel);
+        panel.add(Box.createVerticalStrut(20));
+
+        // Thêm nút OK
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(e -> successDialog.dispose());
+        okButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(okButton);
+        panel.add(buttonPanel);
+
+        successDialog.add(panel);
+        successDialog.setVisible(true);
+    }
+
+//    private void showPaymentSuccessDialog(double change) {
+//        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+//                "Thanh toán thành công", true);
+//        successDialog.setLayout(new BorderLayout(10, 10));
+//        successDialog.setSize(300, 200);
+//        successDialog.setLocationRelativeTo(this);
+//
+//        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
+//        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+//
+//        // Success message
+//        JLabel lblMessage = new JLabel("Thanh toán thành công!");
+//        lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
+//        lblMessage.setFont(new Font("Arial", Font.BOLD, 16));
+//        pnlContent.add(lblMessage, BorderLayout.NORTH);
+//
+//        // Change amount
+//        JLabel lblChange = new JLabel("Tiền thối lại: " + currencyFormatter.format(change));
+//        lblChange.setHorizontalAlignment(SwingConstants.CENTER);
+//        lblChange.setFont(new Font("Arial", Font.PLAIN, 14));
+//        pnlContent.add(lblChange, BorderLayout.CENTER);
+//
+//        // OK button
+//        JButton btnOK = new JButton("Đóng");
+//        btnOK.addActionListener(e -> successDialog.dispose());
+//        JPanel pnlButton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+//        pnlButton.add(btnOK);
+//        pnlContent.add(pnlButton, BorderLayout.SOUTH);
+//
+//        successDialog.add(pnlContent);
+//        successDialog.setVisible(true);
+//    }
 
     private Icon createPaymentIcon(int width, int height, Color color) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -1611,22 +2473,26 @@ public class DoiVePanel extends JPanel {
      */
     private ImageIcon createRefreshIcon(int width, int height, Color color) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(color);
+        Graphics2D g2d = image.createGraphics();
 
-        // Vẽ hình tròn cho nút refresh
-        g2.setStroke(new BasicStroke(1.5f));
-        g2.drawArc(3, 3, width - 6, height - 6, 45, 270);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+
+        // Vẽ biểu tượng làm mới
+        g2d.setStroke(new BasicStroke(width / 8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        int margin = width / 6;
+        g2d.drawArc(margin, margin, width - 2 * margin, height - 2 * margin, 0, 300);
 
         // Vẽ mũi tên
-        g2.fillPolygon(
-                new int[]{width - 3, width - 7, width},
-                new int[]{3, 7, 7},
+        int arrowSize = width / 4;
+        g2d.fillPolygon(
+                new int[] {width - margin, width - margin - arrowSize, width - margin},
+                new int[] {margin, margin, margin + arrowSize},
                 3
         );
 
-        g2.dispose();
+        g2d.dispose();
         return new ImageIcon(image);
     }
 
@@ -1655,18 +2521,25 @@ public class DoiVePanel extends JPanel {
     /**
      * Tạo icon thành công
      */
-    private ImageIcon createSuccessIcon(int width, int height, Color color) {
+    private ImageIcon createSuccessIcon(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(color);
+        Graphics2D g2d = image.createGraphics();
 
-        // Vẽ dấu tích
-        g2.setStroke(new BasicStroke(2f));
-        g2.drawLine(width / 4, height / 2, width / 2 - 1, height - height / 4);
-        g2.drawLine(width / 2 - 1, height - height / 4, width - width / 4, height / 4);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2.dispose();
+        // Vẽ hình tròn xanh
+        g2d.setColor(new Color(0, 153, 0));
+        g2d.fillOval(0, 0, width, height);
+
+        // Vẽ dấu tick
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(width / 5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        int[] xPoints = {width / 4, width / 2, width * 3 / 4};
+        int[] yPoints = {height / 2, height * 3 / 4, height / 3};
+        g2d.drawPolyline(xPoints, yPoints, 3);
+
+        g2d.dispose();
         return new ImageIcon(image);
     }
 
@@ -1706,43 +2579,45 @@ public class DoiVePanel extends JPanel {
     /**
      * Tạo icon loading
      */
-    private ImageIcon createLoadingIcon(int width, int height, Color color) {
+    // Các phương thức tạo icon
+    private ImageIcon createLoadingIcon(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Graphics2D g2d = image.createGraphics();
 
-        int dotSize = width / 6;
-        int margin = width / 12;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(new Color(200, 200, 200));
 
-        // Vẽ ba chấm với độ trong suốt khác nhau
-        g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 255));
-        g2.fillOval(width / 2 - dotSize / 2, height / 2 - dotSize / 2, dotSize, dotSize);
+        int margin = width / 10;
+        g2d.setStroke(new BasicStroke(width / 10f));
+        g2d.drawOval(margin, margin, width - 2 * margin, height - 2 * margin);
 
-        g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 180));
-        g2.fillOval(width / 2 - dotSize / 2 - dotSize - margin, height / 2 - dotSize / 2, dotSize, dotSize);
+        g2d.setColor(new Color(0, 153, 204));
+        g2d.drawArc(margin, margin, width - 2 * margin, height - 2 * margin, 0, 270);
 
-        g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
-        g2.fillOval(width / 2 - dotSize / 2 + dotSize + margin, height / 2 - dotSize / 2, dotSize, dotSize);
-
-        g2.dispose();
+        g2d.dispose();
         return new ImageIcon(image);
     }
 
     /**
      * Tạo icon lỗi
      */
-    private ImageIcon createErrorIcon(int width, int height, Color color) {
+    private ImageIcon createErrorIcon(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Graphics2D g2d = image.createGraphics();
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Vẽ hình tròn đỏ
+        g2d.setColor(Color.RED);
+        g2d.fillOval(0, 0, width, height);
 
         // Vẽ dấu X
-        g2.setColor(color);
-        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.drawLine(4, 4, width - 4, height - 4);
-        g2.drawLine(width - 4, 4, 4, height - 4);
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(width / 5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2d.drawLine(width / 3, height / 3, width * 2 / 3, height * 2 / 3);
+        g2d.drawLine(width * 2 / 3, height / 3, width / 3, height * 2 / 3);
 
-        g2.dispose();
+        g2d.dispose();
         return new ImageIcon(image);
     }
 
