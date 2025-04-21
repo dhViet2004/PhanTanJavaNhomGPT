@@ -1,5 +1,6 @@
 package dao;
 
+import model.KetQuaThongKeDoanhThu;
 import model.KetQuaThongKeVe;
 
 import java.rmi.Remote;
@@ -33,4 +34,7 @@ public interface ThongKeDAO extends Remote {
      * @throws RemoteException lỗi RMI
      */
     boolean testConnection() throws RemoteException;
+
+    List<KetQuaThongKeDoanhThu> thongKeDoanhThuTheoThoiGian(LocalDate fromDate, LocalDate toDate, String timeRangeType)
+            throws RemoteException;
 }

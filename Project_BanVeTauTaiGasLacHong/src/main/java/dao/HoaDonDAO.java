@@ -35,4 +35,8 @@ public interface HoaDonDAO extends Remote {
 
     String generateMaHoaDon(LocalDate ngay) throws RemoteException;
     LoaiHoaDon getLoaiHoaDonById(String maLoaiHD) throws RemoteException;
+
+    List<HoaDon> timKiemHoaDon(String maHoaDon, String soDienThoai, String maNhanVien,   LocalDate tuNgay, LocalDate denNgay) throws RemoteException;
+
+    HoaDon getHoaDonByMa(String maHoaDon) throws RemoteException;
 }
