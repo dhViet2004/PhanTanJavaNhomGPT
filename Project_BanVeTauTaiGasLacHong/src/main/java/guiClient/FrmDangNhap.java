@@ -1,9 +1,12 @@
 package guiClient;
 
 import dao.LichLamViecDAO;
+import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
 import dao.impl.LichLamViecDAOImpl;
+import dao.impl.NhanVienDAOImpl;
 import dao.impl.TaiKhoanDAOImpl;
+//import model.EmailSender;
 import model.LichLamViec;
 import model.NhanVien;
 
@@ -13,6 +16,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,8 +37,12 @@ public class FrmDangNhap extends JFrame implements ActionListener {
     private TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
     private NhanVien nv;
     private LichLamViecDAO llv_dao = new LichLamViecDAOImpl();
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
+    private NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+    private boolean isConnected = false;
 
-    public FrmDangNhap() {
+    public FrmDangNhap() throws RemoteException {
         setTitle("Đăng nhập");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 600);
@@ -171,7 +182,25 @@ public class FrmDangNhap extends JFrame implements ActionListener {
         btnDangNhap.addActionListener(this);
         btnQuenMatKhau.addActionListener(this);
     }
+    private void connectToServer() {
+        try {
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
+            nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");
+            // Thông báo kết nối thành công sau khi lookup thành công
+//            JOptionPane.showMessageDialog(this,
+//                    "Kết nối đến server RMI thành công!",
+//                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            isConnected = true;
 
+        } catch (RemoteException | NotBoundException e) {
+            // Không hiển thị thông báo lỗi kết nối ở đây
+            JOptionPane.showMessageDialog(this,
+                    "Không thể kết nối đến server RMI: " + e.getMessage(),
+                    "Lỗi Kết Nối", JOptionPane.ERROR_MESSAGE);
+
+            e.printStackTrace();
+        }
+    }
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == btnDangNhap) {
@@ -190,6 +219,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 txtMatKhau.requestFocus();
                 return;
             }
+            connectToServer();
             try {
                 // Kiểm tra đăng nhập
                 nv = taiKhoanDAO.checkLogin(user, password);
@@ -224,17 +254,23 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 // ----- KẾT THÚC PHẦN COMMENT -----
 
                 // Tiến hành mở form và thông báo đăng nhập thành công
-                if (nv.getChucVu().trim().equalsIgnoreCase("Nhân viên")) {
-                    MainGUI a = new MainGUI(nv);
-                    a.setVisible(true);
-                    this.dispose();
-                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò Nhân viên");
-                } else if (nv.getChucVu().trim().equalsIgnoreCase("Quan ly")) {
-                    MainGUI b = new MainGUI(nv);
-                    b.setVisible(true);
-                    this.dispose();
-                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò quản lý");
+                if(isConnected){
+                    JOptionPane.showMessageDialog(this,
+                            "Đăng nhập thành công!",
+                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                    if (nv.getChucVu().trim().equalsIgnoreCase("Nhân viên")) {
+                        MainGUI a = new MainGUI(nv);
+                        a.setVisible(true);
+                        this.dispose();
+                        JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò Nhân viên");
+                    } else if (nv.getChucVu().trim().equalsIgnoreCase("Quan ly")) {
+                        MainGUI b = new MainGUI(nv);
+                        b.setVisible(true);
+                        this.dispose();
+                        JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò quản lý");
+                    }
                 }
+
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi khi đăng nhập: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -257,31 +293,36 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 return;
             }
 
-            try {
-                JOptionPane.showMessageDialog(this, "Đang gửi email. Vui lòng chờ trong giây lát...", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-
-                String password = taiKhoanDAO.getPasswordByEmail(email);
-                if (password == null) {
-                    JOptionPane.showMessageDialog(this, "Email không tồn tại trong hệ thống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                } else {
+//            try {
+//                JOptionPane.showMessageDialog(this, "Đang gửi email. Vui lòng chờ trong giây lát...", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+//
+//                String password = taiKhoanDAO.getPasswordByEmail(email);
+//                if (password == null) {
+//                    JOptionPane.showMessageDialog(this, "Email không tồn tại trong hệ thống", "Lỗi", JOptionPane.ERROR_MESSAGE);
+//                } else {
 //                    boolean emailSent = EmailSender.sendPasswordEmail(email, password);
 //                    if (emailSent) {
 //                        JOptionPane.showMessageDialog(this, "Mật khẩu đã được gửi đến email của bạn.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
 //                    } else {
 //                        JOptionPane.showMessageDialog(this, "Gửi email thất bại. Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
 //                    }
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            }
+//                }
+//            } catch (Exception ex) {
+//                JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+//                ex.printStackTrace();
+//            }
         }
     }
 
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            FrmDangNhap frame = new FrmDangNhap();
+            FrmDangNhap frame = null;
+            try {
+                frame = new FrmDangNhap();
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
             frame.setVisible(true);
         });
     }
