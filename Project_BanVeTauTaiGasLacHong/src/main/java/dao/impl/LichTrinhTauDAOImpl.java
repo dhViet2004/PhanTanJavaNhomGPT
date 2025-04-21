@@ -6,6 +6,7 @@ import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Query;
 import model.LichTrinhTau;
 import model.TrangThai;
+import model.TrangThaiVeTau;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrinhTauDAO {
 
@@ -595,4 +597,47 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
         }
         return result;
     }
+
+    public long getAvailableSeatsBySchedule(String maLich) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long availableSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count available seats by schedule
+            String jpql = "SELECT COUNT(cn.maCho) " +
+                    "FROM LichTrinhTau lt " +
+                    "JOIN lt.tau t " +
+                    "JOIN t.danhSachToaTau tt " +
+                    "JOIN tt.danhSachChoNgoi cn " +
+                    "LEFT JOIN cn.veTau vt " +
+                    "ON vt.lichTrinhTau.maLich = lt.maLich " +
+                    "WHERE lt.maLich = :maLich " +
+                    "AND (vt IS NULL OR vt.trangThai IN (:statuses))";
+
+            availableSeatsCount = em.createQuery(jpql, Long.class)
+                    .setParameter("maLich", maLich)
+                    .setParameter("statuses", List.of(TrangThaiVeTau.DA_TRA, TrangThaiVeTau.DA_DOI))
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error fetching available seats by schedule", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return availableSeatsCount;
+    }
+
+
+
 }

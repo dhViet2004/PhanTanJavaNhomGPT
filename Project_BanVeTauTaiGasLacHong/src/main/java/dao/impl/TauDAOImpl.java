@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import lombok.AllArgsConstructor;
 import model.Tau;
+import model.LichTrinhTau;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
@@ -84,6 +85,43 @@ public class TauDAOImpl extends UnicastRemoteObject implements TauDAO {
         return tau;
     }
 
+    public Tau getTauByLichTrinhTau(LichTrinhTau lichTrinh) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        Tau tau = null;
+
+        try {
+            tx.begin();
+
+            // Query to fetch a single Tau associated with the given LichTrinhTau
+            String jpql = "SELECT t FROM Tau t JOIN t.LichTrinhTau lt WHERE lt = :lichTrinh";
+            tau = em.createQuery(jpql, Tau.class)
+                    .setParameter("lichTrinh", lichTrinh)
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (jakarta.persistence.NoResultException e) {
+            // No result found, return null
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("No Tau found for the given LichTrinhTau.");
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Error fetching Tau by LichTrinhTau: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Error fetching Tau by LichTrinhTau", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return tau;
+    }
+
     public boolean save(Tau t) {
         EntityManager em = JPAUtil.getEntityManager();
         EntityTransaction tr = em.getTransaction();
@@ -129,5 +167,6 @@ public class TauDAOImpl extends UnicastRemoteObject implements TauDAO {
         }
         return false;
     }
+
 
 }

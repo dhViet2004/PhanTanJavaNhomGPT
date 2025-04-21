@@ -2,7 +2,10 @@ package dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
+import model.LichTrinhTau;
 import model.LoaiCho;
+import model.TrangThaiVeTau;
 import util.JPAUtil;
 
 import java.util.List;
@@ -61,6 +64,45 @@ public class LoaiChoDAOImpl {
         return false;
     }
 
+    public long getAvailableSeatsCount(LichTrinhTau lichTrinhTau) {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long availableSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count available seats for the given LichTrinhTau
+            String jpql = """
+                SELECT COUNT(cn)
+                FROM ChoNgoi cn
+                LEFT JOIN cn.veTau vt
+                WHERE (vt IS NULL OR vt.trangThai IN (:returned, :exchanged))
+                AND vt.lichTrinhTau = :lichTrinhTau
+            """;
+
+            TypedQuery<Long> query = em.createQuery(jpql, Long.class);
+            query.setParameter("returned", TrangThaiVeTau.DA_TRA);
+            query.setParameter("exchanged", TrangThaiVeTau.DA_DOI);
+            query.setParameter("lichTrinhTau", lichTrinhTau);
+
+            availableSeatsCount = query.getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return availableSeatsCount;
+    }
+
     public boolean delete(String id) {
         EntityTransaction tr = em.getTransaction();
         try {
@@ -77,4 +119,6 @@ public class LoaiChoDAOImpl {
         }
         return false;
     }
+
+
 }

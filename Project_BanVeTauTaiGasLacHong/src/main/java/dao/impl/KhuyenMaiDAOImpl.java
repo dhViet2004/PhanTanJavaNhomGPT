@@ -86,4 +86,5 @@ public class KhuyenMaiDAOImpl {
                 .setParameter("today", LocalDate.now())
                 .getResultList();
     }
+
 }
