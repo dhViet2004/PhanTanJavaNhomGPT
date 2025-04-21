@@ -25,7 +25,7 @@ public class ChatbotDialog extends JDialog {
         setLayout(new BorderLayout());
         setAlwaysOnTop(true);
 
-        // Panel tiêu đề với gradient và nút thu nhỏ
+        // Panel tiêu đề với gradient và nút thu nhỏ và nút đóng
         JPanel titlePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -46,6 +46,11 @@ public class ChatbotDialog extends JDialog {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titlePanel.add(titleLabel, BorderLayout.WEST);
 
+        // Tạo panel chứa nút thu nhỏ và nút đóng
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        buttonPanel.setOpaque(false);
+
         // Nút thu nhỏ
         JButton minimizeButton = new JButton("−");
         minimizeButton.setForeground(Color.WHITE);
@@ -59,7 +64,25 @@ public class ChatbotDialog extends JDialog {
                 toggleDialogSize();
             }
         });
-        titlePanel.add(minimizeButton, BorderLayout.EAST);
+        buttonPanel.add(minimizeButton);
+
+        // Nút đóng (Dấu "X")
+        JButton closeButton = new JButton("×");
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBackground(new Color(41, 128, 185));
+        closeButton.setBorderPainted(false);
+        closeButton.setFocusPainted(false);
+        closeButton.setContentAreaFilled(false);
+        closeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose(); // Đóng hộp thoại
+            }
+        });
+        buttonPanel.add(closeButton);
+
+        // Thêm panel chứa nút vào tiêu đề
+        titlePanel.add(buttonPanel, BorderLayout.EAST);
 
         // Thêm sự kiện click để mở rộng khi nhấn vào toàn bộ tiêu đề
         titlePanel.addMouseListener(new MouseAdapter() {
@@ -73,8 +96,6 @@ public class ChatbotDialog extends JDialog {
 
         // Tạo panel chatbot và đảm bảo không hiện chữ "Trợ lý ảo" bên trong
         chatbotPanel = new AIAssistantPanel();
-        // Nếu AIAssistantPanel có phương thức để ẩn tiêu đề, bạn có thể gọi nó ở đây
-        // Ví dụ: chatbotPanel.hideTitle();
 
         // Thêm các thành phần vào dialog
         add(new RoundedPanel(titlePanel), BorderLayout.NORTH);

@@ -9,6 +9,8 @@ import util.JPAUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class KhachHangDAOImpl extends UnicastRemoteObject implements KhachHangDAO {
@@ -321,6 +323,126 @@ public List<KhachHang> filterByType(String typeName) throws RemoteException {
             }
         }
     }
+
+    @Override
+    public boolean add(KhachHang newCustomer) throws RemoteException {
+        // Kiểm tra xem newCustomer có null không
+        if (newCustomer == null) {
+            return false;
+        }
+
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // Tạo mã khách hàng tự động nếu chưa có, sử dụng quy tắc mới
+            if (newCustomer.getMaKhachHang() == null || newCustomer.getMaKhachHang().trim().isEmpty()) {
+                // Sử dụng phương thức mới để sinh mã khách hàng
+                String customerId = generateCustomerId();
+                newCustomer.setMaKhachHang(customerId);
+            }
+
+            // Đặt điểm tích lũy ban đầu là 0 nếu chưa được thiết lập
+            if (newCustomer.getDiemTichLuy() == 0) {
+                newCustomer.setDiemTichLuy(0.0);
+            }
+
+            // Thiết lập ngày tham gia là ngày hiện tại nếu chưa có
+            if (newCustomer.getNgayThamgGia() == null) {
+                newCustomer.setNgayThamgGia(LocalDate.now());
+            }
+
+            // Thiết lập hạng thành viên mặc định chỉ khi không có giá trị
+            if (newCustomer.getHangThanhVien() == null || newCustomer.getHangThanhVien().isEmpty()) {
+                // CHỈ thiết lập giá trị mặc định khi trường này trống hoặc null
+                newCustomer.setHangThanhVien("Vãng lai");
+            }
+
+            // Các kiểm tra tính hợp lệ khác...
+            // (Giữ nguyên code kiểm tra các trường bắt buộc)
+
+            // Lưu khách hàng mới vào cơ sở dữ liệu
+            em.persist(newCustomer);
+            tx.commit();
+
+            return true;
+        } catch (Exception e) {
+            // Rollback giao dịch nếu có lỗi
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+
+            System.err.println("Lỗi khi thêm khách hàng mới: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi thêm khách hàng mới: " + e.getMessage(), e);
+        } finally {
+            // Đóng EntityManager khi hoàn thành
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    private String generateCustomerId() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // Lấy ngày hiện tại và định dạng thành dd/mm/yyyy
+            LocalDate today = LocalDate.now();
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMyyyy");
+            String dateString = today.format(dateFormatter);
+
+            // Tìm mã khách hàng lớn nhất của ngày hôm nay
+            String jpql = "SELECT k.maKhachHang FROM KhachHang k WHERE k.maKhachHang LIKE :pattern ORDER BY k.maKhachHang DESC";
+            String pattern = "KH" + dateString + "%";
+
+            List<String> ids = em.createQuery(jpql, String.class)
+                    .setParameter("pattern", pattern)
+                    .setMaxResults(1)
+                    .getResultList();
+
+            int sequence = 1; // Giá trị mặc định nếu không tìm thấy mã nào
+
+            if (!ids.isEmpty()) {
+                String lastId = ids.get(0);
+                try {
+                    // Trích xuất phần số cuối cùng (XXXX) từ mã
+                    String sequencePart = lastId.substring(lastId.length() - 4);
+                    sequence = Integer.parseInt(sequencePart) + 1;
+                } catch (Exception e) {
+                    // Nếu có lỗi khi parse, sử dụng giá trị mặc định
+                    System.err.println("Không thể parse mã khách hàng: " + e.getMessage());
+                }
+            }
+
+            // Định dạng số thứ tự với 4 chữ số và padding zero nếu cần
+            String sequenceStr = String.format("%04d", sequence);
+
+            // Tạo mã khách hàng mới: KH + dd/mm/yyyy + XXXX
+            String newId = "KH" + dateString + sequenceStr;
+
+            tx.commit();
+            return newId;
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi tạo mã khách hàng: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi tạo mã khách hàng", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
 //    @Override
 //    public KhachHang getById(String id) {
 //        return null;

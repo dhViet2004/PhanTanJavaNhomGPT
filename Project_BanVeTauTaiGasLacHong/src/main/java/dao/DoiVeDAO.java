@@ -1,6 +1,7 @@
 package dao;
 
 import model.ChoNgoi;
+import model.KhachHang;
 import model.TrangThaiVeTau;
 import model.VeTau;
 
@@ -20,4 +21,5 @@ public interface DoiVeDAO extends Remote {
     boolean huyVe(String maVe) throws RemoteException;
     boolean thanhToanVe(String maVe) throws RemoteException;
     boolean capNhatTrangThaiVe(String maVe, TrangThaiVeTau trangThai) throws RemoteException;
+    KhachHang getKhachHangByMaVe(String maVe) throws RemoteException;
 }

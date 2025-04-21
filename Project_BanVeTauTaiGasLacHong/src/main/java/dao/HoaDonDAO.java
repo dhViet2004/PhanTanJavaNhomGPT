@@ -1,9 +1,11 @@
 package dao;
 
 import model.HoaDon;
+import model.LoaiHoaDon;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -30,4 +32,7 @@ public interface HoaDonDAO extends Remote {
 
     // Retrieve invoices by customer ID
     List<HoaDon> getByCustomerId(String customerId) throws RemoteException;
+
+    String generateMaHoaDon(LocalDate ngay) throws RemoteException;
+    LoaiHoaDon getLoaiHoaDonById(String maLoaiHD) throws RemoteException;
 }

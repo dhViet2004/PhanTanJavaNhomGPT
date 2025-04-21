@@ -7,24 +7,45 @@ import model.NhanVien;
 import model.TaiKhoan;
 import util.JPAUtil;
 
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
+
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
  * @Class: NhanVienDAO
  * @Tạo vào ngày: 18/01/2025
  * @Tác giả: Nguyen Huu Sang
  */
-@AllArgsConstructor
-public class NhanVienDAOImpl {
+//@AllArgsConstructor
+public class NhanVienDAOImpl extends UnicastRemoteObject implements dao.NhanVienDAO, Serializable {
     private EntityManager em;
-    public NhanVienDAOImpl() {
+    public NhanVienDAOImpl() throws RemoteException {
         this.em = JPAUtil.getEntityManager();;
     }
-    public NhanVien getnhanvienById(String id) {
+    @Override
+    public NhanVien getnhanvienById(String id) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         return em.find(NhanVien.class, id);
     }
-
-    public boolean save(NhanVien nv) {
+    public boolean testConnection() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            em.createQuery("SELECT 1").getResultList();
+            return true;
+        } catch (Exception e) {
+            System.err.println("Lỗi kiểm tra kết nối: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+    @Override
+    public boolean save(NhanVien nv) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -46,7 +67,8 @@ public class NhanVienDAOImpl {
         return false;
     }
 
-    public boolean update(NhanVien nv) {
+    @Override
+    public boolean update(NhanVien nv) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -60,7 +82,8 @@ public class NhanVienDAOImpl {
         return false;
     }
 
-    public boolean delete(String id) {
+    @Override
+    public boolean delete(String id) throws RemoteException {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -81,5 +104,11 @@ public class NhanVienDAOImpl {
         }
         return false;
     }
+
+    @Override
+    public List<NhanVien> getAllNhanVien() throws RemoteException {
+        return em.createQuery("from NhanVien nv", NhanVien.class).getResultList();
+    }
+
 
 }

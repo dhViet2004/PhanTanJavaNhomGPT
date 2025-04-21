@@ -1813,7 +1813,7 @@ public class ChatbotEngine {
      */
     public void loadTrainingData() {
         try {
-            File trainingFile = new File("training_data.json");
+            File trainingFile = new File("js/training_data.json");
             if (!trainingFile.exists()) {
                 LOGGER.warning("File training_data.json không tồn tại. Tạo file mặc định...");
                 createDefaultTrainingData();
@@ -1821,7 +1821,7 @@ public class ChatbotEngine {
             }
 
             // Đọc file JSON chứa các cặp câu hỏi-câu trả lời
-            String jsonContent = new String(Files.readAllBytes(Paths.get("training_data.json")));
+            String jsonContent = new String(Files.readAllBytes(Paths.get("js/training_data.json")));
             JSONObject trainingData = new JSONObject(jsonContent);
 
             // Xử lý dữ liệu intents
@@ -2188,7 +2188,7 @@ public class ChatbotEngine {
             trainingData.put("responses", responses);
 
             // Lưu file
-            try (FileWriter file = new FileWriter("training_data.json")) {
+            try (FileWriter file = new FileWriter("js/training_data.json")) {
                 file.write(trainingData.toString(4)); // indent = 4 spaces
                 LOGGER.info("Đã tạo file training_data.json mặc định");
             }

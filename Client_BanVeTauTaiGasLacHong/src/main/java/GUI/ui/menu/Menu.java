@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Rectangle2D;
 import java.net.URL;
+import java.rmi.RemoteException;
 
 public class Menu extends JComponent {
 
@@ -28,6 +29,7 @@ public class Menu extends JComponent {
             {"Quản lý lịch trình tàu"},
             {"Tra cứu", "Tra cứu vé", "Tra cứu theo tuyến", "Tra cứu hóa đơn", "Tra cứu theo chuyến"},
             {"Thống kê", "Doanh thu theo ca", "Lượng vé theo thời gian", "Doanh thu bán vé"},
+            {"Quản lý nhân viên"}
     };
 
     public Menu() {
@@ -81,7 +83,11 @@ public class Menu extends JComponent {
                     }
                 } else {
                     if (event != null) {
-                        event.selected(index, 0);
+                        try {
+                            event.selected(index, 0);
+                        } catch (RemoteException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }
@@ -102,7 +108,11 @@ public class Menu extends JComponent {
                     resetAllMenuItemsActiveState();
                     subItem.setActive(true); // Đặt submenu item là active
                     if (event != null) {
-                        event.selected(index, subItem.getIndex());
+                        try {
+                            event.selected(index, subItem.getIndex());
+                        } catch (RemoteException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             });

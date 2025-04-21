@@ -34,6 +34,12 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
 
     private ChoNgoiSelectorCallback callback;
 
+    // Màu sắc cho các trạng thái ghế
+    private final Color COLOR_EMPTY = Color.WHITE;
+    private final Color COLOR_OCCUPIED = new Color(220, 53, 69); // Đỏ
+    private final Color COLOR_SELECTED = new Color(40, 167, 69); // Xanh lá
+    private final Color COLOR_REPAIR = Color.GRAY;
+
     public ChoNgoiSelectorDialog(Frame owner, LichTrinhTau lichTrinhTau,
                                  ChoNgoiDoiVeDAO choNgoiDAO, ToaTauDoiVeDAO toaTauDAO,
                                  ChoNgoiSelectorCallback callback) {
@@ -107,13 +113,59 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
         pnlSelectToa.add(cboToaTau);
         add(pnlSelectToa, BorderLayout.NORTH);
 
-        // Panel hiển thị chỗ ngồi
+        // Panel thông tin lịch trình (bên phải)
+        JPanel pnlInfo = new JPanel();
+        pnlInfo.setLayout(new BoxLayout(pnlInfo, BoxLayout.Y_AXIS));
+        pnlInfo.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Tiêu đề thông tin
+        JLabel lblTitle = new JLabel("<html><h3>Thông tin lịch trình:</h3></html>");
+        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlInfo.add(lblTitle);
+
+        // Thêm thông tin lịch trình
+        JPanel pnlLichTrinh = new JPanel(new GridLayout(5, 1, 5, 5));
+        pnlLichTrinh.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlLichTrinh.setOpaque(false);
+
+        pnlLichTrinh.add(new JLabel("Mã lịch: " + lichTrinhTau.getMaLich()));
+        pnlLichTrinh.add(new JLabel("Ngày đi: " + lichTrinhTau.getNgayDi()));
+        pnlLichTrinh.add(new JLabel("Giờ đi: " + lichTrinhTau.getGioDi()));
+        pnlLichTrinh.add(new JLabel("Tuyến: " +
+                lichTrinhTau.getTau().getTuyenTau().getGaDi() + " - " +
+                lichTrinhTau.getTau().getTuyenTau().getGaDen()));
+
+        pnlInfo.add(pnlLichTrinh);
+        pnlInfo.add(Box.createVerticalGlue()); // Đẩy nội dung lên trên
+
+        add(pnlInfo, BorderLayout.EAST);
+
+        // Panel hiển thị chỗ ngồi ở giữa
         pnlChoNgoi = new JPanel();
         pnlChoNgoi.setLayout(new GridLayout(0, 8, 10, 10)); // 8 chỗ ngồi mỗi hàng
         JScrollPane scrollPane = new JScrollPane(pnlChoNgoi);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         add(scrollPane, BorderLayout.CENTER);
 
-        // Panel nút điều khiển
+        // Panel bottom chứa nút điều khiển và chú thích màu sắc
+        JPanel pnlBottom = new JPanel(new BorderLayout());
+
+        // Panel chú thích màu sắc (nằm ở bottom-center)
+        JPanel pnlChuThich = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlChuThich.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(5, 0, 5, 0),
+                BorderFactory.createTitledBorder("Chú thích:")
+        ));
+
+        // Tạo các ô màu cho chú thích với kích thước nhỏ hơn và layout ngang
+        addColorLegendItem(pnlChuThich, "Trống", COLOR_EMPTY);
+        addColorLegendItem(pnlChuThich, "Đã đặt", COLOR_OCCUPIED);
+        addColorLegendItem(pnlChuThich, "Đang chọn", COLOR_SELECTED);
+        addColorLegendItem(pnlChuThich, "Đang sửa chữa", COLOR_REPAIR);
+
+        pnlBottom.add(pnlChuThich, BorderLayout.CENTER);
+
+        // Panel nút điều khiển (nằm ở bottom-east)
         JPanel pnlControls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnXacNhan = new JButton("Xác nhận");
         btnXacNhan.addActionListener(e -> xacNhanChonChoNgoi());
@@ -127,53 +179,33 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
 
         pnlControls.add(btnXacNhan);
         pnlControls.add(btnHuy);
-        add(pnlControls, BorderLayout.SOUTH);
 
-        // Panel thông tin
-        JPanel pnlInfo = new JPanel();
-        pnlInfo.setLayout(new BoxLayout(pnlInfo, BoxLayout.Y_AXIS));
-        pnlInfo.add(new JLabel("<html><h3>Thông tin lịch trình:</h3></html>"));
-        pnlInfo.add(new JLabel("Mã lịch: " + lichTrinhTau.getMaLich()));
-        pnlInfo.add(new JLabel("Ngày đi: " + lichTrinhTau.getNgayDi()));
-        pnlInfo.add(new JLabel("Giờ đi: " + lichTrinhTau.getGioDi()));
-        pnlInfo.add(new JLabel("Tuyến: " +
-                lichTrinhTau.getTau().getTuyenTau().getGaDi() + " - " +
-                lichTrinhTau.getTau().getTuyenTau().getGaDen()));
+        pnlBottom.add(pnlControls, BorderLayout.EAST);
 
-        // Chú thích màu sắc
-        pnlInfo.add(Box.createVerticalStrut(20));
-        pnlInfo.add(new JLabel("<html><h3>Chú thích:</h3></html>"));
+        add(pnlBottom, BorderLayout.SOUTH);
+    }
 
-        JPanel pnlChuThich = new JPanel(new GridLayout(4, 2, 5, 5));
+    // Phương thức hỗ trợ thêm mục vào chú thích màu sắc
+    private void addColorLegendItem(JPanel panel, String text, Color color) {
+        // Tạo panel con để chứa màu và text
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        item.setOpaque(false);
 
-        JPanel pnlTrong = new JPanel();
-        pnlTrong.setBackground(Color.WHITE);
-        pnlTrong.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        pnlChuThich.add(new JLabel("Trống: ", JLabel.RIGHT));
-        pnlChuThich.add(pnlTrong);
+        // Tạo panel màu
+        JPanel colorBox = new JPanel();
+        colorBox.setPreferredSize(new Dimension(20, 20));
+        colorBox.setBackground(color);
+        colorBox.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        JPanel pnlDaDat = new JPanel();
-        pnlDaDat.setBackground(Color.RED);
-        pnlDaDat.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        pnlChuThich.add(new JLabel("Đã đặt: ", JLabel.RIGHT));
-        pnlChuThich.add(pnlDaDat);
+        // Tạo label text
+        JLabel label = new JLabel(text);
 
-        JPanel pnlDaChon = new JPanel();
-        pnlDaChon.setBackground(Color.GREEN);
-        pnlDaChon.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        pnlChuThich.add(new JLabel("Đang chọn: ", JLabel.RIGHT));
-        pnlChuThich.add(pnlDaChon);
+        // Thêm vào panel item
+        item.add(colorBox);
+        item.add(label);
 
-        JPanel pnlSuaChua = new JPanel();
-        pnlSuaChua.setBackground(Color.GRAY);
-        pnlSuaChua.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        pnlChuThich.add(new JLabel("Đang sửa chữa: ", JLabel.RIGHT));
-        pnlChuThich.add(pnlSuaChua);
-
-        pnlInfo.add(pnlChuThich);
-
-        pnlInfo.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(pnlInfo, BorderLayout.EAST);
+        // Thêm panel item vào panel chính
+        panel.add(item);
     }
 
     private void loadToaTau() {
@@ -252,6 +284,15 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
         btn.setFont(new Font("Arial", Font.BOLD, 12));
         btn.setPreferredSize(new Dimension(80, 80));
 
+        // Cải thiện giao diện của button ghế
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setFocusPainted(false);
+
+        // Thiết lập màu nền và viền
+        btn.setContentAreaFilled(true);
+        btn.setBorderPainted(true);
+        btn.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 1));
+
         // Thiết lập màu sắc và trạng thái
         updateChoNgoiButtonState(btn, choNgoi);
 
@@ -294,7 +335,7 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
                     if (success) {
                         choNgoiDaChon = choNgoi;
                         btnXacNhan.setEnabled(true);
-                        btn.setBackground(Color.GREEN);
+                        btn.setBackground(COLOR_SELECTED);
                     } else {
                         btn.setSelected(false);
                         JOptionPane.showMessageDialog(this,
@@ -329,10 +370,7 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
             // Kiểm tra tình trạng chỗ ngồi (có thể sử dụng hay đang sửa chữa)
             if (!choNgoi.isTinhTrang()) {
                 // Chỗ ngồi đang sửa chữa (tinh_trang = false)
-                btn.setBackground(Color.GRAY);
-                btn.setEnabled(false);
-                btn.setSelected(false);
-                btn.setToolTipText("Chỗ ngồi đang sửa chữa");
+                setButtonState(btn, COLOR_REPAIR, false, "Chỗ ngồi đang sửa chữa");
                 return;
             }
 
@@ -341,22 +379,16 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
 
             if (daDat) {
                 // Chỗ ngồi đã được đặt trong cùng lịch trình
-                btn.setBackground(Color.RED);
-                btn.setEnabled(false);
-                btn.setSelected(false);
-                btn.setToolTipText("Chỗ ngồi đã được đặt");
+                setButtonState(btn, COLOR_OCCUPIED, false, "Chỗ ngồi đã được đặt");
             } else {
                 // Chỗ ngồi trống và có thể đặt
-                btn.setBackground(Color.WHITE);
-                btn.setEnabled(true);
-                btn.setToolTipText("Chỗ ngồi trống");
+                setButtonState(btn, COLOR_EMPTY, true, "Chỗ ngồi trống");
             }
 
             // Nếu đây là chỗ ngồi đang chọn
             if (choNgoiDaChon != null && choNgoi.getMaCho().equals(choNgoiDaChon.getMaCho())) {
-                btn.setBackground(Color.GREEN);
+                setButtonState(btn, COLOR_SELECTED, true, "Chỗ ngồi đang chọn");
                 btn.setSelected(true);
-                btn.setToolTipText("Chỗ ngồi đang chọn");
             }
 
             // Hiển thị thông tin giá khi hover
@@ -371,9 +403,22 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
 
         } catch (RemoteException e) {
             e.printStackTrace();
-            btn.setBackground(Color.LIGHT_GRAY);
-            btn.setToolTipText("Không thể xác định trạng thái");
+            setButtonState(btn, Color.LIGHT_GRAY, false, "Không thể xác định trạng thái");
         }
+    }
+
+    // Phương thức hỗ trợ thiết lập trạng thái cho button
+    private void setButtonState(JToggleButton btn, Color bgColor, boolean enabled, String tooltip) {
+        btn.setBackground(bgColor);
+        btn.setEnabled(enabled);
+        if (!enabled) {
+            btn.setSelected(false);
+        }
+
+        // Cập nhật UI ngay lập tức để đảm bảo màu sắc được áp dụng đúng
+        SwingUtilities.invokeLater(() -> {
+            btn.repaint();
+        });
     }
 
     private void xacNhanChonChoNgoi() {
@@ -440,6 +485,7 @@ public class ChoNgoiSelectorDialog extends JDialog implements ChoNgoiCallback {
                                     "Thông báo", JOptionPane.WARNING_MESSAGE);
                         }
 
+                        // Cập nhật màu sắc và trạng thái của button
                         updateChoNgoiButtonState(btn, choNgoi);
                     }
                 } catch (Exception e) {

@@ -1,12 +1,14 @@
 package GUI.ui.main;
 
-import GUI.component.DoiVePanel;
-import GUI.component.HomeForm;
-import GUI.component.LichTrinhTauPanel;
+import GUI.component.*;
 import GUI.ui.menu.MenuEvent;
+import dao.NhanVienDAO;
+import dao.impl.NhanVienDAOImpl;
+import model.NhanVien;
 
 import javax.swing.*;
 import java.awt.*;
+import java.rmi.RemoteException;
 
 /**
  *
@@ -26,16 +28,22 @@ public class Main extends javax.swing.JFrame {
 
         menu1.setEvent(new MenuEvent() {
             @Override
-            public void selected(int index, int subIndex) {
+            public void selected(int index, int subIndex) throws RemoteException {
                 if (index == 0) {
                     showForm(new HomeForm());
                 }
                 else if (index == 3){
                     showForm(new LichTrinhTauPanel());
                 } else if (index == 2 && subIndex == 1) {
-                    showForm(new DoiVePanel());
-                } else {
-
+                    NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+                    NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
+                    showForm(new DoiVePanel(nhanVien));
+                } else if (index == 4 && subIndex == 1) {
+                    showForm(new TraCuuVePanel());
+                } else if (index == 6) {
+                    showForm(new QuanLyNhanVienPanel());
+                } else if (index == 5 && subIndex == 2) {
+                    showForm(new ThongKeVePanel());
                 }
             }
         });
@@ -172,7 +180,11 @@ public class Main extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new Main().setVisible(true);
+
+//                new Main().setVisible(true);
+                Loading loading  = new Loading();
+                loading.setVisible(true);
+
             }
         });
     }

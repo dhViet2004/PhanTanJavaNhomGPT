@@ -1,10 +1,13 @@
 package dao;
 
+import model.HoaDon;
+import model.KhachHang;
 import model.VeTau;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Dự án: PhanTanJavaNhomGPT
@@ -21,5 +24,8 @@ public interface VeTauDAO extends Remote {
     List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException;
 
     boolean updateStatusToReturned(String ticketId) throws RemoteException;
+    HoaDon getHoaDonThanhToanByMaVe(String maVe) throws RemoteException;
+    KhachHang getKhachHangByMaVe(String maVe) throws RemoteException;
 
+    Map<String, String> getThongTinGaByMaVe(String maVe) throws RemoteException;
 }

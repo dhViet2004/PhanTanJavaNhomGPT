@@ -4,11 +4,7 @@ import dao.DoiVeDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.NoResultException;
-import model.ChoNgoi;
-import model.KhuyenMai;
-import model.LichTrinhTau;
-import model.TrangThaiVeTau;
-import model.VeTau;
+import model.*;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
@@ -469,5 +465,60 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
                 em.close();
             }
         }
+    }
+
+    // Add this method to your existing DoiVeDAOImpl class
+
+    @Override
+    public KhachHang getKhachHangByMaVe(String maVe) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        KhachHang khachHang = null;
+
+        try {
+            tx.begin();
+
+            // For native queries with named parameters, use :name notation
+            String nativeQuery =
+                    "SELECT kh.* FROM khachhang kh " +
+                            "JOIN hoadon hd ON hd.ma_khach_hang = kh.ma_khach_hang " +
+                            "JOIN chitiet_hoadon cthd ON cthd.ma_hd = hd.ma_hd " +
+                            "WHERE cthd.ma_ve = ?";
+
+            try {
+                khachHang = (KhachHang) em.createNativeQuery(nativeQuery, KhachHang.class)
+                        .setParameter(1, maVe)
+                        .getSingleResult();
+
+                // Ensure related data is loaded if needed
+                if (khachHang != null) {
+                    khachHang.getMaKhachHang(); // Trigger loading
+
+                    // If you need to load the loaiKhachHang relation
+                    if (khachHang.getLoaiKhachHang() != null) {
+                        khachHang.getLoaiKhachHang().getMaLoaiKhachHang();
+                    }
+                }
+
+            } catch (NoResultException e) {
+                // No customer found for this ticket
+                return null;
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi tìm khách hàng từ mã vé: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi tìm khách hàng từ mã vé: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return khachHang;
     }
 }
