@@ -1,7 +1,7 @@
-package GUI.component;
+package GUI.component.guiClient;
 
 import com.toedter.calendar.JDateChooser;
-import dao.NhanVienDAO;
+import dao.*;
 import dao.impl.NhanVienDAOImpl;
 import model.NhanVien;
 
@@ -68,9 +68,9 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
             Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");
             // Thông báo kết nối thành công sau khi lookup thành công
-            JOptionPane.showMessageDialog(this,
-                    "Kết nối đến server RMI thành công!",
-                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+//            JOptionPane.showMessageDialog(this,
+//                    "Kết nối đến server RMI thành công!",
+//                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             // Lấy dữ liệu sau khi lookup thành công (coi như kết nối RMI thành công)
             try {
                 List<NhanVien> dataFromServer = nhanVienDAO.getAllNhanVien();
@@ -1040,6 +1040,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         return !txtTenNV.getText().isEmpty() && !txtSoDT.getText().isEmpty() && !txtCCCD.getText().isEmpty() && !txtDiaChi.getText().isEmpty();
     }
 
+//    @SneakyThrows
     public void taiLaiDanhSachNhanVien() {
         danhSachPanel.removeAll();
 

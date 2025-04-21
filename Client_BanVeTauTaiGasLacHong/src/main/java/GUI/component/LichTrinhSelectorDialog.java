@@ -142,7 +142,7 @@ public class LichTrinhSelectorDialog extends JDialog {
 
     private void initComponents() {
         setLayout(new BorderLayout(10, 10));
-        setSize(1000, 600);
+        setSize(970, 670);
         setLocationRelativeTo(getOwner());
 
         // Thiết lập giao diện với Look and Feel hiện đại
@@ -657,7 +657,7 @@ public class LichTrinhSelectorDialog extends JDialog {
         // Panel chính
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        panel.setPreferredSize(new Dimension(300, 180));
+        panel.setPreferredSize(new Dimension(300, 200));
         panel.setBorder(new LineBorder(lichTrinh.equals(lichTrinhDaChon) ? primaryColor : new Color(220, 220, 220), lichTrinh.equals(lichTrinhDaChon) ? 2 : 1));
         panel.setBackground(Color.WHITE);
 

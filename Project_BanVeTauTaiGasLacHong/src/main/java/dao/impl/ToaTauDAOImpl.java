@@ -6,9 +6,10 @@ import lombok.AllArgsConstructor;
 import model.ToaTau;
 import util.JPAUtil;
 
+import java.rmi.RemoteException;
 import java.util.List;
 @AllArgsConstructor
-public class ToaTauDAOImpl {
+public class ToaTauDAOImpl implements dao.ToaTauDAO {
     private EntityManager em ;
     public ToaTauDAOImpl(){
         this.em = JPAUtil.getEntityManager();
@@ -38,7 +39,7 @@ public class ToaTauDAOImpl {
         }
         return listToaTau;
     }
-
+    @Override
     public ToaTau getToaTauById(String id) {
         return em.find(ToaTau.class, id);
     }
@@ -85,4 +86,28 @@ public class ToaTauDAOImpl {
         }
         return false;
     }
+
+
+    @Override
+    public List<ToaTau> getToaByTau(String maTau) throws RemoteException {
+        EntityTransaction tx = em.getTransaction();
+        List<ToaTau> toaTauList = null;
+
+        try {
+            tx.begin();
+            String jpql = "SELECT tt FROM ToaTau tt WHERE tt.tau.maTau = :maTau";
+            toaTauList = em.createQuery(jpql, ToaTau.class)
+                    .setParameter("maTau", maTau)
+                    .getResultList();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+        }
+
+        return toaTauList;
+    }
+
 }
