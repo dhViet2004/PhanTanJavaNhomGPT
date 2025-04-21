@@ -122,4 +122,15 @@ VALUES
 select hoadon.ma_khach_hang from chitiet_hoadon
 join hoadon on hoadon.ma_hd = chitiet_hoadon.ma_hd
 join khachhang on khachhang.ma_khach_hang = hoadon.ma_khach_hang
-where ma_ve = 'LLT20250418192106-013-004'
+where ma_ve = 'LLT20250418192106-013-004';
+
+select * from toatau where ma_tau = 'T1';
+select * from cho_ngoi where toa_tau_ma_toa = 'T19';
+
+UPDATE cho_ngoi
+SET gia_tien = 400000
+WHERE toa_tau_ma_toa = 'T19';
+
+UPDATE cho_ngoi
+SET loaicho_maloai = 'LC01'
+WHERE toa_tau_ma_toa = 'T19';
