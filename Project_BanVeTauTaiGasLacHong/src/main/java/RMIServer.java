@@ -33,6 +33,7 @@ public class RMIServer {
             NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
             TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
             TraCuuVeDAO traCuuVeDAO = new TraCuuVeDAOImpl();
+            ThongKeDAO thongKeDAO = new ThongKeDAOImpl();
             // Tạo registry
             Registry registry = LocateRegistry.createRegistry(9090);
 
@@ -54,7 +55,7 @@ public class RMIServer {
             registry.rebind("nhanVienDAO",nhanVienDAO);
             registry.rebind("taiKhoanDAO",taiKhoanDAO);
             registry.rebind("traCuuVeDAO", traCuuVeDAO);
-
+            registry.rebind("thongKeDAO", thongKeDAO);
 
             System.out.println("RMI Server đã sẵn sàng!");
             System.out.println("Registry đang chạy tại rmi://127.0.0.1:9090");
@@ -75,6 +76,7 @@ public class RMIServer {
             System.out.println("- nhanVienDAO");
             System.out.println("- taiKhoanDAO");
             System.out.println("- traCuuVeDAO");
+            System.out.println("- thongKeDAO");
 
             System.out.println("Server đang lắng nghe...");
 

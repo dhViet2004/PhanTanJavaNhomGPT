@@ -105,7 +105,8 @@ public class MainGUI extends JFrame {
 
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
-                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên"
+                "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên",
+                "Thống kê số lượng vé theo thời gian"
         };
 
         for (String item : menuItems) {
@@ -395,6 +396,44 @@ public class MainGUI extends JFrame {
                         try {
                             // Lấy panel sau khi đã tạo xong
                             TraCuuVePanel panel = get();
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+            }else if (panelName.equals("Thống kê số lượng vé theo thời gian")) {
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu quản lý vé...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel quản lý vé trong luồng riêng
+                SwingWorker<ThongKeVePanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected ThongKeVePanel doInBackground() {
+                        return new ThongKeVePanel();
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            ThongKeVePanel panel = get();
 
                             // Thêm vào cache và hiển thị
                             contentPanel.add(panel, panelName);
