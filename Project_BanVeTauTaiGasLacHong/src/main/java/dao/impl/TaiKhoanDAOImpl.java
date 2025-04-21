@@ -41,9 +41,9 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
         }
         return false;
     }
-// update password với maNV
-@Override
-public boolean updatePassword(String maNV, String passWord) {
+    // update password với maNV
+    @Override
+    public boolean updatePassword(String maNV, String passWord) {
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -118,8 +118,8 @@ public boolean updatePassword(String maNV, String passWord) {
 
 
     public static void main(String[] args) {
-            TaiKhoanDAOImpl dao = new TaiKhoanDAOImpl();
-            NhanVien vv = dao.checkLogin("NV0003","Abc123.");
+        TaiKhoanDAOImpl dao = new TaiKhoanDAOImpl();
+        NhanVien vv = dao.checkLogin("NV0003","Abc123.");
         System.out.println(vv.toString());
     }
 

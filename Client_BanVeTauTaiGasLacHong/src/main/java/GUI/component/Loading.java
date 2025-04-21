@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import javax.imageio.ImageIO;
 
 public class Loading extends JDialog {
@@ -135,8 +136,15 @@ public class Loading extends JDialog {
             @Override
             protected void done() {
                 dispose();
-                FrmDangNhap frmDangNhap = new FrmDangNhap();
-                frmDangNhap.setVisible(true);
+                FrmDangNhap dn = null;
+
+                try {
+                    dn = new FrmDangNhap();
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
+
+                dn.setVisible(true);
             }
         };
         worker.execute();
