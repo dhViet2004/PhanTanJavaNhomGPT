@@ -37,7 +37,7 @@ public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
     private Color darkTextColor = new Color(52, 73, 94);  // Màu chữ tối
     private Color hoverColor = new Color(66, 139, 202);
     private Color lightBackground = new Color(240, 240, 240); // Màu nền nhạt
-    private Font labelFont = new Font("Segoe UI", Font.PLAIN, 12); // Font cho label
+    private Font labelFont = new Font("Segoe UI", Font.BOLD, 12); // Font cho label
     private Dimension inputSize = new Dimension(200, 30); // Kích thước cho input
     private Font mediumFont = new Font("Segoe UI", Font.PLAIN, 14);
     private Font bold = new Font("Segoe UI", Font.BOLD, 20);
