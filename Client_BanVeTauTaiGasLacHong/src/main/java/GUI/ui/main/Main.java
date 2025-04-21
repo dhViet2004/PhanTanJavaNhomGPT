@@ -32,18 +32,17 @@ public class Main extends javax.swing.JFrame {
                 if (index == 0) {
                     showForm(new HomeForm());
                 }
-                else if (index == 3){
-                    showForm(new LichTrinhTauPanel());
-                } else if (index == 2 && subIndex == 1) {
+                else if (index == 2 && subIndex == 1) {
                     NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
                     NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
                     showForm(new DoiVePanel(nhanVien));
-                } else if (index == 4 && subIndex == 1) {
-                    showForm(new TraCuuVePanel());
+                }
+                else if (index == 3){
+                    showForm(new LichTrinhTauPanel());
+                } else if (index == 4 && subIndex == 2) {
+                        showForm(new TraCuuTuyenPanel());
                 } else if (index == 6) {
                     showForm(new QuanLyNhanVienPanel());
-                } else if (index == 5 && subIndex == 2) {
-                    showForm(new ThongKeVePanel());
                 }
             }
         });
