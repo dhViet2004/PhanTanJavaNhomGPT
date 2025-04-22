@@ -28,12 +28,16 @@ public class Main extends javax.swing.JFrame {
         // Thiết lập giao diện phẳng
         setupFlatDesign();
 
+        // Hiển thị tên nhân viên ở menu
+        menu1.setTenNhanVien(nhanVien.getTenNV());
+
         // Kiểm tra vai trò của nhân viên và điều chỉnh menu
         if (nhanVien != null && nhanVien.getChucVu().equals("Quản lý")) {
             menu1.enableMenuItem(6, true); // Kích hoạt "Quản lý nhân viên" cho quản lý
+            menu1.enableMenuItem(3, true); // Kích hoạt "Quản lý lịch trình tàu" cho quản lý (ví dụ)
         } else {
             menu1.enableMenuItem(6, false); // Vô hiệu hóa "Quản lý nhân viên" cho nhân viên
-            menu1.enableMenuItem(3, false); // Vô hiệu hóa "Quản lý nhân viên" cho nhân viên
+            menu1.enableMenuItem(3, false); // Vô hiệu hóa "Quản lý lịch trình tàu" cho nhân viên (ví dụ)
         }
 
         menu1.setEvent(new MenuEvent() {

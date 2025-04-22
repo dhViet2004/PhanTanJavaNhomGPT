@@ -34,6 +34,9 @@ public class Menu extends JComponent {
             {"Đăng xuất"}
     };
 
+    private JLabel lblTenNhanVien; // Thêm JLabel để hiển thị tên nhân viên
+    private JPanel bottomPanel; // Panel chứa tên nhân viên
+
     public Menu() {
         init();
     }
@@ -53,7 +56,7 @@ public class Menu extends JComponent {
     }
 
     private void init() {
-        layout = new MigLayout("wrap 1, fillx, gapy 0, inset 2", "fill"); // Giảm gapy
+        layout = new MigLayout("wrap 1, fillx, gapy 0, inset 2", "fill"); // Trở lại layout ban đầu
 
         setLayout(layout);
         setOpaque(true);
@@ -61,6 +64,20 @@ public class Menu extends JComponent {
         for (int i = 0; i < menuItems.length; i++) {
             addMenu(menuItems[i][0], i);
         }
+
+        bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false); // Để màu nền của Menu hiển thị
+        lblTenNhanVien = new JLabel("Chưa đăng nhập"); // Khởi tạo JLabel với giá trị mặc định
+        lblTenNhanVien.setFont(new Font("SansSerif", Font.ITALIC, 14));
+        lblTenNhanVien.setForeground(Color.WHITE);
+        lblTenNhanVien.setHorizontalAlignment(SwingConstants.CENTER);
+        bottomPanel.add(lblTenNhanVien, BorderLayout.SOUTH);
+
+        add(bottomPanel, "dock south, h 30!"); // Thêm panel vào cuối và neo ở phía nam
+    }
+
+    public void setTenNhanVien(String tenNhanVien) {
+        lblTenNhanVien.setText("Nhân viên: " + tenNhanVien);
     }
 
     private Icon getIcon(int index) {
