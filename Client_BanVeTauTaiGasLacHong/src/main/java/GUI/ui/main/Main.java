@@ -19,7 +19,9 @@ public class Main extends javax.swing.JFrame {
     /**
      * Creates new form Main
      */
-    public Main() {
+    private NhanVien nhanVien = new NhanVien();
+    public Main(NhanVien nv) throws RemoteException {
+        nhanVien = nv;
         initComponents();
         setExtendedState(javax.swing.JFrame.MAXIMIZED_BOTH);
 
@@ -140,6 +142,7 @@ public class Main extends javax.swing.JFrame {
 
         pack();
         setLocationRelativeTo(null);
+        System.out.println(nhanVien);
     }// </editor-fold>//GEN-END:initComponents
 
     /**
