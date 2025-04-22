@@ -11,6 +11,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -57,6 +60,10 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     private Color darkTextColor = new Color(52, 73, 94);  // Màu chữ tối
     private Color lightBackground = new Color(240, 240, 240); // Màu nền nhạt
 
+    private IconFactory iconFactory = new IconFactory();
+    private final int BUTTON_ICON_SIZE = 18;
+    private final int BUTTON_HEIGHT = 30;
+
     public QuanLyNhanVienPanel() throws RemoteException {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
@@ -70,9 +77,9 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
             Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");
             // Thông báo kết nối thành công sau khi lookup thành công
-            JOptionPane.showMessageDialog(this,
-                    "Kết nối đến server RMI thành công!",
-                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+//            JOptionPane.showMessageDialog(this,
+//                    "Kết nối đến server RMI thành công!",
+//                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             // Lấy dữ liệu sau khi lookup thành công (coi như kết nối RMI thành công)
             try {
                 List<NhanVien> dataFromServer = nhanVienDAO.getAllNhanVien();
@@ -205,11 +212,17 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
 
 
-            JButton btnXoaNV = new JButton("Xóa");
+//            JButton btnXoaNV = new JButton("Xóa");
 
-            styleButton(btnXoaNV, dangerColor, Color.WHITE, createDeleteIcon(10, 10, Color.WHITE));
+//            styleButton(btnXoaNV, dangerColor, Color.WHITE, createDeleteIcon(10, 10, Color.WHITE));
 
-
+            btnXoaNV = new RoundedButton("Xóa", iconFactory.getWhiteIcon("delete", BUTTON_ICON_SIZE, BUTTON_ICON_SIZE));
+            btnXoaNV.setFont(new Font("Arial", Font.BOLD, 13));
+            btnXoaNV.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnXoaNV.setIconTextGap(8);
+            btnXoaNV.setPreferredSize(new Dimension(100, BUTTON_HEIGHT));
+            btnXoaNV.setBackground(dangerColor);
+            btnXoaNV.setForeground(Color.WHITE);
 
             btnXoaNV.setActionCommand(nv.getMaNV());
 
@@ -417,7 +430,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
 
 
-        String[] labels = {"Mã NV:", "Tên NV:", "SĐT:", "CCCD:", "Địa chỉ:", "Ngày vào:", "Chức vụ:", "Avatar:"};
+        String[] labels = {"Mã NV:", "Tên NV:", "SĐT:", "CCCD:", "Email:", "Ngày vào:", "Chức vụ:", "Avatar:"};
 
         JComponent[] fields = {
 
@@ -520,27 +533,18 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
                 }
 
                 for (Component comp : danhSachPanel.getComponents()) {
-
                     if (comp instanceof JPanel) {
-
-                        JPanel panelNhanVien = (JPanel) comp;
-
-                        if (panelNhanVien.getComponentCount() > 0) {
-
-                            JLabel lbl = (JLabel) panelNhanVien.getComponent(0);
-
-                            if (lbl.getText().equalsIgnoreCase(maTim)) {
-
-                                lbl.dispatchEvent(new MouseEvent(lbl, MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 0, 0, 1, false));
-
+                        JPanel panel = (JPanel) comp;
+                        if (panel.getComponentCount() > 0 && panel.getComponent(0) instanceof JLabel) {
+                            JLabel lbl = (JLabel) panel.getComponent(0);
+                            if (lbl.getText().equals(maTim)) {
+                                danhSachPanel.remove(panel);
+                                danhSachPanel.revalidate();
+                                danhSachPanel.repaint();
                                 break;
-
                             }
-
                         }
-
                     }
-
                 }
 
             } else {
@@ -942,7 +946,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     }
 
     private JComboBox<String> taoComboBox(Font font) {
-        JComboBox<String> cb = new JComboBox<>(new String[]{"Nhân viên", "Quản lý", "Trưởng phòng"});
+        JComboBox<String> cb = new JComboBox<>(new String[]{"Nhân viên", "Quản lý"});
         cb.setFont(font);
         cb.setPreferredSize(new Dimension(200, 30));
         return cb;
@@ -1041,10 +1045,81 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         // Kiểm tra tính hợp lệ của các trường thông tin
         return !txtTenNV.getText().isEmpty() && !txtSoDT.getText().isEmpty() && !txtCCCD.getText().isEmpty() && !txtDiaChi.getText().isEmpty();
     }
+    private class IconFactory {
+        // Tạo và trả về icon xóa theo yêu cầu với màu mặc định
+        public Icon getIcon(String iconName, int width, int height) {
+            if ("delete".equals(iconName)) {
+                return new VectorIcon("delete", width, height);
+            }
+            return null; // Hoặc bạn có thể trả về một icon mặc định khác
+        }
 
+        // Tạo và trả về icon xóa màu trắng (dùng cho các nút có nền màu)
+        public Icon getWhiteIcon(String iconName, int width, int height) {
+            if ("delete".equals(iconName)) {
+                return new VectorIcon("delete", width, height, Color.WHITE);
+            }
+            return null; // Hoặc bạn có thể trả về một icon mặc định khác
+        }
+
+        // Class custom icon sử dụng vector graphics
+        private class VectorIcon implements Icon {
+            private final String iconName;
+            private final int width;
+            private final int height;
+            private final Color forcedColor; // Màu bắt buộc (nếu có)
+
+            public VectorIcon(String iconName, int width, int height) {
+                this.iconName = iconName;
+                this.width = width;
+                this.height = height;
+                this.forcedColor = null; // Không có màu bắt buộc
+            }
+
+            public VectorIcon(String iconName, int width, int height, Color forcedColor) {
+                this.iconName = iconName;
+                this.width = width;
+                this.height = height;
+                this.forcedColor = forcedColor; // Sử dụng màu được chỉ định
+            }
+
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                if ("delete".equals(iconName)) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.translate(x, y);
+
+                    Color iconColor;
+                    if (forcedColor != null) {
+                        iconColor = forcedColor;
+                    } else {
+                        iconColor = c.isEnabled() ? new Color(255, 0, 0) : Color.GRAY; // Màu đỏ mặc định cho xóa
+                    }
+                    g2.setColor(iconColor);
+                    g2.setStroke(new BasicStroke(2));
+
+                    // Vẽ dấu X
+                    g2.draw(new Line2D.Double(4, 4, width - 4, height - 4));
+                    g2.draw(new Line2D.Double(width - 4, 4, 4, height - 4));
+
+                    g2.dispose();
+                }
+            }
+
+            @Override
+            public int getIconWidth() {
+                return width;
+            }
+
+            @Override
+            public int getIconHeight() {
+                return height;
+            }
+        }
+    }
     public void taiLaiDanhSachNhanVien() {
         danhSachPanel.removeAll();
-
         Font textFont = new Font("Arial", Font.PLAIN, 16);
 
         for (NhanVien nv : danhSachNhanVien) {
@@ -1090,11 +1165,49 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
 
             panelNhanVien.add(lblNV, BorderLayout.CENTER);
 
-            JButton btnXoaNV = new JButton("Xóa");
-            styleButton(btnXoaNV, dangerColor, Color.WHITE, createDeleteIcon(10, 10, Color.WHITE));
+            JButton btnXoaNV = new RoundedButton("Xóa", iconFactory.getWhiteIcon("delete", BUTTON_ICON_SIZE, BUTTON_ICON_SIZE));
+            btnXoaNV.setFont(new Font("Arial", Font.BOLD, 13));
+            btnXoaNV.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnXoaNV.setIconTextGap(8);
+            btnXoaNV.setPreferredSize(new Dimension(100, BUTTON_HEIGHT));
+            btnXoaNV.setBackground(dangerColor);
+            btnXoaNV.setForeground(Color.WHITE);
             btnXoaNV.setActionCommand(nv.getMaNV());
             btnXoaNV.addActionListener(e -> {
-                // ... (ActionListener cho nút xóa giữ nguyên)
+                String maNVCanXoa = e.getActionCommand();
+                int option = JOptionPane.showConfirmDialog(QuanLyNhanVienPanel.this, "Bạn có chắc chắn muốn xóa nhân viên có mã " + maNVCanXoa + "?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    boolean isDeleted = false;
+                    try {
+                        isDeleted = nhanVienDAO.delete(maNVCanXoa);
+                    } catch (RemoteException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    if (isDeleted) {
+                        danhSachNhanVien.removeIf(nhanVien -> nhanVien.getMaNV().equals(maNVCanXoa));
+                        for (Component comp : danhSachPanel.getComponents()) {
+                            if (comp instanceof JPanel) {
+                                JPanel panel = (JPanel) comp;
+                                if (panel.getComponentCount() > 0 && panel.getComponent(0) instanceof JLabel) {
+                                    JLabel lbl = (JLabel) panel.getComponent(0);
+                                    if (lbl.getText().equals(maNVCanXoa)) {
+                                        danhSachPanel.remove(panel);
+                                        danhSachPanel.revalidate();
+                                        danhSachPanel.repaint();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        JOptionPane.showMessageDialog(QuanLyNhanVienPanel.this, "Nhân viên có mã " + maNVCanXoa + " đã được xóa.");
+                        if (lblNhanVienDangChon != null && lblNhanVienDangChon.getText().equals(maNVCanXoa)) {
+                            clearThongTinNhanVien();
+                            lblNhanVienDangChon = null;
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(QuanLyNhanVienPanel.this, "Xóa nhân viên không thành công.");
+                    }
+                }
             });
 
             panelNhanVien.add(btnXoaNV, BorderLayout.EAST);
@@ -1105,7 +1218,56 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
         danhSachPanel.repaint();
     }
 
+    class RoundedButton extends JButton {
+        private final int arcWidth = 15;
+        private final int arcHeight = 15;
 
+        public RoundedButton(String text) {
+            super(text);
+            setupButton();
+        }
+
+        public RoundedButton(String text, Icon icon) {
+            super(text, icon);
+            setupButton();
+        }
+
+        private void setupButton() {
+            setContentAreaFilled(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            if (getModel().isPressed()) {
+                g2.setColor(getBackground().darker());
+            } else if (getModel().isRollover()) {
+                Color hoverColor = new Color(66, 139, 202);
+                g2.setColor(hoverColor);
+            } else {
+                g2.setColor(getBackground());
+            }
+
+            g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), arcWidth, arcHeight));
+
+            super.paintComponent(g2);
+            g2.dispose();
+        }
+
+
+        @Override
+        protected void paintBorder(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground().darker());
+            g2.draw(new RoundRectangle2D.Double(0, 0, getWidth() - 1, getHeight() - 1, arcWidth, arcHeight));
+            g2.dispose();
+        }
+    }
 
 
 }

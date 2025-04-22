@@ -27,6 +27,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
@@ -168,14 +169,45 @@ public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
         mainPanel.setBackground(Color.WHITE);
 
         // ====== Tiêu đề ======
+        JPanel pnlTitle  = new JPanel(new BorderLayout());
+        pnlTitle.setBackground(primaryColor);
         JLabel title = new JLabel("Thống kê doanh thu theo ca", SwingConstants.CENTER);
         title.setOpaque(true);
         title.setBackground(primaryColor);
         title.setForeground(Color.WHITE);
         title.setFont(bold);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setHorizontalAlignment(SwingConstants.CENTER);
         title.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); // full width
+        pnlTitle.add(title,BorderLayout.CENTER);
 
+        // Thêm ngày giờ hiện tại vào bên phải
+
+        JLabel dateLabel = new JLabel();
+
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+
+        dateLabel.setForeground(Color.WHITE);
+
+
+
+// Cập nhật ngày giờ
+
+        Timer timer = new Timer(1000, e -> {
+
+            Date now = new Date();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+
+            dateLabel.setText(sdf.format(now));
+
+        });
+
+        timer.start();
+
+
+
+        pnlTitle.add(dateLabel, BorderLayout.EAST);
         // ====== Chọn ngày bắt đầu - kết thúc ======
         JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         datePanel.setBackground(Color.WHITE);
@@ -243,7 +275,7 @@ public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
         shiftPanel.add(ca3);
 
         // Thêm các thành phần vào mainPanel
-        mainPanel.add(title);
+        mainPanel.add(pnlTitle);
         mainPanel.add(datePanel);
         mainPanel.add(shiftPanel);
 

@@ -20,6 +20,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class TraCuuTuyenPanel extends JPanel implements ActionListener {
     private static final String RMI_SERVER_IP = "127.0.0.1";
@@ -68,12 +70,41 @@ public class TraCuuTuyenPanel extends JPanel implements ActionListener {
         setBackground(lightBackground);
 
         // Tiêu đề trang
-        JPanel pnlTitle = new JPanel();
+        JPanel pnlTitle = new JPanel(new BorderLayout());
         pnlTitle.setBackground(primaryColor);
         JLabel lblTitle = new JLabel("TRA CỨU TUYẾN TÀU");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(Color.WHITE);
-        pnlTitle.add(lblTitle);
+        lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        pnlTitle.add(lblTitle, BorderLayout.CENTER);
+
+        // Thêm ngày giờ hiện tại vào bên phải
+
+        JLabel dateLabel = new JLabel();
+
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+
+        dateLabel.setForeground(Color.WHITE);
+
+
+
+// Cập nhật ngày giờ
+
+        Timer timer = new Timer(1000, e -> {
+
+            Date now = new Date();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+
+            dateLabel.setText(sdf.format(now));
+
+        });
+
+        timer.start();
+
+
+
+        pnlTitle.add(dateLabel, BorderLayout.EAST);
         add(pnlTitle, BorderLayout.NORTH);
 
         // Panel chính chứa hai phần trái và phải
