@@ -447,4 +447,42 @@ public List<KhachHang> filterByType(String typeName) throws RemoteException {
 //    public KhachHang getById(String id) {
 //        return null;
 //    }
+
+    @Override
+    public KhachHang findByIdCardAndPhone(String idCard, String phone) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        KhachHang result = null;
+
+        try {
+            tx.begin();
+            String query = "SELECT kh FROM KhachHang kh JOIN FETCH kh.loaiKhachHang WHERE kh.giayTo = :idCard AND kh.soDienThoai = :phone";
+            List<KhachHang> customers = em.createQuery(query, KhachHang.class)
+                    .setParameter("idCard", idCard)
+                    .setParameter("phone", phone)
+                    .getResultList();
+
+            if (!customers.isEmpty()) {
+                result = customers.get(0);
+                // Ensure related data is loaded
+                if (result.getLoaiKhachHang() != null) {
+                    result.getLoaiKhachHang().getTenLoaiKhachHang();
+                }
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            System.err.println("Lỗi khi tìm kiếm khách hàng theo CMND và SĐT: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi tìm kiếm khách hàng theo CMND và SĐT", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+        return result;
+    }
 }

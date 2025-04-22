@@ -106,7 +106,7 @@ public class MainGUI extends JFrame {
         String[] menuItems = {
                 "Trang chủ", "Thông tin hoạt động", "Quản lý khách hàng",
                 "Quản lý vé", "Quản lý lịch trình", "Báo cáo", "Tra cứu vé", "Đổi vé", "Trả vé", "Quản lý nhân viên",
-                "Thống kê số lượng vé theo thời gian"
+                "Thống kê số lượng vé theo thời gian", "Quản lý khuyến mãi"
         };
 
         for (String item : menuItems) {
@@ -370,6 +370,44 @@ public class MainGUI extends JFrame {
                             e.printStackTrace();
                             JOptionPane.showMessageDialog(MainGUI.this,
                                     "Không thể tải dữ liệu nhân viên: " + e.getMessage(),
+                                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                            cardLayout.show(contentPanel, "Trang chủ");
+                        }
+                    }
+                };
+
+                worker.execute();
+                return; // Thoát sớm
+            } else if (panelName.equals("Quản lý khuyến mãi")) {
+                // Hiển thị giao diện tải dữ liệu
+                JPanel loadingPanel = createLoadingPanel("Đang tải dữ liệu khuyến mãi...");
+                contentPanel.add(loadingPanel, "Loading_" + panelName);
+                cardLayout.show(contentPanel, "Loading_" + panelName);
+
+                // Tạo panel quản lý khuyến mãi trong luồng riêng
+                SwingWorker<KhuyenMaiPanel, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected KhuyenMaiPanel doInBackground() throws RemoteException {
+                        return new KhuyenMaiPanel(); // KhuyenMaiPanel sẽ tự kết nối RMI
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            // Lấy panel sau khi đã tạo xong
+                            KhuyenMaiPanel panel = get();
+
+                            // Thêm vào cache và hiển thị
+                            contentPanel.add(panel, panelName);
+                            panelMap.put(panelName, panel);
+                            cardLayout.show(contentPanel, panelName);
+
+                            // Xóa panel loading
+                            contentPanel.remove(loadingPanel);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(MainGUI.this,
+                                    "Không thể tải dữ liệu khuyến mãi: " + e.getMessage(),
                                     "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
                             cardLayout.show(contentPanel, "Trang chủ");
                         }

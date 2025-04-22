@@ -19,6 +19,9 @@ public interface VeTauDAO extends Remote {
     boolean save(VeTau veTau) throws RemoteException;
     List<VeTau> getAllList() throws RemoteException;
     VeTau getById(String id) throws RemoteException;
+
+    String generateMaVe() throws RemoteException;
+
     boolean update(VeTau veTau) throws RemoteException;
     boolean delete(String id) throws RemoteException;
     List<VeTau> getByInvoiceId(String invoiceId) throws RemoteException;

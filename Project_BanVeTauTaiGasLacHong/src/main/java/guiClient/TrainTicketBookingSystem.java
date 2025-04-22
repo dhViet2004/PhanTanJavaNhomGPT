@@ -10,14 +10,20 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.*;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import javax.swing.Timer;
 import javax.swing.plaf.basic.BasicScrollBarUI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import com.toedter.calendar.JDateChooser;
 
 /**
  * Train Ticket Booking System GUI
@@ -25,6 +31,10 @@ import java.util.stream.Collectors;
  * @author luongtan204
  */
 public class TrainTicketBookingSystem extends JFrame {
+    private static final Logger LOGGER = Logger.getLogger(TrainTicketBookingSystem.class.getName());
+    // Địa chỉ IP và port của RMI server
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     // UI Components
     private JPanel seatsPanel;
     private JPanel carsPanel;
@@ -79,21 +89,34 @@ public class TrainTicketBookingSystem extends JFrame {
     private TauDAO tauDAO;
     private ToaTauDAO toaTauDAO;
     private ChoNgoiDAO choNgoiDAO;
+    private KhuyenMaiDAO khuyenMaiDAO;
+    private NhanVienDAO nhanVienDAO;
+
+
+    // Employee information
+    private NhanVien nhanVien;
 
     /**
      * Constructor - initializes the application
+     * @param nv The employee who is using the system
      */
-    public TrainTicketBookingSystem() throws RemoteException {
+    public TrainTicketBookingSystem(NhanVien nv) throws RemoteException {
+        this.nhanVien = nv;
         setTitle("Hệ thống đặt vé tàu");
         setSize(1200, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Initialize DAOs
-        lichTrinhTauDAO = new LichTrinhTauDAOImpl();
-        tauDAO = new TauDAOImpl();
-        toaTauDAO = new ToaTauDAOImpl();
-        choNgoiDAO = new ChoNgoiDAOImpl();
+        // Initialize RMI services
+        try {
+            initRMIServices();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize RMI services", e);
+            JOptionPane.showMessageDialog(this,
+                    "Không thể kết nối đến máy chủ: " + e.getMessage(),
+                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
 
         // Main container panel with BorderLayout
         JPanel containerPanel = new JPanel(new BorderLayout(10, 10));
@@ -120,6 +143,93 @@ public class TrainTicketBookingSystem extends JFrame {
 
         // Add container panel to frame
         add(containerPanel);
+    }
+
+    private void initRMIServices() throws Exception {
+        LOGGER.info("Initializing RMI services...");
+        Registry registry = null;
+        boolean anyServiceConnected = false;
+        StringBuilder errorMessages = new StringBuilder();
+
+        try {
+            // Get registry from RMI server
+            registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
+            LOGGER.info("Connected to RMI registry at " + RMI_SERVER_IP + ":" + RMI_SERVER_PORT);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to RMI registry", e);
+            throw new Exception("Không thể kết nối đến máy chủ RMI: " + e.getMessage(), e);
+        }
+
+
+        // Look up each remote object individually
+        try {
+
+            lichTrinhTauDAO = (LichTrinhTauDAO) registry.lookup("lichTrinhTauDAO");
+            LOGGER.info("LichTrinhTauDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to LichTrinhTauDAO service", e);
+            errorMessages.append("LichTrinhTauDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        try {
+            tauDAO = (TauDAO) registry.lookup("tauDAO");
+            LOGGER.info("TauDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to TauDAO service", e);
+            errorMessages.append("TauDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        try {
+            toaTauDAO = (ToaTauDAO) registry.lookup("toaTauDAO");
+            LOGGER.info("ToaTauDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to ToaTauDAO service", e);
+            errorMessages.append("ToaTauDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        try {
+            choNgoiDAO = (ChoNgoiDAO) registry.lookup("choNgoiDAO");
+            LOGGER.info("ChoNgoiDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to ChoNgoiDAO service", e);
+            errorMessages.append("ChoNgoiDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        try {
+            khuyenMaiDAO = (KhuyenMaiDAO) registry.lookup("KhuyenMaiDAO");
+            LOGGER.info("KhuyenMaiDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to KhuyenMaiDAO service", e);
+            errorMessages.append("KhuyenMaiDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        try {
+            nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");
+            LOGGER.info("NhanVienDAO service connected successfully");
+            anyServiceConnected = true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to connect to NhanVienDAO service", e);
+            errorMessages.append("NhanVienDAO: ").append(e.getMessage()).append("\n");
+        }
+
+        // Check if any services were connected
+        if (!anyServiceConnected) {
+            LOGGER.severe("Failed to connect to any RMI services");
+            throw new Exception("Không thể kết nối đến bất kỳ dịch vụ RMI nào:\n" + errorMessages);
+        } else if (errorMessages.length() > 0) {
+            // Some services failed but not all
+            LOGGER.warning("Some RMI services failed to connect: " + errorMessages);
+            JOptionPane.showMessageDialog(null,
+                    "Kết nối thành công một phần. Một số tính năng có thể không hoạt động:\n" + errorMessages,
+                    "Cảnh báo kết nối", JOptionPane.WARNING_MESSAGE);
+        } else {
+            LOGGER.info("All RMI services initialized successfully");
+        }
     }
 
     /**
@@ -409,49 +519,178 @@ public class TrainTicketBookingSystem extends JFrame {
     }
 
     /**
-     * Creates a train icon with wheels
+     * Creates a realistic train locomotive icon
      */
     private JPanel createTrainIconPanel(Color bgColor) {
         JPanel iconPanel = new JPanel();
         iconPanel.setLayout(new BorderLayout());
         iconPanel.setBackground(bgColor);
 
-        // Create train wheels
-        JPanel wheelsPanel = new JPanel() {
+        // Create train with detailed graphics
+        JPanel trainPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.setColor(Color.WHITE);
-                g.fillOval(30, 0, 20, 20);
-                g.fillOval(90, 0, 20, 20);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Main locomotive body
+                g2d.setColor(new Color(50, 50, 50));
+                g2d.fillRoundRect(20, 5, 100, 25, 10, 10);
+
+                // Front of locomotive (chimney)
+                g2d.setColor(new Color(70, 70, 70));
+                g2d.fillRoundRect(10, 10, 20, 15, 5, 5);
+
+                // Chimney/smokestack
+                g2d.setColor(new Color(40, 40, 40));
+                g2d.fillRect(15, 0, 10, 10);
+
+                // Windows
+                g2d.setColor(new Color(173, 216, 230)); // Light blue
+                g2d.fillRoundRect(40, 10, 15, 10, 3, 3);
+                g2d.fillRoundRect(65, 10, 15, 10, 3, 3);
+                g2d.fillRoundRect(90, 10, 15, 10, 3, 3);
+
+                // Window frames
+                g2d.setColor(new Color(100, 100, 100));
+                g2d.drawRoundRect(40, 10, 15, 10, 3, 3);
+                g2d.drawRoundRect(65, 10, 15, 10, 3, 3);
+                g2d.drawRoundRect(90, 10, 15, 10, 3, 3);
+
+                // Wheels
+                g2d.setColor(Color.BLACK);
+                g2d.fillOval(30, 30, 15, 15);
+                g2d.fillOval(60, 30, 15, 15);
+                g2d.fillOval(90, 30, 15, 15);
+
+                // Wheel centers
+                g2d.setColor(Color.DARK_GRAY);
+                g2d.fillOval(34, 34, 7, 7);
+                g2d.fillOval(64, 34, 7, 7);
+                g2d.fillOval(94, 34, 7, 7);
+
+                // Connecting rods
+                g2d.setColor(new Color(150, 150, 150));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawLine(37, 37, 67, 37);
+                g2d.drawLine(67, 37, 97, 37);
+
+                // Headlight
+                g2d.setColor(Color.YELLOW);
+                g2d.fillOval(12, 15, 6, 6);
+
+                // Outline
+                g2d.setColor(Color.BLACK);
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(20, 5, 100, 25, 10, 10);
+                g2d.drawRoundRect(10, 10, 20, 15, 5, 5);
             }
         };
-        wheelsPanel.setOpaque(false);
-        wheelsPanel.setPreferredSize(new Dimension(140, 20));
+        trainPanel.setOpaque(false);
+        trainPanel.setPreferredSize(new Dimension(140, 50));
 
-        // Create train base
-        JPanel basePanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.setColor(Color.BLACK);
-                g.fillRect(20, 0, 100, 5);
-            }
-        };
-        basePanel.setOpaque(false);
-        basePanel.setPreferredSize(new Dimension(140, 5));
-
-        iconPanel.add(wheelsPanel, BorderLayout.CENTER);
-        iconPanel.add(basePanel, BorderLayout.SOUTH);
+        iconPanel.add(trainPanel, BorderLayout.CENTER);
 
         return iconPanel;
+    }
+
+    /**
+     * Creates a realistic train car panel
+     */
+    private JPanel createTrainCarPanel(Color bgColor, String carNumber, boolean isVIP, boolean isSelected) {
+        JPanel carPanel = new JPanel();
+        carPanel.setLayout(new BorderLayout());
+        carPanel.setPreferredSize(new Dimension(60, 50));
+
+        if (isSelected) {
+            carPanel.setBorder(activeBorder);
+        }
+
+        // Create train car with detailed graphics
+        JPanel trainCarPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Main car body
+                g2d.setColor(bgColor);
+                g2d.fillRoundRect(5, 5, 50, 25, 8, 8);
+
+                // Windows
+                g2d.setColor(new Color(173, 216, 230)); // Light blue
+                int windowCount = 3;
+                int windowWidth = 10;
+                int windowSpacing = 5;
+                int startX = 10;
+
+                for (int i = 0; i < windowCount; i++) {
+                    g2d.fillRoundRect(startX + i * (windowWidth + windowSpacing), 10, windowWidth, 8, 2, 2);
+                }
+
+                // Window frames
+                g2d.setColor(new Color(100, 100, 100));
+                for (int i = 0; i < windowCount; i++) {
+                    g2d.drawRoundRect(startX + i * (windowWidth + windowSpacing), 10, windowWidth, 8, 2, 2);
+                }
+
+                // Door
+                g2d.setColor(new Color(80, 80, 80));
+                g2d.fillRoundRect(40, 10, 10, 15, 2, 2);
+                g2d.setColor(new Color(60, 60, 60));
+                g2d.drawRoundRect(40, 10, 10, 15, 2, 2);
+
+                // Wheels
+                g2d.setColor(Color.BLACK);
+                g2d.fillOval(15, 30, 10, 10);
+                g2d.fillOval(35, 30, 10, 10);
+
+                // Wheel centers
+                g2d.setColor(Color.DARK_GRAY);
+                g2d.fillOval(17, 32, 6, 6);
+                g2d.fillOval(37, 32, 6, 6);
+
+                // Connecting rod
+                g2d.setColor(new Color(150, 150, 150));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawLine(20, 35, 40, 35);
+
+                // Car outline
+                g2d.setColor(Color.BLACK);
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(5, 5, 50, 25, 8, 8);
+
+                // VIP indicator
+                if (isVIP) {
+                    g2d.setColor(Color.YELLOW);
+                    g2d.setFont(new Font("Arial", Font.BOLD, 12));
+                    g2d.drawString("★", 25, 20);
+                }
+            }
+        };
+        trainCarPanel.setOpaque(false);
+
+        // Add car number label
+        JLabel carLabel = new JLabel(carNumber, SwingConstants.CENTER);
+        carLabel.setPreferredSize(new Dimension(60, 10));
+        carLabel.setForeground(Color.BLACK);
+        carLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+        carPanel.add(trainCarPanel, BorderLayout.CENTER);
+        carPanel.add(carLabel, BorderLayout.SOUTH);
+
+        return carPanel;
     }
 
     /**
      * Load train cars for the selected train
      */
     private void loadTrainCars(String trainId) throws RemoteException {
-        // Clear existing cars
+        try {
+
+
         carsPanel.removeAll();
 
         if (trainId == null || trainId.isEmpty()) {
@@ -487,54 +726,34 @@ public class TrainTicketBookingSystem extends JFrame {
                 toaNumber = String.valueOf(toaTau.getThuTu());
             }
 
-            JPanel carPanel = new JPanel();
-            carPanel.setLayout(new BorderLayout());
-            carPanel.setPreferredSize(new Dimension(50, 50));
-
-            // IMPORTANT: Set the name property to store the toa ID for selection
-            carPanel.setName(maToa);
-
             // Determine background color based on car type (loaiToa)
             boolean isVIP = isVipCar(toaTau);
 
             // Check if this car is currently selected
             boolean isSelected = maToa.equals(currentToaId);
 
-            Color bgColor = isVIP ?
-                    new Color(255, 69, 0) : // Red-orange for Vietnam flag (VIP)
-                    new Color(100, 181, 246); // Light blue (standard)
-
-            // Add border for active state
+            // Determine color based on car type and selection state
+            Color bgColor;
             if (isSelected) {
-                carPanel.setBorder(activeBorder);
+                // Selected car color - bright green
+                bgColor = new Color(76, 175, 80);
+            } else {
+                // Standard colors based on car type
+                bgColor = isVIP ?
+                        new Color(255, 69, 0) : // Red-orange for Vietnam flag (VIP)
+                        new Color(100, 181, 246); // Light blue (standard)
             }
 
-            JPanel colorPanel = new JPanel();
-            colorPanel.setBackground(bgColor);
-            colorPanel.setPreferredSize(new Dimension(50, 40));
+            // Create realistic train car panel
+            JPanel carPanel = createTrainCarPanel(bgColor, toaNumber, isVIP, isSelected);
+            carPanel.setName(maToa); // Store the toa ID for selection
 
-            // Add car number label
-            JLabel carLabel = new JLabel(toaNumber, SwingConstants.CENTER);
-            carLabel.setPreferredSize(new Dimension(50, 10));
-            carLabel.setForeground(Color.BLACK);
-            carLabel.setFont(new Font("Arial", Font.BOLD, 12));
 
-            carPanel.add(colorPanel, BorderLayout.CENTER);
-            carPanel.add(carLabel, BorderLayout.SOUTH);
-
-            // Add star for VIP cars
-            if (isVIP) {
-                JLabel starLabel = new JLabel("★", SwingConstants.CENTER);
-                starLabel.setForeground(Color.YELLOW);
-                starLabel.setFont(new Font("Arial", Font.BOLD, 16));
-                colorPanel.setLayout(new BorderLayout());
-                colorPanel.add(starLabel, BorderLayout.CENTER);
-            }
 
             // Add tooltip for hovering
             String tooltip = "<html>" +
                     "<b>Toa số " + toaNumber + "</b><br>" +
-                    "Loại toa: " + (toaTau.getLoaiToa() != null ? toaTau.getLoaiToa().getTenLoai() : "Thường") + "<br>" +
+                    "Loại toa: " + toaTau.getLoaiToa().getTenLoai() + "<br>" +
                     "Số ghế: " + toaTau.getSoGhe() + "<br>" +
                     (isVIP ? "<i>Toa VIP</i>" : "") +
                     "</html>";
@@ -569,33 +788,66 @@ public class TrainTicketBookingSystem extends JFrame {
                     }
                 }
 
-                // Add hover effect
+                // Enhanced hover effect
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     if (!toaId.equals(currentToaId)) {
-                        colorPanel.setBorder(BorderFactory.createLineBorder(Color.YELLOW, 2));
+                        // Hover effect for non-selected cars
+                        carPanel.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(255, 255, 0), 2), // Bright yellow for hover
+                            BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                        ));
+
+                        // Highlight the train car panel
+                        for (Component child : carPanel.getComponents()) {
+                            if (child instanceof JPanel && child.getName() == null) {
+                                // Apply hover highlight to the train car visualization panel
+                                child.setBackground(new Color(255, 255, 240)); // Very light yellow
+                            }
+                        }
+                    } else {
+                        // Enhanced hover effect for already selected car
+                        carPanel.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(255, 165, 0), 3), // Orange for selected hover
+                            BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                        ));
                     }
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
                     if (!toaId.equals(currentToaId)) {
-                        colorPanel.setBorder(null);
+                        // Remove hover effect for non-selected cars
+                        carPanel.setBorder(null);
+
+                        // Reset background of train car panel
+                        for (Component child : carPanel.getComponents()) {
+                            if (child instanceof JPanel && child.getName() == null) {
+                                // Reset to transparent background
+                                child.setBackground(null);
+                            }
+                        }
+                    } else {
+                        // Restore selection effect for selected car
+                        carPanel.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(255, 215, 0), 2), // Gold border for selection
+                            BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                        ));
                     }
                 }
             });
 
             carsPanel.add(carPanel);
+
         }
 
-        // Add locomotive
+        // Add locomotive using the realistic train icon panel
         JPanel locomotivePanel = new JPanel();
         locomotivePanel.setLayout(new BorderLayout());
         locomotivePanel.setPreferredSize(new Dimension(70, 50));
 
-        JPanel colorPanel = new JPanel();
-        colorPanel.setBackground(activeColor);
-        colorPanel.setPreferredSize(new Dimension(70, 40));
+        // Create realistic locomotive using our updated method
+        JPanel trainIconPanel = createTrainIconPanel(activeColor);
 
         JLabel carLabel = new JLabel(trainId, SwingConstants.CENTER);
         carLabel.setPreferredSize(new Dimension(70, 10));
@@ -605,7 +857,7 @@ public class TrainTicketBookingSystem extends JFrame {
         // Add tooltip for locomotive
         locomotivePanel.setToolTipText("<html><b>Đầu máy tàu " + trainId + "</b></html>");
 
-        locomotivePanel.add(colorPanel, BorderLayout.CENTER);
+        locomotivePanel.add(trainIconPanel, BorderLayout.CENTER);
         locomotivePanel.add(carLabel, BorderLayout.SOUTH);
 
         carsPanel.add(locomotivePanel);
@@ -613,6 +865,20 @@ public class TrainTicketBookingSystem extends JFrame {
         // Refresh UI
         carsPanel.revalidate();
         carsPanel.repaint();
+        } catch (RemoteException ex) {
+            LOGGER.log(Level.SEVERE, "RMI error loading train cars", ex);
+            JOptionPane.showMessageDialog(this,
+                    "Lỗi kết nối khi tải thông tin toa: " + ex.getMessage(),
+                    "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+
+            // Show placeholder instead
+            JLabel errorLabel = new JLabel("Lỗi kết nối máy chủ khi tải thông tin toa", SwingConstants.CENTER);
+            errorLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+            errorLabel.setForeground(Color.RED);
+            carsPanel.add(errorLabel);
+            carsPanel.revalidate();
+            carsPanel.repaint();
+        }
     }
 
     /**
@@ -686,7 +952,7 @@ public class TrainTicketBookingSystem extends JFrame {
      * Create the visualization panel for seats with exactly 4 rows as requested
      * IMPROVED: Uses ChoNgoi.getById() to get proper seat names
      */
-    private JPanel createSeatVisualizationPanel(Map<String, String> seatsMap) {
+    private JPanel createSeatVisualizationPanel(Map<String, String> seatsMap) throws RemoteException {
         // Main panel with border layout
         JPanel containerPanel = new JPanel(new BorderLayout());
         containerPanel.setBackground(Color.WHITE);
@@ -809,7 +1075,7 @@ public class TrainTicketBookingSystem extends JFrame {
      * Helper method to place a seat in the grid
      */
     private void placeSeatInGrid(JPanel seatGridPanel, JPanel[][] seatPanels, List<String> seatIds,
-                                 Map<String, String> seatsMap, int currentSeat, int row, int col) {
+                                 Map<String, String> seatsMap, int currentSeat, int row, int col) throws RemoteException {
         String seatId = seatIds.get(currentSeat);
 
         // Get the actual seat name from ChoNgoi object
@@ -995,8 +1261,6 @@ public class TrainTicketBookingSystem extends JFrame {
 
                 // Update UI to reflect pending status
                 updateSeatStatus(seatId, STATUS_PENDING);
-                // rerender
-                reloadSeatUI(seatId);
 
                 // Add to cart
                 addToCartWithTimeout(seatId, displayName, price);
@@ -1023,10 +1287,39 @@ public class TrainTicketBookingSystem extends JFrame {
                     if (scrollComp instanceof JScrollPane) {
                         // Force repaint of the viewport and all its children
                         JViewport viewport = ((JScrollPane)scrollComp).getViewport();
+
+                        // Get the view component (the actual seat grid)
+                        Component view = viewport.getView();
+                        if (view != null) {
+                            // Force immediate validation and repaint of the view and all its children
+                            view.validate();
+                            view.repaint();
+                        }
+
+                        // Force immediate validation and repaint of the viewport
+                        viewport.validate();
                         viewport.repaint();
 
+                        // Force immediate validation and repaint of the scroll pane
+                        ((JScrollPane)scrollComp).validate();
+                        ((JScrollPane)scrollComp).repaint();
+
+                        // Force immediate validation and repaint of the visual panel
+                        ((JPanel)visualPanel).validate();
+                        ((JPanel)visualPanel).repaint();
+
+                        // Force immediate validation and repaint of the seats panel
+                        seatsPanel.validate();
+                        seatsPanel.repaint();
+
                         // Queue another repaint after a short delay to ensure UI updates
-                        Timer repaintTimer = new Timer(50, e -> viewport.repaint());
+                        Timer repaintTimer = new Timer(50, e -> {
+                            if (view != null) view.repaint();
+                            viewport.repaint();
+                            ((JScrollPane)scrollComp).repaint();
+                            ((JPanel)visualPanel).repaint();
+                            seatsPanel.repaint();
+                        });
                         repaintTimer.setRepeats(false);
                         repaintTimer.start();
                     }
@@ -1035,6 +1328,10 @@ public class TrainTicketBookingSystem extends JFrame {
         });
     }
     private boolean findAndUpdateComponentRecursively(Container container, String seatId) {
+        return findAndUpdateComponentRecursively(container, seatId, null);
+    }
+
+    private boolean findAndUpdateComponentRecursively(Container container, String seatId, String status) {
         // Check all components in this container
         for (Component comp : container.getComponents()) {
             // If it's the outer seat panel that contains a panel with BorderLayout
@@ -1051,27 +1348,41 @@ public class TrainTicketBookingSystem extends JFrame {
                         String tooltip = seatPanel.getToolTipText();
                         if (tooltip != null && tooltip.contains("Ghế: <b>" + seatId + "</b>")) {
                             // Found it! Update color based on status
-                            String status = reservationTimers.containsKey(seatId) ? STATUS_PENDING : STATUS_AVAILABLE;
-                            Color bgColor = switch (status) {
+                            // If status is not provided, determine it from reservationTimers
+                            String effectiveStatus = status != null ? status :
+                                                    (reservationTimers.containsKey(seatId) ? STATUS_PENDING : STATUS_AVAILABLE);
+
+                            Color bgColor = switch (effectiveStatus) {
                                 case STATUS_PENDING -> SEAT_PENDING_COLOR;
                                 case STATUS_BOOKED -> SEAT_BOOKED_COLOR;
                                 default -> SEAT_AVAILABLE_COLOR;
                             };
 
+                            // Set the background color
                             seatPanel.setBackground(bgColor);
+
+                            // Force immediate repaint of this seat panel
+                            seatPanel.invalidate();
+                            seatPanel.validate();
                             seatPanel.repaint();
+
+                            // Also repaint the parent panel to ensure changes are visible
+                            panel.invalidate();
+                            panel.validate();
+                            panel.repaint();
+
                             return true;
                         }
                     }
                 }
 
                 // Recursively search children
-                if (findAndUpdateComponentRecursively(panel, seatId)) {
+                if (findAndUpdateComponentRecursively(panel, seatId, status)) {
                     return true;
                 }
             } else if (comp instanceof Container) {
                 // Check other containers (like scroll panes)
-                if (findAndUpdateComponentRecursively((Container) comp, seatId)) {
+                if (findAndUpdateComponentRecursively((Container) comp, seatId, status)) {
                     return true;
                 }
             }
@@ -1171,8 +1482,37 @@ public class TrainTicketBookingSystem extends JFrame {
         String to = arrivalField.getText();
         String departureDate = departureDateField.getText();
 
+        // Get train car information
+        String carId = currentToaId;
+        String carName = "";
+
+        try {
+            // Get the car name or number from the ToaTauDAO
+            ToaTau toaTau = toaTauDAO.getToaTauById(carId);
+            if (toaTau != null) {
+                // Extract car number from maToa rather than using thuTu field
+                String toaNumber;
+                String maToa = toaTau.getMaToa();
+
+                if (maToa != null && maToa.contains("-")) {
+                    // Extract number from the first part (before the dash)
+                    String firstPart = maToa.split("-")[0];
+                    // Remove non-numeric characters to get just the number
+                    toaNumber = firstPart.replaceAll("\\D+", "");
+                } else {
+                    // Fallback to thuTu if maToa format is different
+                    toaNumber = String.valueOf(toaTau.getThuTu());
+                }
+
+                carName = "Toa số " + toaNumber;
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting train car information: " + e.getMessage());
+            carName = "Toa không xác định";
+        }
+
         // Create and add ticket item to cart with seatId for later reference
-        TicketItem item = new TicketItem(currentTrainId, seatId, displayName, from, to, departureDate, price);
+        TicketItem item = new TicketItem(currentTrainId, seatId, displayName, from, to, departureDate, price, carId, carName);
         cartItems.add(item);
 
         // Update cart display
@@ -1180,7 +1520,6 @@ public class TrainTicketBookingSystem extends JFrame {
 
         // Immediately update the seat status in UI to show as pending (yellow)
         updateSeatStatus(seatId, STATUS_PENDING);
-
     }
 
 
@@ -1215,10 +1554,46 @@ public class TrainTicketBookingSystem extends JFrame {
      */
     private void updateSeatStatus(String seatId, String status) {
         try {
-            // Re-load the seat chart to reflect changes
-            loadSeatChart(currentTrainId, currentToaId, currentMaLich);
+            // Use invokeAndWait to ensure UI updates happen synchronously
+            if (SwingUtilities.isEventDispatchThread()) {
+                updateSeatStatusImpl(seatId, status);
+            } else {
+                try {
+                    SwingUtilities.invokeAndWait(() -> updateSeatStatusImpl(seatId, status));
+                } catch (Exception e) {
+                    System.err.println("Error in invokeAndWait: " + e.getMessage());
+                    // Fall back to the normal implementation
+                    updateSeatStatusImpl(seatId, status);
+                }
+            }
         } catch (Exception ex) {
             System.err.println("Error updating seat status: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Implementation of seat status update
+     */
+    private void updateSeatStatusImpl(String seatId, String status) {
+        try {
+            // First try to find and update the specific seat component
+            if (seatsPanel != null && seatsPanel.getComponentCount() > 0) {
+                boolean updated = findAndUpdateComponentRecursively(seatsPanel, seatId, status);
+
+                // If we couldn't find and update the specific seat, fall back to reloading the entire chart
+                if (!updated) {
+                    // Re-load the seat chart to reflect changes
+                    loadSeatChart(currentTrainId, currentToaId, currentMaLich);
+                } else {
+                    // Force UI refresh to make the color change visible immediately
+                    reloadSeatUI(seatId);
+                }
+            } else {
+                // If seatsPanel is not initialized yet, reload the entire chart
+                loadSeatChart(currentTrainId, currentToaId, currentMaLich);
+            }
+        } catch (Exception ex) {
+            System.err.println("Error in updateSeatStatusImpl: " + ex.getMessage());
         }
     }
 
@@ -1265,47 +1640,188 @@ public class TrainTicketBookingSystem extends JFrame {
     }
 
     /**
-     * Update car selection visual state
+     * Update car selection visual state with enhanced visual feedback
      */
     private void updateCarSelection(String selectedToaId) {
-        Component[] components = carsPanel.getComponents();
+        try {
+            // Get train cars from DAO to recreate them with updated colors
+            List<ToaTau> toaTauList = toaTauDAO.getToaByTau(currentTrainId);
 
-        for (Component comp : components) {
-            if (comp instanceof JPanel) {
-                JPanel carPanel = (JPanel) comp;
-
-                // Skip the locomotive panel which doesn't have toa ID
-                if (carPanel.getPreferredSize().width > 50) continue;
-
-                // Clear any existing border
-                carPanel.setBorder(null);
-
-                // If this panel has the name matching the selected toa ID
-                if (carPanel.getName() != null && carPanel.getName().equals(selectedToaId)) {
-                    carPanel.setBorder(activeBorder);
-                }
+            // If no train cars found, just return
+            if (toaTauList == null || toaTauList.isEmpty()) {
+                return;
             }
-        }
 
-        carsPanel.revalidate();
-        carsPanel.repaint();
+            // Sort cars by order (thuTu) - still reversed for display order
+            Collections.sort(toaTauList, Comparator.comparingInt(ToaTau::getThuTu).reversed());
+
+            // Clear existing cars
+            carsPanel.removeAll();
+
+            // Recreate car panels with updated colors
+            for (ToaTau toaTau : toaTauList) {
+                // Extract car number from maToa rather than using thuTu field
+                String toaNumber;
+                String maToa = toaTau.getMaToa();
+
+                if (maToa != null && maToa.contains("-")) {
+                    // Extract number from the first part (before the dash)
+                    String firstPart = maToa.split("-")[0];
+                    // Remove non-numeric characters to get just the number
+                    toaNumber = firstPart.replaceAll("\\D+", "");
+                } else {
+                    // Fallback to thuTu if maToa format is different
+                    toaNumber = String.valueOf(toaTau.getThuTu());
+                }
+
+                // Determine background color based on car type and selection state
+                boolean isVIP = isVipCar(toaTau);
+                boolean isSelected = maToa.equals(selectedToaId);
+
+                // Determine color based on selection state and car type
+                Color bgColor;
+                if (isSelected) {
+                    // Selected car color - bright green
+                    bgColor = new Color(76, 175, 80);
+                } else {
+                    // Standard colors based on car type
+                    bgColor = isVIP ?
+                            new Color(255, 69, 0) : // Red-orange for Vietnam flag (VIP)
+                            new Color(100, 181, 246); // Light blue (standard)
+                }
+
+                // Create realistic train car panel with updated color
+                JPanel carPanel = createTrainCarPanel(bgColor, toaNumber, isVIP, isSelected);
+                carPanel.setName(maToa); // Store the toa ID for selection
+
+                // Add tooltip for hovering
+                String tooltip = "<html>" +
+                        "<b>Toa số " + toaNumber + "</b><br>" +
+                        "Loại toa: " + (toaTau.getLoaiToa() != null ? toaTau.getLoaiToa().getTenLoai() : "Thường") + "<br>" +
+                        "Số ghế: " + toaTau.getSoGhe() + "<br>" +
+                        (isVIP ? "<i>Toa VIP</i>" : "") +
+                        "</html>";
+
+                carPanel.setToolTipText(tooltip);
+
+                // Add click listener for car selection
+                final String toaId = toaTau.getMaToa();
+                final String toaName = toaTau.getTenToa();
+                final String finalToaNumber = toaNumber;
+
+                carPanel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        try {
+                            // Update current toa ID
+                            currentToaId = toaId;
+
+                            // Update the seating section label
+                            seatingSectionLabel.setText("Toa số " + finalToaNumber + ": " + toaName);
+
+                            // Update visual selection for all cars
+                            updateCarSelection(toaId);
+
+                            // Load and display the seat chart
+                            loadSeatChart(currentTrainId, currentToaId, currentMaLich);
+
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(carPanel,
+                                    "Lỗi khi chọn toa: " + ex.getMessage(),
+                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+
+                    // Enhanced hover effect
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        if (!toaId.equals(currentToaId)) {
+                            // Hover effect for non-selected cars
+                            carPanel.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(new Color(255, 255, 0), 2), // Bright yellow for hover
+                                BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                            ));
+
+                            // Highlight the train car panel
+                            for (Component child : carPanel.getComponents()) {
+                                if (child instanceof JPanel && child.getName() == null) {
+                                    // Apply hover highlight to the train car visualization panel
+                                    child.setBackground(new Color(255, 255, 240)); // Very light yellow
+                                }
+                            }
+                        } else {
+                            // Enhanced hover effect for already selected car
+                            carPanel.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(new Color(255, 165, 0), 3), // Orange for selected hover
+                                BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                            ));
+                        }
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        if (!toaId.equals(currentToaId)) {
+                            // Remove hover effect for non-selected cars
+                            carPanel.setBorder(null);
+
+                            // Reset background of train car panel
+                            for (Component child : carPanel.getComponents()) {
+                                if (child instanceof JPanel && child.getName() == null) {
+                                    // Reset to transparent background
+                                    child.setBackground(null);
+                                }
+                            }
+                        } else {
+                            // Restore selection effect for selected car
+                            carPanel.setBorder(BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(new Color(255, 215, 0), 2), // Gold border for selection
+                                BorderFactory.createEmptyBorder(1, 1, 1, 1)
+                            ));
+                        }
+                    }
+                });
+
+                carsPanel.add(carPanel);
+            }
+
+            // Add locomotive using the realistic train icon panel
+            JPanel locomotivePanel = new JPanel();
+            locomotivePanel.setLayout(new BorderLayout());
+            locomotivePanel.setPreferredSize(new Dimension(70, 50));
+
+            // Create realistic locomotive using our updated method
+            JPanel trainIconPanel = createTrainIconPanel(activeColor);
+
+            JLabel carLabel = new JLabel(currentTrainId, SwingConstants.CENTER);
+            carLabel.setPreferredSize(new Dimension(70, 10));
+            carLabel.setForeground(Color.BLACK);
+            carLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+            // Add tooltip for locomotive
+            locomotivePanel.setToolTipText("<html><b>Đầu máy tàu " + currentTrainId + "</b></html>");
+
+            locomotivePanel.add(trainIconPanel, BorderLayout.CENTER);
+            locomotivePanel.add(carLabel, BorderLayout.SOUTH);
+
+            carsPanel.add(locomotivePanel);
+
+            // Apply visual update
+            carsPanel.revalidate();
+            carsPanel.repaint();
+        } catch (Exception ex) {
+            System.err.println("Error in updateCarSelection: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     /**
      * Determine if a car is VIP based on loaiToa
      */
     private boolean isVipCar(ToaTau toaTau) {
-        if (toaTau.getLoaiToa() == null) return false;
+       return false;
 
-        LoaiToa loaiToa = toaTau.getLoaiToa();
-        String tenLoai = loaiToa.getTenLoai();
 
-        // Check if the type name contains VIP or premium indicators
-        return tenLoai != null && (
-                tenLoai.contains("VIP") ||
-                        tenLoai.contains("Cao cấp") ||
-                        tenLoai.contains("Đặc biệt")
-        );
+
     }
 
     /**
@@ -1422,7 +1938,12 @@ public class TrainTicketBookingSystem extends JFrame {
         formPanel.add(createFormLabel("Ngày đi"));
         JPanel departureDatePanel = new JPanel(new BorderLayout(5, 0));
         departureDateField = new JTextField("20/04/2025");
-        JButton departureDateButton = createCalendarButton();
+        departureDateField.setFont(new Font("Arial", Font.PLAIN, 12));
+        departureDateField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(204, 204, 204)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        JButton departureDateButton = createCalendarButton(departureDateField);
         departureDatePanel.add(departureDateField, BorderLayout.CENTER);
         departureDatePanel.add(departureDateButton, BorderLayout.EAST);
         formPanel.add(departureDatePanel);
@@ -1432,7 +1953,12 @@ public class TrainTicketBookingSystem extends JFrame {
         formPanel.add(createFormLabel("Ngày về"));
         JPanel returnDatePanel = new JPanel(new BorderLayout(5, 0));
         returnDateField = new JTextField("20/04/2025");
-        JButton returnDateButton = createCalendarButton();
+        returnDateField.setFont(new Font("Arial", Font.PLAIN, 12));
+        returnDateField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(204, 204, 204)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        JButton returnDateButton = createCalendarButton(returnDateField);
         returnDatePanel.add(returnDateField, BorderLayout.CENTER);
         returnDatePanel.add(returnDateButton, BorderLayout.EAST);
         formPanel.add(returnDatePanel);
@@ -1481,30 +2007,63 @@ public class TrainTicketBookingSystem extends JFrame {
 
     /**
      * Create a calendar button for date fields
+     * @param textField The text field to update with the selected date
+     * @return A styled calendar button with date picker functionality
      */
-    private JButton createCalendarButton() {
+    private JButton createCalendarButton(JTextField textField) {
         JButton calendarButton = new JButton();
         calendarButton.setBackground(activeColor);
-        calendarButton.setPreferredSize(new Dimension(30, 30));
+        calendarButton.setPreferredSize(new Dimension(32, 32));
         calendarButton.setFocusPainted(false);
+        calendarButton.setBorderPainted(false);
+        calendarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Calendar icon fallback
+        // Add a subtle border
+        calendarButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(41, 128, 185, 100), 1, true),
+            BorderFactory.createEmptyBorder(4, 4, 4, 4)
+        ));
+
+        // Enhanced calendar icon
         calendarButton.setIcon(new ImageIcon(getClass().getResource("/Anh_HeThong/calendar.png")) {
             @Override
             public void paintIcon(Component c, Graphics g, int x, int y) {
                 Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Draw calendar background with shadow
+                g2.setColor(new Color(0, 0, 0, 20));
+                g2.fillRoundRect(x + 4, y + 4, 16, 16, 4, 4);
+
+                // Draw calendar background
                 g2.setColor(Color.WHITE);
-                g2.fillRect(x + 3, y + 3, 14, 14);
-                g2.setColor(Color.WHITE);
-                g2.fillRect(x + 5, y, 2, 4);
-                g2.fillRect(x + 13, y, 2, 4);
+                g2.fillRoundRect(x + 2, y + 2, 16, 16, 4, 4);
+
+                // Draw calendar top bar
                 g2.setColor(activeColor);
-                g2.drawRect(x + 3, y + 3, 14, 14);
-                g2.drawLine(x + 3, y + 8, x + 17, y + 8);
+                g2.fillRoundRect(x + 2, y + 2, 16, 5, 4, 4);
+
+                // Draw calendar outline
+                g2.setColor(new Color(41, 128, 185));
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(x + 2, y + 2, 16, 16, 4, 4);
+
+                // Draw calendar hangers
+                g2.setColor(new Color(41, 128, 185));
+                g2.fillRect(x + 6, y, 2, 3);
+                g2.fillRect(x + 12, y, 2, 3);
+
+                // Draw calendar grid lines
+                g2.setColor(new Color(200, 200, 200));
+                g2.drawLine(x + 2, y + 10, x + 18, y + 10);
+                g2.drawLine(x + 2, y + 14, x + 18, y + 14);
+                g2.drawLine(x + 7, y + 7, x + 7, y + 18);
+                g2.drawLine(x + 13, y + 7, x + 13, y + 18);
+
                 g2.dispose();
             }
-            public int getIconWidth() { return 20; }
-            public int getIconHeight() { return 20; }
+            public int getIconWidth() { return 22; }
+            public int getIconHeight() { return 22; }
         });
 
         // Add hover effect
@@ -1520,7 +2079,75 @@ public class TrainTicketBookingSystem extends JFrame {
             }
         });
 
+        // Add action listener to show promotion calendar panel
+        calendarButton.addActionListener(e -> {
+            // Create a popup menu to hold the promotion calendar panel
+            JPopupMenu popup = new JPopupMenu();
+            popup.setBorder(BorderFactory.createEmptyBorder());
+
+            // Create a panel with a border layout to hold the promotion calendar panel
+            JPanel popupPanel = new JPanel(new BorderLayout());
+            popupPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(41, 128, 185), 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+            popupPanel.setBackground(Color.WHITE);
+
+            // Create the promotion calendar panel
+            PromotionCalendarPanel calendarPanel = new PromotionCalendarPanel(khuyenMaiDAO);
+            calendarPanel.setPreferredSize(new Dimension(400, 400));
+
+            // Try to parse current date from text field
+            try {
+                if (!textField.getText().isEmpty()) {
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    LocalDate date = LocalDate.parse(textField.getText(), formatter);
+                    calendarPanel.setSelectedDate(date);
+                }
+            } catch (Exception ex) {
+                // If parsing fails, use current date (default)
+            }
+
+            // Add a listener to handle date selection
+            calendarPanel.setDayPanelClickListener((date, promotions) -> {
+                // Update the text field with the selected date
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                textField.setText(date.format(formatter));
+
+                // Hide the popup after selection
+                popup.setVisible(false);
+            });
+
+            // Add the calendar panel to the popup panel
+            popupPanel.add(calendarPanel, BorderLayout.CENTER);
+
+            // Add the panel to the popup
+            popup.add(popupPanel);
+
+            // Show the popup below the button
+            popup.show(calendarButton, 0, calendarButton.getHeight());
+        });
+
         return calendarButton;
+    }
+
+    /**
+     * Create a styled date chooser
+     */
+    private JDateChooser createStyledDateChooser() {
+        JDateChooser dateChooser = new JDateChooser();
+        dateChooser.setDateFormatString("dd/MM/yyyy");
+        dateChooser.setPreferredSize(new Dimension(150, 30));
+        dateChooser.setFont(new Font("Arial", Font.PLAIN, 12));
+
+        // Style the text field inside the date chooser
+        JTextField textField = (JTextField) dateChooser.getDateEditor().getUiComponent();
+        textField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(204, 204, 204)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+
+        return dateChooser;
     }
 
     /**
@@ -1613,11 +2240,13 @@ public class TrainTicketBookingSystem extends JFrame {
             System.out.println("Search completed, " + filteredLichTrinhList.size() + " trains found");
 
         } catch (RemoteException ex) {
+            LOGGER.log(Level.SEVERE, "RMI error during train search", ex);
             JOptionPane.showMessageDialog(this,
                     "Lỗi kết nối đến máy chủ: " + ex.getMessage(),
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
         } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Error during train search", ex);
             JOptionPane.showMessageDialog(this,
                     "Lỗi tìm kiếm: " + ex.getMessage(),
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -1693,12 +2322,19 @@ public class TrainTicketBookingSystem extends JFrame {
         trainLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         infoPanel.add(trainLabel);
 
-        // Date and car/seat info
-        JLabel detailsLabel = new JLabel(item.departureDate + " " + item.seatNumber);
-        detailsLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-        detailsLabel.setForeground(Color.GRAY);
-        detailsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        infoPanel.add(detailsLabel);
+        // Date info
+        JLabel dateLabel = new JLabel(item.departureDate);
+        dateLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        dateLabel.setForeground(Color.GRAY);
+        dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        infoPanel.add(dateLabel);
+
+        // Car and seat info
+        JLabel carSeatLabel = new JLabel(item.carName + " - " + item.seatNumber);
+        carSeatLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        carSeatLabel.setForeground(new Color(0, 102, 204)); // Blue color for emphasis
+        carSeatLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        infoPanel.add(carSeatLabel);
 
         // Add countdown if applicable
         if (remainingTimes.containsKey(item.seatId)) {
@@ -1822,7 +2458,7 @@ public class TrainTicketBookingSystem extends JFrame {
                     if (contentPane == null) return;
 
                     // Add a debug log
-                    System.out.println("Updating timer for seat: " + seatId + " with time: " + timeString);
+
 
                     JPanel containerPanel = findMainContainerPanel(contentPane);
                     if (containerPanel == null) return;
@@ -2131,10 +2767,10 @@ public class TrainTicketBookingSystem extends JFrame {
                 ticketsToCheckout.put(item.seatId, currentMaLich);
             }
 
-            // Open checkout screen with only the necessary identifiers
+            // Open checkout screen with only the necessary identifiers and employee information
             ThanhToanGUI checkoutScreen = null;
             try {
-                checkoutScreen = new ThanhToanGUI(ticketsToCheckout);
+                checkoutScreen = new ThanhToanGUI(ticketsToCheckout, nhanVien);
             } catch (RemoteException ex) {
                 throw new RuntimeException(ex);
             }
@@ -2167,9 +2803,12 @@ public class TrainTicketBookingSystem extends JFrame {
         String to;
         String departureDate;
         double price;
+        String carId;       // The train car ID
+        String carName;     // The train car name or number
 
         public TicketItem(String trainCode, String seatId, String seatNumber,
-                          String from, String to, String departureDate, double price) {
+                          String from, String to, String departureDate, double price,
+                          String carId, String carName) {
             this.trainCode = trainCode;
             this.seatId = seatId;
             this.seatNumber = seatNumber;
@@ -2177,6 +2816,8 @@ public class TrainTicketBookingSystem extends JFrame {
             this.to = to;
             this.departureDate = departureDate;
             this.price = price;
+            this.carId = carId;
+            this.carName = carName;
         }
     }
 
@@ -2193,7 +2834,12 @@ public class TrainTicketBookingSystem extends JFrame {
 
         SwingUtilities.invokeLater(() -> {
             try {
-                TrainTicketBookingSystem app = new TrainTicketBookingSystem();
+                // Create a sample employee for testing
+                NhanVien nv = new NhanVien();
+                NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+                nv = nhanVienDAO.getnhanvienById("NV202504180001");
+
+                TrainTicketBookingSystem app = new TrainTicketBookingSystem(nv);
                 app.setVisible(true);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null,

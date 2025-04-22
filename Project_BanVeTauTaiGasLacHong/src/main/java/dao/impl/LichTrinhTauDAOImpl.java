@@ -638,6 +638,260 @@ public class LichTrinhTauDAOImpl extends UnicastRemoteObject implements LichTrin
         return availableSeatsCount;
     }
 
+    @Override
+    public long getReservedSeatsBySchedule(String maLich) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long reservedSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count reserved seats by schedule
+            String jpql = "SELECT COUNT(cn.maCho) " +
+                    "FROM LichTrinhTau lt " +
+                    "JOIN lt.tau t " +
+                    "JOIN t.danhSachToaTau tt " +
+                    "JOIN tt.danhSachChoNgoi cn " +
+                    "JOIN cn.veTau vt " +
+                    "WHERE lt.maLich = :maLich " +
+                    "AND vt.lichTrinhTau.maLich = lt.maLich " +
+                    "AND vt.trangThai NOT IN (:statuses)";
+
+            reservedSeatsCount = em.createQuery(jpql, Long.class)
+                    .setParameter("maLich", maLich)
+                    .setParameter("statuses", List.of(TrangThaiVeTau.DA_TRA, TrangThaiVeTau.DA_DOI))
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error fetching reserved seats by schedule", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return reservedSeatsCount;
+    }
+
+    @Override
+    public long getReservedSeatsByScheduleAndCar(String maLich, String maToa) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long reservedSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count reserved seats by schedule and train car
+            String jpql = "SELECT COUNT(cn.maCho) " +
+                    "FROM LichTrinhTau lt " +
+                    "JOIN lt.tau t " +
+                    "JOIN t.danhSachToaTau tt " +
+                    "JOIN tt.danhSachChoNgoi cn " +
+                    "JOIN cn.veTau vt " +
+                    "WHERE lt.maLich = :maLich " +
+                    "AND tt.maToa = :maToa " +
+                    "AND vt.lichTrinhTau.maLich = lt.maLich " +
+                    "AND vt.trangThai NOT IN (:statuses)";
+
+            reservedSeatsCount = em.createQuery(jpql, Long.class)
+                    .setParameter("maLich", maLich)
+                    .setParameter("maToa", maToa)
+                    .setParameter("statuses", List.of(TrangThaiVeTau.DA_TRA, TrangThaiVeTau.DA_DOI))
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error fetching reserved seats by schedule and car", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return reservedSeatsCount;
+    }
+
+    @Override
+    public long getTotalSeatsBySchedule(String maLich) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long totalSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count total seats by schedule
+            String jpql = "SELECT COUNT(cn.maCho) " +
+                    "FROM LichTrinhTau lt " +
+                    "JOIN lt.tau t " +
+                    "JOIN t.danhSachToaTau tt " +
+                    "JOIN tt.danhSachChoNgoi cn " +
+                    "WHERE lt.maLich = :maLich";
+
+            totalSeatsCount = em.createQuery(jpql, Long.class)
+                    .setParameter("maLich", maLich)
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error fetching total seats by schedule", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return totalSeatsCount;
+    }
+
+    @Override
+    public long getTotalSeatsByScheduleAndCar(String maLich, String maToa) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        long totalSeatsCount = 0;
+
+        try {
+            tx.begin();
+
+            // JPQL query to count total seats by schedule and train car
+            String jpql = "SELECT COUNT(cn.maCho) " +
+                    "FROM LichTrinhTau lt " +
+                    "JOIN lt.tau t " +
+                    "JOIN t.danhSachToaTau tt " +
+                    "JOIN tt.danhSachChoNgoi cn " +
+                    "WHERE lt.maLich = :maLich " +
+                    "AND tt.maToa = :maToa";
+
+            totalSeatsCount = em.createQuery(jpql, Long.class)
+                    .setParameter("maLich", maLich)
+                    .setParameter("maToa", maToa)
+                    .getSingleResult();
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error fetching total seats by schedule and car", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return totalSeatsCount;
+    }
+
+    @Override
+    public double getReservationPercentageBySchedule(String maLich) throws RemoteException {
+        long totalSeats = getTotalSeatsBySchedule(maLich);
+        if (totalSeats == 0) {
+            return 0.0; // Avoid division by zero
+        }
+
+        long reservedSeats = getReservedSeatsBySchedule(maLich);
+        return (reservedSeats * 100.0) / totalSeats;
+    }
+
+    @Override
+    public double getReservationPercentageByScheduleAndCar(String maLich, String maToa) throws RemoteException {
+        long totalSeats = getTotalSeatsByScheduleAndCar(maLich, maToa);
+        if (totalSeats == 0) {
+            return 0.0; // Avoid division by zero
+        }
+
+        long reservedSeats = getReservedSeatsByScheduleAndCar(maLich, maToa);
+        return (reservedSeats * 100.0) / totalSeats;
+    }
+
+    @Override
+    public boolean updateTicketStatusBySchedule(String maLich, TrangThaiVeTau trangThai) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // JPQL query to update ticket status for a given schedule
+            String jpql = "UPDATE VeTau v " +
+                    "SET v.trangThai = :trangThai " +
+                    "WHERE v.lichTrinhTau.maLich = :maLich";
+
+            int updatedCount = em.createQuery(jpql)
+                    .setParameter("trangThai", trangThai)
+                    .setParameter("maLich", maLich)
+                    .executeUpdate();
+
+            tx.commit();
+
+            // Return true if at least one ticket was updated
+            return updatedCount > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error updating ticket status by schedule", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    @Override
+    public boolean updateTicketStatusByScheduleAndCar(String maLich, String maToa, TrangThaiVeTau trangThai) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            // JPQL query to update ticket status for a given schedule and train car
+            String jpql = "UPDATE VeTau v " +
+                    "SET v.trangThai = :trangThai " +
+                    "WHERE v.lichTrinhTau.maLich = :maLich " +
+                    "AND v.choNgoi.toaTau.maToa = :maToa";
+
+            int updatedCount = em.createQuery(jpql)
+                    .setParameter("trangThai", trangThai)
+                    .setParameter("maLich", maLich)
+                    .setParameter("maToa", maToa)
+                    .executeUpdate();
+
+            tx.commit();
+
+            // Return true if at least one ticket was updated
+            return updatedCount > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            throw new RemoteException("Error updating ticket status by schedule and car", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
 
 
 }

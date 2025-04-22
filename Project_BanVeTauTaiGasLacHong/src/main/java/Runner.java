@@ -14,7 +14,7 @@ public class Runner {
         // Khởi tạo EntityManager và EntityTransaction để tương tác với cơ sở dữ liệu
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
-        KhuyenMaiDF.generateAndPrintSampleData(em);
+
         LoaiToaDF.generateSampleData(em);
         TuyenTauDF.generateSampleData(em);
         TauDF.generateSampleData(em);

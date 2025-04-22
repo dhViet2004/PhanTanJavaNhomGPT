@@ -7,11 +7,12 @@ import model.ToaTau;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
-@AllArgsConstructor
-public class ToaTauDAOImpl implements dao.ToaTauDAO {
+
+public class ToaTauDAOImpl extends UnicastRemoteObject implements dao.ToaTauDAO {
     private EntityManager em ;
-    public ToaTauDAOImpl(){
+    public ToaTauDAOImpl() throws RemoteException {
         this.em = JPAUtil.getEntityManager();
     }
 
@@ -40,7 +41,7 @@ public class ToaTauDAOImpl implements dao.ToaTauDAO {
         return listToaTau;
     }
     @Override
-    public ToaTau getToaTauById(String id) {
+    public ToaTau getToaTauById(String id) throws RemoteException {
         return em.find(ToaTau.class, id);
     }
 

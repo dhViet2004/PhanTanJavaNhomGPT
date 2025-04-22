@@ -11,6 +11,8 @@ import util.JPAUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +60,49 @@ public class VeTauDAOImpl extends UnicastRemoteObject implements VeTauDAO {
         }
         return false;
     }
+    @Override
+    public String generateMaVe() throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            // Query to get the latest ticket ID
+            String query = "SELECT v.maVe FROM VeTau v ORDER BY v.maVe DESC";
+            List<String> results = em.createQuery(query, String.class)
+                    .setMaxResults(1)
+                    .getResultList();
 
+            if (results.isEmpty()) {
+                // No tickets exist yet, start with VE00000001
+                return "VE00000001";
+            } else {
+                String latestId = results.get(0);
+                // Extract the numeric portion (assumes format is VExxxxxxxx)
+                if (latestId.length() >= 10 && latestId.startsWith("VE")) {
+                    String numericPart = latestId.substring(2);
+                    try {
+                        // Parse the numeric part and increment by 1
+                        int nextNum = Integer.parseInt(numericPart) + 1;
+                        // Format with leading zeros to maintain 8 digits
+                        return String.format("VE%08d", nextNum);
+                    } catch (NumberFormatException e) {
+                        // If parsing fails, fall back to date + random approach
+                        return "VE" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                                + String.format("%04d", (int)(Math.random() * 10000));
+                    }
+                } else {
+                    // Invalid format, fall back to date + random approach
+                    return "VE" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                            + String.format("%04d", (int)(Math.random() * 10000));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fall back to date + random approach in case of errors
+            return "VE" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                    + String.format("%04d", (int)(Math.random() * 10000));
+        } finally {
+            em.close();
+        }
+    }
     @Override
     public boolean update(VeTau t) throws RemoteException {
         EntityManager em = JPAUtil.getEntityManager();

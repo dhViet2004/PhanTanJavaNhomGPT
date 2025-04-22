@@ -20,7 +20,7 @@ public class RMIServer {
             LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
             TauDAO tauDAO = new TauDAOImpl();
             TuyenTauDAO tuyenTauDAO = new TuyenTauDAOImpl();
-
+            KhuyenMaiDAO khuyenMaiDAO = new KhuyenMaiDAOImpl();
             HoaDonDAO hoaDonDAO = new HoaDonDAOImpl();
             KhachHangDAO khachHangDAO = new KhachHangDAOImpl();
             LoaiKhachHangDAO loaiKhachHangDAO = new LoaiKhachHangDAOImpl();
@@ -31,9 +31,11 @@ public class RMIServer {
             LoaiHoaDonDAO loaiHoaDonDAO = new LoaiHoaDonDAOImpl();
             ChiTietHoaDonDAO chiTietHoaDonDAO = new ChiTietHoaDonDAOImpl();
             NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+            ChoNgoiDAO choNgoiDAO = new ChoNgoiDAOImpl();
             TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
             TraCuuVeDAO traCuuVeDAO = new TraCuuVeDAOImpl();
             ThongKeDAO thongKeDAO = new ThongKeDAOImpl();
+            ToaTauDAO ToaTauDAO = new ToaTauDAOImpl();
             // Tạo registry
             Registry registry = LocateRegistry.createRegistry(9090);
 
@@ -41,12 +43,13 @@ public class RMIServer {
             registry.rebind("lichTrinhTauDAO", lichTrinhTauDAO);
             registry.rebind("tauDAO", tauDAO);
             registry.rebind("tuyenTauDAO", tuyenTauDAO);
-
+            registry.rebind("toaTauDAO", ToaTauDAO);
+            registry.rebind("KhuyenMaiDAO", khuyenMaiDAO);
             registry.rebind("hoaDonDAO", hoaDonDAO);
             registry.rebind("veTauDAO", veTauDAO);
             registry.rebind("khachHangDAO", khachHangDAO);
             registry.rebind("loaiKhachHangDAO", loaiKhachHangDAO);
-
+            registry.rebind("choNgoiDAO", choNgoiDAO);
             registry.rebind("doiVeDAO", doiVeDAO); // Thêm dòng này
             registry.rebind("toaTauDoiVeDAO", toaTauDoiVeDAO);
             registry.rebind("choNgoiDoiVeDAO", choNgoiDoiVeDAO);
@@ -56,6 +59,8 @@ public class RMIServer {
             registry.rebind("taiKhoanDAO",taiKhoanDAO);
             registry.rebind("traCuuVeDAO", traCuuVeDAO);
             registry.rebind("thongKeDAO", thongKeDAO);
+            registry.rebind("khachHangDAO", khachHangDAO);
+            registry.rebind("loaiKhachHangDAO", loaiKhachHangDAO);
 
             System.out.println("RMI Server đã sẵn sàng!");
             System.out.println("Registry đang chạy tại rmi://127.0.0.1:9090");

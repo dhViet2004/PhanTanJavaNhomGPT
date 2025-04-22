@@ -7,15 +7,16 @@ import model.ChoNgoi;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import model.TrangThaiVeTau;
-public class ChoNgoiDAOImpl implements dao.ChoNgoiDAO {
+public class ChoNgoiDAOImpl extends UnicastRemoteObject implements dao.ChoNgoiDAO {
     private EntityManager em;
 
-    public ChoNgoiDAOImpl() {
+    public ChoNgoiDAOImpl() throws RemoteException {
         this.em = JPAUtil.getEntityManager();
     }
 
@@ -34,7 +35,7 @@ public class ChoNgoiDAOImpl implements dao.ChoNgoiDAO {
         return list;
     }
     @Override
-    public ChoNgoi getById(String id) {
+    public ChoNgoi getById(String id) throws RemoteException {
         return em.find(ChoNgoi.class, id);
     }
 
@@ -83,7 +84,7 @@ public class ChoNgoiDAOImpl implements dao.ChoNgoiDAO {
         return false;
     }
     @Override
-    public List<ChoNgoi> getListByToa(String maToa) {
+    public List<ChoNgoi> getListByToa(String maToa) throws RemoteException {
         EntityTransaction tx = em.getTransaction();
         List<ChoNgoi> list = null;
         try {
@@ -157,29 +158,5 @@ public class ChoNgoiDAOImpl implements dao.ChoNgoiDAO {
         return seatAvailabilityMap;
     }
 
-    public static void main(String[] args) {
-        try {
-            // Initialize the DAO
-            ChoNgoiDAOImpl choNgoiDAO = new ChoNgoiDAOImpl();
 
-            // Test with sample inputs (replace with actual values from your database)
-            String maLich = "LLT20250418192106-013"; // Example schedule ID
-            String maToa = "T101"; // Example toa ID
-
-            // Call the method and get the result
-            Map<String, String> seatAvailabilityMap = choNgoiDAO.getAvailableSeatsMapByScheduleAndToa(maLich, maToa);
-
-            // Print the results
-            System.out.println("Seat availability for Schedule: " + maLich + " and Toa: " + maToa);
-            if (seatAvailabilityMap.isEmpty()) {
-                System.out.println("No seats found.");
-            } else {
-                seatAvailabilityMap.forEach((maCho, trangThai) ->
-                        System.out.println("Seat ID: " + maCho + ", Status: " + trangThai)
-                );
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-    }
 }

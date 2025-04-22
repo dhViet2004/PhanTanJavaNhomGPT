@@ -34,31 +34,31 @@ public class KhuyenMaiDF {
         return String.format("%s%06d", prefix, nextNumber);
     }
 
-    // Hàm để hiển thị dữ liệu mẫu
-    public static void generateAndPrintSampleData(EntityManager em) {
-
-
-        try {
-            em.getTransaction().begin();
-            for (int i = 0; i < 15; i++) {
-                KhuyenMai khuyenMai = new KhuyenMai();
-                khuyenMai.setMaKM(generateNextMaKM(em)); // Sinh mã tự động
-                khuyenMai.setTenKM("Khuyến mãi số " + (i + 1));
-                khuyenMai.setThoiGianBatDau(LocalDate.now().minusDays(i));
-                khuyenMai.setThoiGianKetThuc(LocalDate.now().plusDays(i + 10));
-                khuyenMai.setNoiDungKM("Giảm giá " + (10 + i) + "% cho khách hàng");
-                khuyenMai.setChietKhau(10 + i);
-                khuyenMai.setDoiTuongApDung("Khách hàng loại " + (i % 3 + 1));
-                khuyenMai.setTrangThai(i % 2 == 0 ? "Đang áp dụng" : "Hết hạn");
-
-                em.persist(khuyenMai); // Lưu vào cơ sở dữ liệu
-            }
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            e.printStackTrace();
-        }
-    }
+//    // Hàm để hiển thị dữ liệu mẫu
+//    public static void generateAndPrintSampleData(EntityManager em) {
+//
+//
+//        try {
+//            em.getTransaction().begin();
+//            for (int i = 0; i < 15; i++) {
+//                KhuyenMai khuyenMai = new KhuyenMai();
+//                khuyenMai.setMaKM(generateNextMaKM(em)); // Sinh mã tự động
+//                khuyenMai.setTenKM("Khuyến mãi số " + (i + 1));
+//                khuyenMai.setThoiGianBatDau(LocalDate.now().minusDays(i));
+//                khuyenMai.setThoiGianKetThuc(LocalDate.now().plusDays(i + 10));
+//                khuyenMai.setNoiDungKM("Giảm giá " + (10 + i) + "% cho khách hàng");
+//                khuyenMai.setChietKhau(10 + i);
+//                khuyenMai.setDoiTuongApDung("Khách hàng loại " + (i % 3 + 1));
+//                khuyenMai.setTrangThai(i % 2 == 0 ? "Đang áp dụng" : "Hết hạn");
+//
+//                em.persist(khuyenMai); // Lưu vào cơ sở dữ liệu
+//            }
+//            em.getTransaction().commit();
+//        } catch (Exception e) {
+//            em.getTransaction().rollback();
+//            e.printStackTrace();
+//        }
+//    }
 
 
 }
