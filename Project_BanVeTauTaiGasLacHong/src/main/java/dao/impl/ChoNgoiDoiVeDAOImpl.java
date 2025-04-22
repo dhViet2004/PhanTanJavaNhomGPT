@@ -4,13 +4,16 @@ import dao.ChoNgoiCallback;
 import dao.ChoNgoiDoiVeDAO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Query;
 import model.ChoNgoi;
 import model.TrangThaiVeTau;
+import model.VeTau;
 import util.JPAUtil;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,7 +25,99 @@ public class ChoNgoiDoiVeDAOImpl extends UnicastRemoteObject implements ChoNgoiD
 
     // Lưu trữ các chỗ ngồi đã khóa tạm thời: <maCho:maLichTrinh, <sessionId, thời điểm hết hạn>>
     private final Map<String, Map<String, Long>> choNgoiDaKhoa = new ConcurrentHashMap<>();
+    @Override
+    public Map<String, TrangThaiVeTau> getTrangThaiChoNgoiTheoLichTrinh(String maLichTrinh) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        Map<String, TrangThaiVeTau> result = new HashMap<>();
 
+        try {
+            // Query to get all tickets for this schedule that are not returned/exchanged
+            String jpql = "SELECT v FROM VeTau v " +
+                    "WHERE v.lichTrinhTau.maLich = :maLichTrinh " +
+                    "AND v.choNgoi IS NOT NULL";
+
+            List<VeTau> tickets = em.createQuery(jpql, VeTau.class)
+                    .setParameter("maLichTrinh", maLichTrinh)
+                    .getResultList();
+
+            // Map seat IDs to their ticket status
+            for (VeTau ve : tickets) {
+                // Latest ticket status for each seat takes precedence
+                String maCho = ve.getChoNgoi().getMaCho();
+                TrangThaiVeTau currentStatus = result.get(maCho);
+
+                // Only overwrite if:
+                // 1. No status exists yet, or
+                // 2. New status is DA_THANH_TOAN (takes precedence), or
+                // 3. Current is not DA_THANH_TOAN and new is DA_DOI or DA_TRA
+                if (currentStatus == null ||
+                        ve.getTrangThai() == TrangThaiVeTau.DA_THANH_TOAN ||
+                        (currentStatus != TrangThaiVeTau.DA_THANH_TOAN &&
+                                (ve.getTrangThai() == TrangThaiVeTau.DA_DOI ||
+                                        ve.getTrangThai() == TrangThaiVeTau.DA_TRA))) {
+
+                    result.put(maCho, ve.getTrangThai());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi lấy trạng thái chỗ ngồi theo lịch trình: " + e.getMessage());
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return result;
+    }
+    @Override
+    public boolean kiemTraChoNgoiThuocVe(String maCho, String maVe) throws RemoteException {
+        if (maVe == null || maVe.isEmpty()) return false;
+
+        EntityManager em = JPAUtil.getEntityManager();
+
+        try {
+            // Use JPQL to check if a seat belongs to a specific ticket
+            String jpql = "SELECT COUNT(v) FROM VeTau v WHERE v.choNgoi.maCho = :maCho AND v.maVe = :maVe";
+
+            Long count = em.createQuery(jpql, Long.class)
+                    .setParameter("maCho", maCho)
+                    .setParameter("maVe", maVe)
+                    .getSingleResult();
+
+            return count > 0;
+        } catch (Exception e) {
+            throw new RemoteException("Lỗi khi kiểm tra chỗ ngồi thuộc vé: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+    @Override
+    public boolean isChoNgoiAvailable(String maCho, String maVeHienTai) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            String jpql = "SELECT COUNT(v) FROM VeTau v WHERE v.choNgoi.maCho = :maCho " +
+                    "AND v.maVe != :maVeHienTai " +
+                    "AND v.trangThai NOT IN (:trangThaiDaTra)";
+
+            Long count = em.createQuery(jpql, Long.class)
+                    .setParameter("maCho", maCho)
+                    .setParameter("maVeHienTai", maVeHienTai)
+                    .setParameter("trangThaiDaTra", TrangThaiVeTau.DA_TRA)
+                    .getSingleResult();
+
+            return count == 0;
+        } catch (Exception e) {
+            throw new RemoteException("Lỗi khi kiểm tra chỗ ngồi: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
     public ChoNgoiDoiVeDAOImpl() throws RemoteException {
         super();
         // Khởi động thread dọn dẹp các khóa hết hạn
@@ -304,6 +399,80 @@ public class ChoNgoiDoiVeDAOImpl extends UnicastRemoteObject implements ChoNgoiD
     @Override
     public void huyDangKyClientChoThongBao(ChoNgoiCallback callback) throws RemoteException {
         clientCallbacks.remove(callback);
+    }
+
+    @Override
+    public boolean kiemTraChoNgoiDaDatTrenHeTHong(String maCho, String maVeLoaiTru) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            String jpql = "SELECT COUNT(v) FROM VeTau v " +
+                    "WHERE v.choNgoi.maCho = :maCho " +
+                    "AND v.trangThai NOT IN (:trangThaiDaTra, :trangThaiDaDoi)";
+
+            // Nếu có mã vé cần loại trừ, thêm điều kiện
+            if (maVeLoaiTru != null && !maVeLoaiTru.isEmpty()) {
+                jpql += " AND v.maVe != :maVeLoaiTru";
+            }
+
+            Query query = em.createQuery(jpql);
+            query.setParameter("maCho", maCho)
+                    .setParameter("trangThaiDaTra", TrangThaiVeTau.DA_TRA)
+                    .setParameter("trangThaiDaDoi", TrangThaiVeTau.DA_DOI);
+
+            if (maVeLoaiTru != null && !maVeLoaiTru.isEmpty()) {
+                query.setParameter("maVeLoaiTru", maVeLoaiTru);
+            }
+
+            Long count = (Long) query.getSingleResult();
+
+            tx.commit();
+            return count > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RemoteException("Lỗi khi kiểm tra chỗ ngồi đã đặt trên hệ thống: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    @Override
+    public List<String> layDanhSachLichTrinhDaDatCho(String maCho) throws RemoteException {
+        EntityManager em = JPAUtil.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            String jpql = "SELECT DISTINCT v.lichTrinhTau.maLich FROM VeTau v " +
+                    "WHERE v.choNgoi.maCho = :maCho " +
+                    "AND v.trangThai NOT IN (:trangThaiDaTra, :trangThaiDaDoi)";
+
+            List<String> danhSachLichTrinh = em.createQuery(jpql, String.class)
+                    .setParameter("maCho", maCho)
+                    .setParameter("trangThaiDaTra", TrangThaiVeTau.DA_TRA)
+                    .setParameter("trangThaiDaDoi", TrangThaiVeTau.DA_DOI)
+                    .getResultList();
+
+            tx.commit();
+            return danhSachLichTrinh;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RemoteException("Lỗi khi lấy danh sách lịch trình đã đặt chỗ: " + e.getMessage(), e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     // Phương thức thông báo cập nhật trạng thái chỗ ngồi cho tất cả client

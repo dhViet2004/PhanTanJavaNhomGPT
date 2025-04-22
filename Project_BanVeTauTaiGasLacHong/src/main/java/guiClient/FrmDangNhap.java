@@ -7,8 +7,10 @@ import dao.impl.LichLamViecDAOImpl;
 import dao.impl.NhanVienDAOImpl;
 import dao.impl.TaiKhoanDAOImpl;
 //import model.EmailSender;
+import model.EmailSender;
 import model.LichLamViec;
 import model.NhanVien;
+//import model.SMSSender;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +28,8 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 public class FrmDangNhap extends JFrame implements ActionListener {
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     private JPanel mainPanel;
     private JLabel backgroundLabel;
     private JTextField txtMaNhanVien;
@@ -37,8 +41,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
     private TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
     private NhanVien nv;
     private LichLamViecDAO llv_dao = new LichLamViecDAOImpl();
-    private static final String RMI_SERVER_IP = "127.0.0.1";
-    private static final int RMI_SERVER_PORT = 9090;
+
     private NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
     private boolean isConnected = false;
 
@@ -277,40 +280,47 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 ex.printStackTrace();
             }
 
-        } else if (e.getSource() == btnQuenMatKhau) {
-            // Phần quên mật khẩu giữ nguyên như cũ
+        }
+        else if (e.getSource() == btnQuenMatKhau) {
+            // Kiểm tra người dùng đã nhập tên đăng nhập chưa
             String user = txtMaNhanVien.getText();
             if (user == null || user.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng nhập tên đăng nhập trước khi thực hiện quên mật khẩu.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                txtMaNhanVien.requestFocus();
+                txtMaNhanVien.requestFocus(); // Đặt tiêu điểm vào trường tên đăng nhập
                 return;
             }
 
+            // Hiển thị hộp thoại yêu cầu nhập email
             String email = JOptionPane.showInputDialog(this, "Vui lòng nhập email để lấy lại mật khẩu:", "Quên mật khẩu", JOptionPane.INFORMATION_MESSAGE);
 
+            // Kiểm tra email nhập vào
             if (email == null || email.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Email không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-//            try {
-//                JOptionPane.showMessageDialog(this, "Đang gửi email. Vui lòng chờ trong giây lát...", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-//
-//                String password = taiKhoanDAO.getPasswordByEmail(email);
-//                if (password == null) {
-//                    JOptionPane.showMessageDialog(this, "Email không tồn tại trong hệ thống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                } else {
-//                    boolean emailSent = EmailSender.sendPasswordEmail(email, password);
-//                    if (emailSent) {
-//                        JOptionPane.showMessageDialog(this, "Mật khẩu đã được gửi đến email của bạn.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-//                    } else {
-//                        JOptionPane.showMessageDialog(this, "Gửi email thất bại. Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                    }
-//                }
-//            } catch (Exception ex) {
-//                JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                ex.printStackTrace();
-//            }
+            try {
+                // Hiển thị thông báo đang gửi email
+                JOptionPane.showMessageDialog(this, "Đang gửi email. Vui lòng chờ trong giây lát...", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+
+                // Kiểm tra email trong cơ sở dữ liệu
+                String password = taiKhoanDAO.getPasswordByEmail(email); // Phương thức này phải được triển khai trong lớp DAO_TaiKhoan
+                if (password == null) {
+                    JOptionPane.showMessageDialog(this, "Email không tồn tại trong hệ thống", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    // Gửi email chứa mật khẩu
+                    boolean emailSent = EmailSender.sendPasswordEmail(email, password);
+
+                    if (emailSent) {
+                        JOptionPane.showMessageDialog(this, "Mật khẩu đã được gửi đến email của bạn.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Gửi email thất bại. Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
         }
     }
 

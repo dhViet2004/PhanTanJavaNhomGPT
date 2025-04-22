@@ -77,18 +77,33 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
         return false;
     }
 
-    public String getPasswordByEmail(String email) {
+    public String getPasswordByPhone(String phone) {
         String jpql = "SELECT tk.passWord FROM TaiKhoan tk " +
-                "JOIN tk.nhanVien nv WHERE nv.diaChi = :email";
+                "JOIN tk.nhanVien nv WHERE nv.soDT = :phone";
 
         try {
             return em.createQuery(jpql, String.class)
-                    .setParameter("email", email)
+                    .setParameter("phone", phone)
                     .getSingleResult();
         } catch (NoResultException e) {
             return null; // Không tìm thấy
         }
     }
+
+    public String getPasswordByEmail(String email) {
+        String jpql = "SELECT tk.passWord FROM TaiKhoan tk WHERE tk.nhanVien.diaChi = :email";
+        try {
+            return em.createQuery(jpql, String.class)
+                    .setParameter("email", email)
+                    .getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public NhanVien checkLogin(String maNhanVien, String password) {
         System.out.println(maNhanVien + ": "+password);

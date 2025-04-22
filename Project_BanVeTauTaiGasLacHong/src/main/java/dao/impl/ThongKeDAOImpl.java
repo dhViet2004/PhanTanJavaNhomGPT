@@ -2,7 +2,9 @@ package dao.impl;
 
 import dao.ThongKeDAO;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Query;
+import model.KetQuaThongKeDoanhThu;
 import model.KetQuaThongKeVe;
 import model.TrangThaiVeTau;
 import util.JPAUtil;
@@ -145,4 +147,104 @@ public class ThongKeDAOImpl extends UnicastRemoteObject implements ThongKeDAO {
             }
         }
     }
+
+    @Override
+    public List<KetQuaThongKeDoanhThu> thongKeDoanhThuTheoThoiGian(LocalDate tuNgay, LocalDate denNgay, String loaiThoiGian)  throws RemoteException {
+
+        EntityManager em = JPAUtil.getEntityManager();
+        List<KetQuaThongKeDoanhThu> ketQuaList = new ArrayList<>();
+
+        try {
+            // Xác định format date group trong SQL dựa vào loại thời gian
+            String jpqlGroupBy;
+
+            switch (loaiThoiGian) {
+                case "Ngày":
+                    jpqlGroupBy = "CAST(v.ngayDi AS DATE)";
+                    break;
+                case "Tuần":
+                    jpqlGroupBy = "FUNCTION('DATE_ADD', v.ngayDi, FUNCTION('INTERVAL', FUNCTION('-WEEKDAY', v.ngayDi), 'DAY'))";
+                    break;
+                case "Tháng":
+                    jpqlGroupBy = "FUNCTION('DATE', FUNCTION('DATE_FORMAT', v.ngayDi, '%Y-%m-01'))";
+                    break;
+                case "Quý":
+                    jpqlGroupBy = "FUNCTION('DATE', FUNCTION('DATE_FORMAT', v.ngayDi, '%Y-%m-01'))";
+                    break;
+                case "Năm":
+                    jpqlGroupBy = "FUNCTION('DATE', FUNCTION('DATE_FORMAT', v.ngayDi, '%Y-01-01'))";
+                    break;
+                default:
+                    jpqlGroupBy = "CAST(v.ngayDi AS DATE)";
+            }
+
+            // JPQL query
+            String jpql = "SELECT " + jpqlGroupBy + " AS thoiGian, " +
+                    "tt.tenTuyen AS tenTuyen, " +
+                    "lt.tenLoai AS loaiToa, " +
+                    "CASE WHEN v.doiTuong = 'TRE_EM' THEN 'Trẻ em' " +
+                    "     WHEN v.doiTuong = 'NGUOI_LON' THEN 'Người lớn' " +
+                    "     ELSE v.doiTuong END as loaiVe, " +
+                    "SUM(v.giaVe) as doanhThu " +
+                    "FROM VeTau v " +
+                    "JOIN v.lichTrinhTau ltt " +
+                    "JOIN ltt.tau t " +
+                    "JOIN t.tuyenTau tt " +
+                    "JOIN v.choNgoi cn " +
+                    "JOIN cn.toaTau toa " +
+                    "JOIN toa.loaiToa lt " +
+                    "WHERE v.ngayDi BETWEEN :tuNgay AND :denNgay " +
+                    "AND v.trangThai = 'DA_THANH_TOAN' " +
+                    "GROUP BY " + jpqlGroupBy + ", tt.tenTuyen, lt.tenLoai, v.doiTuong " +
+                    "ORDER BY " + jpqlGroupBy + ", tt.tenTuyen";
+
+            Query query = em.createQuery(jpql);
+            query.setParameter("tuNgay", tuNgay);
+            query.setParameter("denNgay", denNgay);
+
+            List<Object[]> results = query.getResultList();
+
+            // Chuyển đổi kết quả
+            for (Object[] row : results) {
+                KetQuaThongKeDoanhThu ketQua = new KetQuaThongKeDoanhThu();
+
+                // Chuyển đổi ngày giống như trong hàm thongKeVeTheoThoiGian
+                if (row[0] instanceof java.sql.Date) {
+                    java.sql.Date sqlDate = (java.sql.Date) row[0];
+                    ketQua.setThoiGian(sqlDate.toLocalDate());
+                } else if (row[0] instanceof java.time.LocalDate) {
+                    ketQua.setThoiGian((LocalDate) row[0]);
+                } else if (row[0] instanceof java.util.Date) {
+                    java.util.Date utilDate = (java.util.Date) row[0];
+                    ketQua.setThoiGian(utilDate.toInstant()
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate());
+                } else {
+                    // Nếu không phải kiểu date đã biết, in ra lớp thực tế để debug
+                    System.err.println("Unexpected date type: " +
+                            (row[0] != null ? row[0].getClass().getName() : "null"));
+                    // Nếu null, đặt thành ngày hiện tại
+                    ketQua.setThoiGian(row[0] != null ? LocalDate.parse(row[0].toString()) : LocalDate.now());
+                }
+
+                ketQua.setTenTuyen((String) row[1]);
+                ketQua.setLoaiToa((String) row[2]);
+                ketQua.setLoaiVe((String) row[3]);
+                ketQua.setDoanhThu(((Number) row[4]).doubleValue());
+                ketQuaList.add(ketQua);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi thống kê doanh thu theo thời gian: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Lỗi khi thống kê doanh thu theo thời gian", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+
+        return ketQuaList;
+    }
+
 }

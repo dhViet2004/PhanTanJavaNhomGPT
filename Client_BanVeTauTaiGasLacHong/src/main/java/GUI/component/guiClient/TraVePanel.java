@@ -34,6 +34,9 @@ import java.util.Locale;
 import java.util.Map;
 
 public class TraVePanel extends JPanel {
+    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final int RMI_SERVER_PORT = 9090;
+
     private VeTauDAO veTauDAO;
     private JTextField txtMaVe;
     private JTextField txtTenKhachHang;
@@ -462,7 +465,8 @@ public class TraVePanel extends JPanel {
     // Cập nhật phương thức connectToServer
     private void connectToServer() {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 9090);
+//            Registry registry = LocateRegistry.getRegistry("localhost", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             this.veTauDAO = (VeTauDAO) registry.lookup("veTauDAO");
             this.hoaDonDAO = (HoaDonDAO) registry.lookup("hoaDonDAO");
             this.chiTietHoaDonDAO = (ChiTietHoaDonDAO) registry.lookup("chiTietHoaDonDAO");

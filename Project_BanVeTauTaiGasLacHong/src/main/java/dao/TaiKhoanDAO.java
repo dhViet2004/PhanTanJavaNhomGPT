@@ -18,4 +18,5 @@ public interface TaiKhoanDAO  extends Remote {
     String getPasswordByEmail(String email) throws RemoteException;
     NhanVien checkLogin(String maNhanVien, String password) throws RemoteException;
     boolean insert(TaiKhoan nd) throws RemoteException;
+    String getPasswordByPhone(String phone) throws RemoteException;
 }

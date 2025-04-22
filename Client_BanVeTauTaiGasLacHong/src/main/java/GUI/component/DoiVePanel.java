@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 public class DoiVePanel extends JPanel {
     // Địa chỉ IP và port của RMI server
-    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final String RMI_SERVER_IP = "192.168.1.39";
     private static final int RMI_SERVER_PORT = 9090;
     // Thêm các biến cho preloading
     private boolean isPreloadingData = false;
@@ -815,7 +815,7 @@ public class DoiVePanel extends JPanel {
 
             if (response == JOptionPane.YES_OPTION) {
                 // Quay lại màn hình chính
-                Container parent = this.getParent();
+                java.awt.Container parent = this.getParent();
                 if (parent != null) {
                     ((CardLayout) parent.getLayout()).show(parent, "Trang chủ");
                 }
@@ -1313,8 +1313,8 @@ public class DoiVePanel extends JPanel {
 
             // Gọi API để cập nhật vé
             boolean success = doiVeDAO.doiVe(veTauHienTai);
-
-            if (success) {
+            boolean xuLyThanhToanSuccess = xuLyThanhToan();
+            if (success && xuLyThanhToanSuccess) {
                 updateLichSuAndShowSuccess(trangThaiCu);
             } else {
                 JOptionPane.showMessageDialog(this,
@@ -1383,7 +1383,8 @@ public class DoiVePanel extends JPanel {
                     lichTrinhDaChon,
                     choNgoiDAO,
                     toaTauDAO,
-                    this::xuLyChoNgoiDaChon
+                    this::xuLyChoNgoiDaChon,
+                    veTauHienTai.getMaVe()
             );
             dialog.setVisible(true);
         } catch (Exception e) {
@@ -1453,7 +1454,6 @@ public class DoiVePanel extends JPanel {
     }
 
     private void updateLichSuAndShowSuccess(TrangThaiVeTau trangThaiCu) {
-
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String ngayGio = sdf.format(new Date());
 
@@ -1469,8 +1469,18 @@ public class DoiVePanel extends JPanel {
                 trangThaiThanhToan
         });
 
+        // Tính chênh lệch giá vé giữa vé mới và vé cũ
+        final double giaVeMoi = veTauHienTai.getGiaVe();
+        final double chenhLech = giaVeMoi - giaVeBanDau;
+        final boolean canTraThem = chenhLech > 0;
+        final boolean duocHoanLai = chenhLech < 0;
+        final double soTienChenhLech = Math.abs(chenhLech);
+
         // Create payment dialog
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán đổi vé", true);
+        String dialogTitle = canTraThem ? "Thanh toán đổi vé - Cần thu thêm" :
+                duocHoanLai ? "Thanh toán đổi vé - Hoàn tiền thừa" :
+                        "Thanh toán đổi vé";
+        final JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), dialogTitle, true);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setSize(500, 650); // Tăng kích thước chiều cao để chứa thêm các thành phần mới
         dialog.setLocationRelativeTo(this);
@@ -1486,6 +1496,22 @@ public class DoiVePanel extends JPanel {
         // Information panel
         JPanel pnlInfo = new JPanel(new BorderLayout(10, 10));
 
+        // Thêm thông tin chênh lệch giá
+        String thongTinChenhLech = "";
+
+        if (canTraThem) {
+            thongTinChenhLech = "\n- Giá vé cũ: " + currencyFormatter.format(giaVeBanDau) +
+                    "\n- Giá vé mới: " + currencyFormatter.format(giaVeMoi) +
+                    "\n- Cần thanh toán thêm: " + currencyFormatter.format(soTienChenhLech);
+        } else if (duocHoanLai) {
+            thongTinChenhLech = "\n- Giá vé cũ: " + currencyFormatter.format(giaVeBanDau) +
+                    "\n- Giá vé mới: " + currencyFormatter.format(giaVeMoi) +
+                    "\n- Tiền thừa hoàn lại: " + currencyFormatter.format(soTienChenhLech);
+        } else {
+            thongTinChenhLech = "\n- Giá vé: " + currencyFormatter.format(giaVeMoi) +
+                    "\n- Không có chênh lệch giá";
+        }
+
         // Ticket details
         String thongTinVe = "Thông tin vé đã đổi:\n\n" +
                 "- Mã vé: " + veTauHienTai.getMaVe() + "\n" +
@@ -1499,7 +1525,7 @@ public class DoiVePanel extends JPanel {
                 "- Chỗ ngồi: " + veTauHienTai.getChoNgoi().getTenCho() + "\n" +
                 "- Loại chỗ: " + veTauHienTai.getChoNgoi().getLoaiCho().getTenLoai() + "\n" +
                 "- Đối tượng: " + veTauHienTai.getDoiTuong() + "\n" +
-                "- Giá vé: " + currencyFormatter.format(veTauHienTai.getGiaVe()) + "\n\n" +
+                thongTinChenhLech + "\n\n" +
                 "- Trạng thái: " + veTauHienTai.getTrangThai().getValue();
 
         JTextArea txtThongTin = new JTextArea(thongTinVe);
@@ -1518,242 +1544,288 @@ public class DoiVePanel extends JPanel {
         // Payment panel
         JPanel pnlPayment = new JPanel();
         pnlPayment.setLayout(new BoxLayout(pnlPayment, BoxLayout.Y_AXIS));
-        pnlPayment.setBorder(BorderFactory.createTitledBorder("Thông tin thanh toán"));
 
-        // Thêm panel chọn phương thức thanh toán
-        JPanel pnlPaymentMethod = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel lblPaymentMethod = new JLabel("Phương thức thanh toán:");
-        pnlPaymentMethod.add(lblPaymentMethod);
+        // Sử dụng các container để giữ tham chiếu đến các đối tượng
+        final Container container = new Container();
+        container.radCash = null;
+        container.radTransfer = null;
+        container.txtCustomerPayment = null;
+        container.txtTransactionId = null;
+        container.lblPaymentStatus = null;
+        container.cmbPaymentType = null;
+        container.lblChange = null;
 
-        // Tạo radio button cho các phương thức thanh toán
-        JRadioButton radCash = new JRadioButton("Tiền mặt", true);
-        JRadioButton radTransfer = new JRadioButton("Chuyển khoản");
+        // Chỉ hiển thị phần thanh toán nếu cần trả thêm tiền
+        if (canTraThem) {
+            pnlPayment.setBorder(BorderFactory.createTitledBorder("Thông tin thanh toán"));
 
-        ButtonGroup paymentMethodGroup = new ButtonGroup();
-        paymentMethodGroup.add(radCash);
-        paymentMethodGroup.add(radTransfer);
+            // Thêm panel chọn phương thức thanh toán
+            JPanel pnlPaymentMethod = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JLabel lblPaymentMethod = new JLabel("Phương thức thanh toán:");
+            pnlPaymentMethod.add(lblPaymentMethod);
 
-        // Thêm các radio button vào panel
-        pnlPaymentMethod.add(radCash);
-        pnlPaymentMethod.add(radTransfer);
-        pnlPayment.add(pnlPaymentMethod);
+            // Tạo radio button cho các phương thức thanh toán
+            JRadioButton radCash = new JRadioButton("Tiền mặt", true);
+            JRadioButton radTransfer = new JRadioButton("Chuyển khoản");
+            container.radCash = radCash;
+            container.radTransfer = radTransfer;
 
-        // Panel cho thanh toán tiền mặt
-        JPanel pnlCashPayment = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+            ButtonGroup paymentMethodGroup = new ButtonGroup();
+            paymentMethodGroup.add(radCash);
+            paymentMethodGroup.add(radTransfer);
 
-        // Total amount
-        gbc.gridx = 0; gbc.gridy = 0;
-        pnlCashPayment.add(new JLabel("Tổng tiền:"), gbc);
+            // Thêm các radio button vào panel
+            pnlPaymentMethod.add(radCash);
+            pnlPaymentMethod.add(radTransfer);
+            pnlPayment.add(pnlPaymentMethod);
 
-        gbc.gridx = 1;
-        JLabel lblTotalAmount = new JLabel(currencyFormatter.format(veTauHienTai.getGiaVe()));
-        lblTotalAmount.setFont(new Font("Arial", Font.BOLD, 14));
-        pnlCashPayment.add(lblTotalAmount, gbc);
+            // Panel cho thanh toán tiền mặt
+            JPanel pnlCashPayment = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Customer payment
-        gbc.gridx = 0; gbc.gridy = 1;
-        pnlCashPayment.add(new JLabel("Tiền khách đưa:"), gbc);
+            // Total amount
+            gbc.gridx = 0; gbc.gridy = 0;
+            pnlCashPayment.add(new JLabel("Cần thu thêm:"), gbc);
 
-        gbc.gridx = 1;
-        JTextField txtCustomerPayment = new JTextField(15);
-        txtCustomerPayment.setFont(new Font("Arial", Font.PLAIN, 14));
-        pnlCashPayment.add(txtCustomerPayment, gbc);
+            gbc.gridx = 1;
+            JLabel lblTotalAmount = new JLabel(currencyFormatter.format(soTienChenhLech));
+            lblTotalAmount.setFont(new Font("Arial", Font.BOLD, 14));
+            pnlCashPayment.add(lblTotalAmount, gbc);
 
-        // Change amount
-        gbc.gridx = 0; gbc.gridy = 2;
-        pnlCashPayment.add(new JLabel("Tiền thối lại:"), gbc);
+            // Customer payment
+            gbc.gridx = 0; gbc.gridy = 1;
+            pnlCashPayment.add(new JLabel("Tiền khách đưa:"), gbc);
 
-        gbc.gridx = 1;
-        JLabel lblChange = new JLabel("0 VNĐ");
-        lblChange.setFont(new Font("Arial", Font.BOLD, 14));
-        pnlCashPayment.add(lblChange, gbc);
+            gbc.gridx = 1;
+            JTextField txtCustomerPayment = new JTextField(15);
+            container.txtCustomerPayment = txtCustomerPayment;
+            txtCustomerPayment.setFont(new Font("Arial", Font.PLAIN, 14));
+            pnlCashPayment.add(txtCustomerPayment, gbc);
 
-        // Panel cho thanh toán chuyển khoản
-        JPanel pnlTransferPayment = new JPanel();
-        pnlTransferPayment.setLayout(new BorderLayout(10, 10));
+            // Change amount
+            gbc.gridx = 0; gbc.gridy = 2;
+            pnlCashPayment.add(new JLabel("Tiền thối lại:"), gbc);
 
-        // Panel cho thông tin chuyển khoản
-        JPanel pnlTransferInfo = new JPanel(new GridBagLayout());
-        GridBagConstraints gbcTransfer = new GridBagConstraints();
-        gbcTransfer.insets = new Insets(5, 5, 5, 5);
-        gbcTransfer.fill = GridBagConstraints.HORIZONTAL;
+            gbc.gridx = 1;
+            JLabel lblChange = new JLabel("0 VNĐ");
+            container.lblChange = lblChange;
+            lblChange.setFont(new Font("Arial", Font.BOLD, 14));
+            pnlCashPayment.add(lblChange, gbc);
 
-        // Số tiền cần chuyển
-        gbcTransfer.gridx = 0; gbcTransfer.gridy = 0;
-        pnlTransferInfo.add(new JLabel("Số tiền cần chuyển:"), gbcTransfer);
+            // Panel cho thanh toán chuyển khoản
+            JPanel pnlTransferPayment = new JPanel();
+            pnlTransferPayment.setLayout(new BorderLayout(10, 10));
 
-        gbcTransfer.gridx = 1;
-        JLabel lblTransferAmount = new JLabel(currencyFormatter.format(veTauHienTai.getGiaVe()));
-        lblTransferAmount.setFont(new Font("Arial", Font.BOLD, 14));
-        pnlTransferInfo.add(lblTransferAmount, gbcTransfer);
+            // Panel cho thông tin chuyển khoản
+            JPanel pnlTransferInfo = new JPanel(new GridBagLayout());
+            GridBagConstraints gbcTransfer = new GridBagConstraints();
+            gbcTransfer.insets = new Insets(5, 5, 5, 5);
+            gbcTransfer.fill = GridBagConstraints.HORIZONTAL;
 
-        // Phương thức thanh toán
-        gbcTransfer.gridx = 0; gbcTransfer.gridy = 1;
-        pnlTransferInfo.add(new JLabel("Chọn phương thức:"), gbcTransfer);
+            // Số tiền cần chuyển
+            gbcTransfer.gridx = 0; gbcTransfer.gridy = 0;
+            pnlTransferInfo.add(new JLabel("Số tiền cần chuyển:"), gbcTransfer);
 
-        gbcTransfer.gridx = 1;
-        String[] paymentOptions = {"Chuyển khoản ngân hàng", "VNPay QR"};
-        JComboBox<String> cmbPaymentType = new JComboBox<>(paymentOptions);
-        pnlTransferInfo.add(cmbPaymentType, gbcTransfer);
+            gbcTransfer.gridx = 1;
+            JLabel lblTransferAmount = new JLabel(currencyFormatter.format(soTienChenhLech));
+            lblTransferAmount.setFont(new Font("Arial", Font.BOLD, 14));
+            pnlTransferInfo.add(lblTransferAmount, gbcTransfer);
 
-        // Tab panel cho các phương thức thanh toán
-        JPanel pnlPaymentTabs = new JPanel(new CardLayout());
+            // Phương thức thanh toán
+            gbcTransfer.gridx = 0; gbcTransfer.gridy = 1;
+            pnlTransferInfo.add(new JLabel("Chọn phương thức:"), gbcTransfer);
 
-        // Tab 1: Chuyển khoản ngân hàng truyền thống
-        JPanel pnlBankTransfer = new JPanel();
-        pnlBankTransfer.setLayout(new BoxLayout(pnlBankTransfer, BoxLayout.Y_AXIS));
+            gbcTransfer.gridx = 1;
+            String[] paymentOptions = {"Chuyển khoản ngân hàng", "VNPay QR"};
+            JComboBox<String> cmbPaymentType = new JComboBox<>(paymentOptions);
+            container.cmbPaymentType = cmbPaymentType;
+            pnlTransferInfo.add(cmbPaymentType, gbcTransfer);
 
-        JPanel pnlAccountInfo = new JPanel();
-        pnlAccountInfo.setLayout(new BoxLayout(pnlAccountInfo, BoxLayout.Y_AXIS));
-        pnlAccountInfo.setBorder(BorderFactory.createTitledBorder("Thông tin chuyển khoản"));
+            // Tab panel cho các phương thức thanh toán
+            JPanel pnlPaymentTabs = new JPanel(new CardLayout());
 
-        JLabel lblBankName = new JLabel("• Ngân hàng: BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam");
-        JLabel lblAccountName = new JLabel("• Chủ tài khoản: CÔNG TY CỔ PHẦN VẬN TẢI ĐƯỜNG SẮT LẠC HỒNG");
-        JLabel lblAccountNumber = new JLabel("• Số tài khoản: 21410000123456");
-        JLabel lblTransferContent = new JLabel("• Nội dung chuyển khoản: " + veTauHienTai.getMaVe());
+            // Tab 1: Chuyển khoản ngân hàng truyền thống
+            JPanel pnlBankTransfer = new JPanel();
+            pnlBankTransfer.setLayout(new BoxLayout(pnlBankTransfer, BoxLayout.Y_AXIS));
 
-        pnlAccountInfo.add(lblBankName);
-        pnlAccountInfo.add(Box.createVerticalStrut(5));
-        pnlAccountInfo.add(lblAccountName);
-        pnlAccountInfo.add(Box.createVerticalStrut(5));
-        pnlAccountInfo.add(lblAccountNumber);
-        pnlAccountInfo.add(Box.createVerticalStrut(5));
-        pnlAccountInfo.add(lblTransferContent);
+            JPanel pnlAccountInfo = new JPanel();
+            pnlAccountInfo.setLayout(new BoxLayout(pnlAccountInfo, BoxLayout.Y_AXIS));
+            pnlAccountInfo.setBorder(BorderFactory.createTitledBorder("Thông tin chuyển khoản"));
 
-        pnlBankTransfer.add(pnlAccountInfo);
+            JLabel lblBankName = new JLabel("• Ngân hàng: BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam");
+            JLabel lblAccountName = new JLabel("• Chủ tài khoản: CÔNG TY CỔ PHẦN VẬN TẢI ĐƯỜNG SẮT LẠC HỒNG");
+            JLabel lblAccountNumber = new JLabel("• Số tài khoản: 21410000123456");
+            JLabel lblTransferContent = new JLabel("• Nội dung chuyển khoản: " + veTauHienTai.getMaVe());
 
-        // Mã giao dịch
-        JPanel pnlTransactionId = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlTransactionId.add(new JLabel("Mã giao dịch:"));
-        JTextField txtTransactionId = new JTextField(20);
-        txtTransactionId.setFont(new Font("Arial", Font.PLAIN, 14));
-        pnlTransactionId.add(txtTransactionId);
-        pnlBankTransfer.add(pnlTransactionId);
+            pnlAccountInfo.add(lblBankName);
+            pnlAccountInfo.add(Box.createVerticalStrut(5));
+            pnlAccountInfo.add(lblAccountName);
+            pnlAccountInfo.add(Box.createVerticalStrut(5));
+            pnlAccountInfo.add(lblAccountNumber);
+            pnlAccountInfo.add(Box.createVerticalStrut(5));
+            pnlAccountInfo.add(lblTransferContent);
 
-        // Tab 2: VNPay QR
-        JPanel pnlVnpayQR = new JPanel(new BorderLayout(10, 10));
-        pnlVnpayQR.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            pnlBankTransfer.add(pnlAccountInfo);
 
-        // Panel hiển thị mã QR
-        JPanel pnlQRDisplay = new JPanel(new BorderLayout());
-        pnlQRDisplay.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-        pnlQRDisplay.setBackground(Color.WHITE);
-        pnlQRDisplay.setPreferredSize(new Dimension(240, 240));
+            // Mã giao dịch
+            JPanel pnlTransactionId = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            pnlTransactionId.add(new JLabel("Mã giao dịch:"));
+            JTextField txtTransactionId = new JTextField(20);
+            container.txtTransactionId = txtTransactionId;
+            txtTransactionId.setFont(new Font("Arial", Font.PLAIN, 14));
+            pnlTransactionId.add(txtTransactionId);
+            pnlBankTransfer.add(pnlTransactionId);
 
-        // Label để hiển thị mã QR (ban đầu chỉ hiển thị icon tải)
-        JLabel lblQRCode = new JLabel();
-        lblQRCode.setHorizontalAlignment(SwingConstants.CENTER);
-        lblQRCode.setIcon(createLoadingIcon(48, 48));
-        pnlQRDisplay.add(lblQRCode, BorderLayout.CENTER);
+            // Tab 2: VNPay QR
+            JPanel pnlVnpayQR = new JPanel(new BorderLayout(10, 10));
+            pnlVnpayQR.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        pnlVnpayQR.add(pnlQRDisplay, BorderLayout.CENTER);
+            // Panel hiển thị mã QR
+            JPanel pnlQRDisplay = new JPanel(new BorderLayout());
+            pnlQRDisplay.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+            pnlQRDisplay.setBackground(Color.WHITE);
+            pnlQRDisplay.setPreferredSize(new Dimension(240, 240));
 
-        // Panel hướng dẫn thanh toán QR
-        JPanel pnlQRGuide = new JPanel();
-        pnlQRGuide.setLayout(new BoxLayout(pnlQRGuide, BoxLayout.Y_AXIS));
+            // Label để hiển thị mã QR (ban đầu chỉ hiển thị icon tải)
+            JLabel lblQRCode = new JLabel();
+            lblQRCode.setHorizontalAlignment(SwingConstants.CENTER);
+            lblQRCode.setIcon(createLoadingIcon(48, 48));
+            pnlQRDisplay.add(lblQRCode, BorderLayout.CENTER);
 
-        JLabel lblQRGuide1 = new JLabel("1. Quét mã QR bằng ứng dụng ngân hàng hoặc VNPay");
-        JLabel lblQRGuide2 = new JLabel("2. Kiểm tra thông tin giao dịch và xác nhận thanh toán");
-        JLabel lblQRGuide3 = new JLabel("3. Hệ thống sẽ tự động cập nhật sau khi thanh toán thành công");
+            pnlVnpayQR.add(pnlQRDisplay, BorderLayout.CENTER);
 
-        pnlQRGuide.add(lblQRGuide1);
-        pnlQRGuide.add(Box.createVerticalStrut(5));
-        pnlQRGuide.add(lblQRGuide2);
-        pnlQRGuide.add(Box.createVerticalStrut(5));
-        pnlQRGuide.add(lblQRGuide3);
+            // Panel hướng dẫn thanh toán QR
+            JPanel pnlQRGuide = new JPanel();
+            pnlQRGuide.setLayout(new BoxLayout(pnlQRGuide, BoxLayout.Y_AXIS));
 
-        // Thêm trạng thái thanh toán
-        JPanel pnlPaymentStatus = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel lblPaymentStatus = new JLabel("Đang chờ thanh toán...", createLoadingIcon(16, 16), JLabel.LEFT);
-        lblPaymentStatus.setForeground(new Color(255, 153, 0)); // Màu cam
-        pnlPaymentStatus.add(lblPaymentStatus);
+            JLabel lblQRGuide1 = new JLabel("1. Quét mã QR bằng ứng dụng ngân hàng hoặc VNPay");
+            JLabel lblQRGuide2 = new JLabel("2. Kiểm tra thông tin giao dịch và xác nhận thanh toán");
+            JLabel lblQRGuide3 = new JLabel("3. Hệ thống sẽ tự động cập nhật sau khi thanh toán thành công");
 
-        // Panel cho nút làm mới trạng thái
-        JPanel pnlRefresh = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton btnRefreshStatus = new JButton("Kiểm tra trạng thái");
-        btnRefreshStatus.setIcon(createRefreshIcon(16, 16, Color.BLACK));
-        pnlRefresh.add(btnRefreshStatus);
+            pnlQRGuide.add(lblQRGuide1);
+            pnlQRGuide.add(Box.createVerticalStrut(5));
+            pnlQRGuide.add(lblQRGuide2);
+            pnlQRGuide.add(Box.createVerticalStrut(5));
+            pnlQRGuide.add(lblQRGuide3);
 
-        JPanel pnlQRBottom = new JPanel(new BorderLayout());
-        pnlQRBottom.add(pnlQRGuide, BorderLayout.NORTH);
-        pnlQRBottom.add(pnlPaymentStatus, BorderLayout.CENTER);
-        pnlQRBottom.add(pnlRefresh, BorderLayout.SOUTH);
+            // Thêm trạng thái thanh toán
+            JPanel pnlPaymentStatus = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JLabel lblPaymentStatus = new JLabel("Đang chờ thanh toán...", createLoadingIcon(16, 16), JLabel.LEFT);
+            container.lblPaymentStatus = lblPaymentStatus;
+            lblPaymentStatus.setForeground(new Color(255, 153, 0)); // Màu cam
+            pnlPaymentStatus.add(lblPaymentStatus);
 
-        pnlVnpayQR.add(pnlQRBottom, BorderLayout.SOUTH);
+            // Panel cho nút làm mới trạng thái
+            JPanel pnlRefresh = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JButton btnRefreshStatus = new JButton("Kiểm tra trạng thái");
+            btnRefreshStatus.setIcon(createRefreshIcon(16, 16, Color.BLACK));
+            pnlRefresh.add(btnRefreshStatus);
 
-        // Thêm các tab vào panel chính
-        pnlPaymentTabs.add(pnlBankTransfer, "BANK_TRANSFER");
-        pnlPaymentTabs.add(pnlVnpayQR, "VNPAY_QR");
+            JPanel pnlQRBottom = new JPanel(new BorderLayout());
+            pnlQRBottom.add(pnlQRGuide, BorderLayout.NORTH);
+            pnlQRBottom.add(pnlPaymentStatus, BorderLayout.CENTER);
+            pnlQRBottom.add(pnlRefresh, BorderLayout.SOUTH);
 
-        // Listener cho combobox để chuyển tab
-        cmbPaymentType.addActionListener(e -> {
-            CardLayout cl = (CardLayout) pnlPaymentTabs.getLayout();
-            int selectedIndex = cmbPaymentType.getSelectedIndex();
-            if (selectedIndex == 0) {
-                cl.show(pnlPaymentTabs, "BANK_TRANSFER");
-            } else {
-                cl.show(pnlPaymentTabs, "VNPAY_QR");
-                // Tạo QR code khi chọn tab VNPay
-                generateVnpayQRCode(lblQRCode, veTauHienTai.getMaVe(), veTauHienTai.getGiaVe(), lblPaymentStatus);
-            }
-        });
+            pnlVnpayQR.add(pnlQRBottom, BorderLayout.SOUTH);
 
-        pnlTransferInfo.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        pnlTransferPayment.add(pnlTransferInfo, BorderLayout.NORTH);
-        pnlTransferPayment.add(pnlPaymentTabs, BorderLayout.CENTER);
+            // Thêm các tab vào panel chính
+            pnlPaymentTabs.add(pnlBankTransfer, "BANK_TRANSFER");
+            pnlPaymentTabs.add(pnlVnpayQR, "VNPAY_QR");
 
-        // Nút làm mới trạng thái thanh toán
-        btnRefreshStatus.addActionListener(e -> {
-            checkVnpayPaymentStatus(veTauHienTai.getMaVe(), lblPaymentStatus, dialog);
-        });
-
-        // Hiển thị panel phương thức thanh toán ban đầu (mặc định là tiền mặt)
-        pnlPayment.add(pnlCashPayment);
-        pnlTransferPayment.setVisible(false);
-        pnlPayment.add(pnlTransferPayment);
-
-        // Thêm listener cho radio button để chuyển đổi giữa các phương thức thanh toán
-        radCash.addActionListener(e -> {
-            pnlCashPayment.setVisible(true);
-            pnlTransferPayment.setVisible(false);
-            dialog.revalidate();
-            dialog.repaint();
-        });
-
-        radTransfer.addActionListener(e -> {
-            pnlCashPayment.setVisible(false);
-            pnlTransferPayment.setVisible(true);
-            dialog.revalidate();
-            dialog.repaint();
-        });
-
-        // Add document listener for automatic change calculation
-        txtCustomerPayment.getDocument().addDocumentListener(new DocumentListener() {
-            private void updateChange() {
-                try {
-                    String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
-                    if (!input.isEmpty()) {
-                        double customerPayment = Double.parseDouble(input);
-                        double change = customerPayment - veTauHienTai.getGiaVe();
-                        lblChange.setText(currencyFormatter.format(Math.max(0, change)));
-                    } else {
-                        lblChange.setText("0 VNĐ");
-                    }
-                } catch (NumberFormatException e) {
-                    lblChange.setText("0 VNĐ");
+            // Listener cho combobox để chuyển tab
+            cmbPaymentType.addActionListener(e -> {
+                CardLayout cl = (CardLayout) pnlPaymentTabs.getLayout();
+                int selectedIndex = cmbPaymentType.getSelectedIndex();
+                if (selectedIndex == 0) {
+                    cl.show(pnlPaymentTabs, "BANK_TRANSFER");
+                } else {
+                    cl.show(pnlPaymentTabs, "VNPAY_QR");
+                    // Tạo QR code khi chọn tab VNPay
+                    generateVnpayQRCode(lblQRCode, veTauHienTai.getMaVe(), soTienChenhLech, lblPaymentStatus);
                 }
+            });
+
+            pnlTransferInfo.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+            pnlTransferPayment.add(pnlTransferInfo, BorderLayout.NORTH);
+            pnlTransferPayment.add(pnlPaymentTabs, BorderLayout.CENTER);
+
+            // Nút làm mới trạng thái thanh toán
+            btnRefreshStatus.addActionListener(e -> {
+                checkVnpayPaymentStatus(veTauHienTai.getMaVe(), lblPaymentStatus, dialog);
+            });
+
+            // Hiển thị panel phương thức thanh toán ban đầu (mặc định là tiền mặt)
+            pnlPayment.add(pnlCashPayment);
+            pnlTransferPayment.setVisible(false);
+            pnlPayment.add(pnlTransferPayment);
+
+            // Thêm listener cho radio button để chuyển đổi giữa các phương thức thanh toán
+            radCash.addActionListener(e -> {
+                pnlCashPayment.setVisible(true);
+                pnlTransferPayment.setVisible(false);
+                dialog.revalidate();
+                dialog.repaint();
+            });
+
+            radTransfer.addActionListener(e -> {
+                pnlCashPayment.setVisible(false);
+                pnlTransferPayment.setVisible(true);
+                dialog.revalidate();
+                dialog.repaint();
+            });
+
+            // Add document listener for automatic change calculation
+            txtCustomerPayment.getDocument().addDocumentListener(new DocumentListener() {
+                private void updateChange() {
+                    try {
+                        String input = container.txtCustomerPayment.getText().replaceAll("[^\\d]", "");
+                        if (!input.isEmpty()) {
+                            double customerPayment = Double.parseDouble(input);
+                            double change = customerPayment - soTienChenhLech;
+                            container.lblChange.setText(currencyFormatter.format(Math.max(0, change)));
+                        } else {
+                            container.lblChange.setText("0 VNĐ");
+                        }
+                    } catch (NumberFormatException e) {
+                        container.lblChange.setText("0 VNĐ");
+                    }
+                }
+
+                @Override
+                public void insertUpdate(DocumentEvent e) { updateChange(); }
+                @Override
+                public void removeUpdate(DocumentEvent e) { updateChange(); }
+                @Override
+                public void changedUpdate(DocumentEvent e) { updateChange(); }
+            });
+        } else {
+            // Nếu không cần thu thêm tiền hoặc có tiền thừa, hiển thị thông báo
+            String messageTitle = duocHoanLai ? "Hoàn tiền thừa" : "Thông tin đổi vé";
+            String messageContent = duocHoanLai
+                    ? "Sau khi đổi vé, khách hàng được hoàn trả: " + currencyFormatter.format(soTienChenhLech)
+                    : "Giá vé mới bằng giá vé cũ. Không phát sinh thêm chi phí.";
+
+            JPanel pnlMessage = new JPanel();
+            pnlMessage.setLayout(new BoxLayout(pnlMessage, BoxLayout.Y_AXIS));
+            pnlMessage.setBorder(BorderFactory.createTitledBorder(messageTitle));
+
+            JLabel lblMessage = new JLabel(messageContent);
+            lblMessage.setFont(new Font("Arial", Font.BOLD, 14));
+            lblMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            if (duocHoanLai) {
+                // Icon hoàn tiền
+                JLabel lblRefundIcon = new JLabel(createRefundIcon(24, 24, new Color(0, 150, 0)));
+                lblRefundIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+                pnlMessage.add(lblRefundIcon);
+                pnlMessage.add(Box.createVerticalStrut(10));
             }
 
-            @Override
-            public void insertUpdate(DocumentEvent e) { updateChange(); }
-            @Override
-            public void removeUpdate(DocumentEvent e) { updateChange(); }
-            @Override
-            public void changedUpdate(DocumentEvent e) { updateChange(); }
-        });
+            pnlMessage.add(lblMessage);
+            pnlPayment.add(pnlMessage);
+        }
 
         pnlInfo.add(pnlPayment, BorderLayout.SOUTH);
         pnlContent.add(pnlInfo, BorderLayout.CENTER);
@@ -1762,106 +1834,185 @@ public class DoiVePanel extends JPanel {
         JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlButtons.setBackground(Color.WHITE);
 
-        // Payment button
-        JButton btnThanhToan = new JButton("Thanh toán") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isPressed() ? primaryColor.darker().darker() :
-                        getModel().isRollover() ? primaryColor.darker() : primaryColor);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        // Payment button hoặc OK button
+        JButton btnAction;
 
-        btnThanhToan.setForeground(Color.WHITE);
-        btnThanhToan.setFont(new Font("Arial", Font.BOLD, 12));
-        btnThanhToan.setBorderPainted(false);
-        btnThanhToan.setContentAreaFilled(false);
-        btnThanhToan.setFocusPainted(false);
-        btnThanhToan.setIcon(createPaymentIcon(16, 16, Color.WHITE));
-        btnThanhToan.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnThanhToan.setPreferredSize(new Dimension(120, 30));
+        if (canTraThem) {
+            btnAction = new JButton("Thanh toán") {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getModel().isPressed() ? primaryColor.darker().darker() :
+                            getModel().isRollover() ? primaryColor.darker() : primaryColor);
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+        } else {
+            btnAction = new JButton("Xác nhận") {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getModel().isPressed() ? primaryColor.darker().darker() :
+                            getModel().isRollover() ? primaryColor.darker() : primaryColor);
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+        }
 
-        btnThanhToan.addActionListener(e -> {
-            try {
-                if (radCash.isSelected()) {
-                    // Xử lý thanh toán tiền mặt
-                    String input = txtCustomerPayment.getText().replaceAll("[^\\d]", "");
-                    if (input.isEmpty()) {
-                        JOptionPane.showMessageDialog(dialog,
-                                "Vui lòng nhập số tiền khách đưa",
-                                "Thông báo", JOptionPane.WARNING_MESSAGE);
-                        return;
-                    }
+        btnAction.setForeground(Color.WHITE);
+        btnAction.setFont(new Font("Arial", Font.BOLD, 12));
+        btnAction.setBorderPainted(false);
+        btnAction.setContentAreaFilled(false);
+        btnAction.setFocusPainted(false);
 
-                    double customerPayment = Double.parseDouble(input);
-                    if (customerPayment < veTauHienTai.getGiaVe()) {
-                        JOptionPane.showMessageDialog(dialog,
-                                "Số tiền khách đưa không đủ",
-                                "Thông báo", JOptionPane.WARNING_MESSAGE);
-                        return;
-                    }
+        if (canTraThem) {
+            btnAction.setIcon(createPaymentIcon(16, 16, Color.WHITE));
+        } else {
+            btnAction.setIcon(createCheckIcon(16, 16, Color.WHITE));
+        }
 
-                    if (xuLyThanhToan("TIEN_MAT", "")) {
-                        double change = customerPayment - veTauHienTai.getGiaVe();
-                        showPaymentSuccessDialog(change);
-                        processAfterSuccessfulPayment(dialog);
-                    }
-                } else if (radTransfer.isSelected()) {
-                    // Xử lý thanh toán chuyển khoản
-                    int selectedPaymentType = cmbPaymentType.getSelectedIndex();
+        btnAction.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAction.setPreferredSize(new Dimension(120, 30));
 
-                    if (selectedPaymentType == 0) { // Chuyển khoản ngân hàng
-                        String transactionId = txtTransactionId.getText().trim();
-                        if (transactionId.isEmpty()) {
+        if (canTraThem) {
+            btnAction.addActionListener(e -> {
+                try {
+                    if (container.radCash.isSelected()) {
+                        // Xử lý thanh toán tiền mặt
+                        String input = container.txtCustomerPayment.getText().replaceAll("[^\\d]", "");
+                        if (input.isEmpty()) {
                             JOptionPane.showMessageDialog(dialog,
-                                    "Vui lòng nhập mã giao dịch",
+                                    "Vui lòng nhập số tiền khách đưa",
                                     "Thông báo", JOptionPane.WARNING_MESSAGE);
                             return;
                         }
 
-                        if (xuLyThanhToan("CHUYEN_KHOAN_NGAN_HANG", transactionId)) {
-                            showTransferSuccessDialog();
-                            processAfterSuccessfulPayment(dialog);
-                        } else {
+                        double customerPayment = Double.parseDouble(input);
+                        if (customerPayment < soTienChenhLech) {
                             JOptionPane.showMessageDialog(dialog,
-                                    "Không thể xác thực giao dịch. Vui lòng kiểm tra mã giao dịch.",
-                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                                    "Số tiền khách đưa không đủ",
+                                    "Thông báo", JOptionPane.WARNING_MESSAGE);
+                            return;
                         }
-                    } else { // VNPay QR
-                        // Xác thực lại trạng thái thanh toán một lần nữa
-                        boolean paymentSuccess = checkVnpayPaymentStatus(veTauHienTai.getMaVe(), lblPaymentStatus, null);
 
-                        if (paymentSuccess) {
-                            showVnpaySuccessDialog();
+                        if (xuLyThanhToan("TIEN_MAT", "")) {
+                            double change = customerPayment - soTienChenhLech;
+                            showPaymentSuccessDialog(change);
                             processAfterSuccessfulPayment(dialog);
-                        } else {
-                            JOptionPane.showMessageDialog(dialog,
-                                    "Chưa nhận được thông tin thanh toán. Vui lòng thanh toán hoặc kiểm tra lại.",
-                                    "Chưa thanh toán", JOptionPane.WARNING_MESSAGE);
+                        }
+                    } else if (container.radTransfer.isSelected()) {
+                        // Xử lý thanh toán chuyển khoản
+                        int selectedPaymentType = container.cmbPaymentType.getSelectedIndex();
+
+                        if (selectedPaymentType == 0) { // Chuyển khoản ngân hàng
+                            String transactionId = container.txtTransactionId.getText().trim();
+                            if (transactionId.isEmpty()) {
+                                JOptionPane.showMessageDialog(dialog,
+                                        "Vui lòng nhập mã giao dịch",
+                                        "Thông báo", JOptionPane.WARNING_MESSAGE);
+                                return;
+                            }
+
+                            if (xuLyThanhToan("CHUYEN_KHOAN_NGAN_HANG", transactionId)) {
+                                showTransferSuccessDialog();
+                                processAfterSuccessfulPayment(dialog);
+                            } else {
+                                JOptionPane.showMessageDialog(dialog,
+                                        "Không thể xác thực giao dịch. Vui lòng kiểm tra mã giao dịch.",
+                                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } else { // VNPay QR
+                            // Xác thực lại trạng thái thanh toán một lần nữa
+                            boolean paymentSuccess = checkVnpayPaymentStatus(veTauHienTai.getMaVe(), container.lblPaymentStatus, null);
+
+                            if (paymentSuccess) {
+                                showVnpaySuccessDialog();
+                                processAfterSuccessfulPayment(dialog);
+                            } else {
+                                JOptionPane.showMessageDialog(dialog,
+                                        "Chưa nhận được thông tin thanh toán. Vui lòng thanh toán hoặc kiểm tra lại.",
+                                        "Chưa thanh toán", JOptionPane.WARNING_MESSAGE);
+                            }
                         }
                     }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Số tiền không hợp lệ",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                            "Lỗi khi thanh toán: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Số tiền không hợp lệ",
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(dialog,
-                        "Lỗi khi thanh toán: " + ex.getMessage(),
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        });
+            });
+        } else {
+            // Nút xác nhận đơn giản nếu không cần thu thêm tiền
+            btnAction.addActionListener(e -> {
+                try {
+                    processAfterSuccessfulPayment(dialog);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                            "Lỗi khi xác nhận: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+        }
 
-        pnlButtons.add(btnThanhToan);
+        pnlButtons.add(btnAction);
         pnlContent.add(pnlButtons, BorderLayout.SOUTH);
 
         dialog.add(pnlContent);
         dialog.setVisible(true);
+    }
+
+    // Tạo một lớp Container để giữ các tham chiếu
+    private static class Container {
+        public JRadioButton radCash;
+        public JRadioButton radTransfer;
+        public JTextField txtCustomerPayment;
+        public JTextField txtTransactionId;
+        public JLabel lblPaymentStatus;
+        public JComboBox<String> cmbPaymentType;
+        public JLabel lblChange;
+    }
+
+    private ImageIcon createRefundIcon(int width, int height, Color color) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+
+        // Vẽ đồng xu
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawOval(3, 3, width - 6, height - 6);
+
+        // Vẽ mũi tên hoàn tiền
+        int arrowBaseX = width / 2;
+        int arrowBaseY = height / 4;
+        int arrowWidth = width / 3;
+        int arrowHeight = height / 2;
+
+        // Đường cong của mũi tên
+        g2d.drawArc(arrowBaseX - arrowWidth / 2, arrowBaseY,
+                arrowWidth, arrowHeight, 0, -180);
+
+        // Đầu mũi tên
+        g2d.fillPolygon(
+                new int[] {arrowBaseX - 3, arrowBaseX - arrowWidth / 2 - 5, arrowBaseX - arrowWidth / 2 + 5},
+                new int[] {arrowBaseY + arrowHeight / 2, arrowBaseY + arrowHeight / 2 - 5, arrowBaseY + arrowHeight / 2 - 5},
+                3
+        );
+
+        g2d.dispose();
+        return new ImageIcon(image);
     }
 
     // Phương thức hiển thị dialog thanh toán VNPay thành công
@@ -2181,8 +2332,7 @@ public class DoiVePanel extends JPanel {
         veTauHienTai.setTrangThai(TrangThaiVeTau.DA_THANH_TOAN);
 
         // Gọi API để cập nhật trạng thái vé
-        boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_THANH_TOAN);
-
+        boolean success = doiVeDAO.capNhatTrangThaiVe(veTauHienTai.getMaVe(), TrangThaiVeTau.DA_DOI);
         if (success) {
             dialog.dispose();
             updateStatus(SUCCESS_TEXT, false);
@@ -2210,7 +2360,7 @@ public class DoiVePanel extends JPanel {
     // Phương thức hiển thị thông báo thanh toán chuyển khoản thành công
     private void showTransferSuccessDialog() {
         JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Thanh toán thành công", true);
-        successDialog.setSize(350, 200);
+        successDialog.setSize(350, 220);
         successDialog.setLocationRelativeTo(this);
         successDialog.setLayout(new BorderLayout());
 
@@ -2303,39 +2453,6 @@ public class DoiVePanel extends JPanel {
         successDialog.add(panel);
         successDialog.setVisible(true);
     }
-
-//    private void showPaymentSuccessDialog(double change) {
-//        JDialog successDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-//                "Thanh toán thành công", true);
-//        successDialog.setLayout(new BorderLayout(10, 10));
-//        successDialog.setSize(300, 200);
-//        successDialog.setLocationRelativeTo(this);
-//
-//        JPanel pnlContent = new JPanel(new BorderLayout(10, 10));
-//        pnlContent.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-//
-//        // Success message
-//        JLabel lblMessage = new JLabel("Thanh toán thành công!");
-//        lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
-//        lblMessage.setFont(new Font("Arial", Font.BOLD, 16));
-//        pnlContent.add(lblMessage, BorderLayout.NORTH);
-//
-//        // Change amount
-//        JLabel lblChange = new JLabel("Tiền thối lại: " + currencyFormatter.format(change));
-//        lblChange.setHorizontalAlignment(SwingConstants.CENTER);
-//        lblChange.setFont(new Font("Arial", Font.PLAIN, 14));
-//        pnlContent.add(lblChange, BorderLayout.CENTER);
-//
-//        // OK button
-//        JButton btnOK = new JButton("Đóng");
-//        btnOK.addActionListener(e -> successDialog.dispose());
-//        JPanel pnlButton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-//        pnlButton.add(btnOK);
-//        pnlContent.add(pnlButton, BorderLayout.SOUTH);
-//
-//        successDialog.add(pnlContent);
-//        successDialog.setVisible(true);
-//    }
 
     private Icon createPaymentIcon(int width, int height, Color color) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -2772,14 +2889,18 @@ public class DoiVePanel extends JPanel {
             }
             System.out.println("Đã tìm thấy KhachHang: " + khachHang.getMaKhachHang());
 
+            double vat = 0.1; // VAT 8% - Điều chỉnh theo quy định của bạn
+            double tienThue = veTauHienTai.getGiaVe() * vat;
+            double thanhTien = veTauHienTai.getGiaVe()+tienThue;
+            double tongTien = thanhTien+tienThue;
             // 2. Tạo hóa đơn mới
             HoaDon hoaDon = new HoaDon();
             String maHD = generateMaHD();
             System.out.println("Generated MaHD: " + maHD);
             hoaDon.setMaHD(maHD);
             hoaDon.setNgayLap(LocalDateTime.now());
-            hoaDon.setTienGiam(giaVeBanDau - veTauHienTai.getGiaVe());
-            hoaDon.setTongTien(veTauHienTai.getGiaVe());
+            hoaDon.setTienGiam(giaVeBanDau - tongTien);
+            hoaDon.setTongTien(tongTien);
             hoaDon.setKhachHang(khachHang);
 
             // Debugging the NhanVien reference
@@ -2822,13 +2943,11 @@ public class DoiVePanel extends JPanel {
             chiTietHoaDon.setVeTau(veTauHienTai);
 
             // Thiết lập các giá trị tài chính
-            double vat = 0.1; // VAT 8% - Điều chỉnh theo quy định của bạn
             chiTietHoaDon.setSoLuong(1); // Mỗi vé được tính là 1 đơn vị
             chiTietHoaDon.setVAT(vat);
 
             // Tính toán thành tiền và tiền thuế
-            double thanhTien = veTauHienTai.getGiaVe(); // Giá vé sau khi đã giảm giá
-            double tienThue = thanhTien * vat;
+
 
             chiTietHoaDon.setThanhTien(thanhTien);
             chiTietHoaDon.setTienThue(tienThue);
@@ -2855,6 +2974,14 @@ public class DoiVePanel extends JPanel {
             e.printStackTrace();
             throw new RemoteException("Lỗi khi xử lý thanh toán: " + e.getMessage(), e);
         }
+    }
+
+    private String generateMaVe() {
+        // Format: HD + yyyyMMdd + 4 số random
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String datePart = sdf.format(new Date());
+        String randomPart = String.format("%04d", new Random().nextInt(10000));
+        return "VT" + datePart + randomPart;
     }
 
     private String generateMaHD() {

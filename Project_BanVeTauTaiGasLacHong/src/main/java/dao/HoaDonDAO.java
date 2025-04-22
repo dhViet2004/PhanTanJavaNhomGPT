@@ -35,4 +35,10 @@ public interface HoaDonDAO extends Remote {
 
     String generateMaHoaDon(LocalDate ngay) throws RemoteException;
     LoaiHoaDon getLoaiHoaDonById(String maLoaiHD) throws RemoteException;
+
+    List<HoaDon> timKiemHoaDon(String maHoaDon, String soDienThoai, String maNhanVien,   LocalDate tuNgay, LocalDate denNgay) throws RemoteException;
+
+    HoaDon getHoaDonByMa(String maHoaDon) throws RemoteException;
+    List<HoaDon> getHoaDonsByDateRange(LocalDate startDate, LocalDate endDate) throws RemoteException;
+    List<HoaDon> getHoaDonsByDateRangeAndShift(LocalDate startDate, LocalDate endDate, int ca) throws RemoteException;
 }

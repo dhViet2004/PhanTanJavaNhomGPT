@@ -108,50 +108,26 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
                 return false;
             }
 
-            // Lưu thông tin chỗ ngồi và lịch trình cũ
-            ChoNgoi choNgoiCu = existingVe.getChoNgoi();
-            LichTrinhTau lichTrinhCu = existingVe.getLichTrinhTau();
+            // Kiểm tra chỗ ngồi mới có khả dụng không
+            if (veTau.getChoNgoi() != null) {
+                String jpql = "SELECT COUNT(v) FROM VeTau v " +
+                        "WHERE v.choNgoi.maCho = :maCho " +
+                        "AND v.maVe != :maVe " +
+                        "AND v.trangThai NOT IN (:trangThaiDaTra)";
 
-            // Kiểm tra chỗ ngồi mới có khả dụng không và chưa được đặt trong lịch trình mới
-            if (veTau.getChoNgoi() != null && veTau.getLichTrinhTau() != null) {
-                String maChoNgoi = veTau.getChoNgoi().getMaCho();
-                String maLichTrinh = veTau.getLichTrinhTau().getMaLich();
+                Long count = em.createQuery(jpql, Long.class)
+                        .setParameter("maCho", veTau.getChoNgoi().getMaCho())
+                        .setParameter("maVe", veTau.getMaVe())
+                        .setParameter("trangThaiDaTra", TrangThaiVeTau.DA_TRA)
+                        .getSingleResult();
 
-                // Kiểm tra trường hợp không phải là giữ nguyên chỗ ngồi và lịch trình
-                boolean giuNguyenChoVaLich = choNgoiCu != null && lichTrinhCu != null &&
-                        choNgoiCu.getMaCho().equals(maChoNgoi) &&
-                        lichTrinhCu.getMaLich().equals(maLichTrinh);
-
-                if (!giuNguyenChoVaLich) {
-                    // Kiểm tra chỗ ngồi mới có khả dụng không
-                    ChoNgoi choNgoi = em.find(ChoNgoi.class, maChoNgoi);
-                    if (choNgoi == null || !choNgoi.isTinhTrang()) {
-                        tx.rollback();
-                        throw new RemoteException("Chỗ ngồi không khả dụng hoặc đang sửa chữa.");
-                    }
-
-                    // Kiểm tra chỗ ngồi mới đã được đặt trong lịch trình mới chưa
-                    String jpql = "SELECT COUNT(v) FROM VeTau v " +
-                            "WHERE v.choNgoi.maCho = :maCho " +
-                            "AND v.lichTrinhTau.maLich = :maLichTrinh " +
-                            "AND v.maVe != :maVe " +
-                            "AND v.trangThai NOT IN (:trangThaiDaTra)";
-
-                    Long count = em.createQuery(jpql, Long.class)
-                            .setParameter("maCho", maChoNgoi)
-                            .setParameter("maLichTrinh", maLichTrinh)
-                            .setParameter("maVe", veTau.getMaVe())
-                            .setParameter("trangThaiDaTra", TrangThaiVeTau.DA_TRA)
-                            .getSingleResult();
-
-                    if (count > 0) {
-                        tx.rollback();
-                        throw new RemoteException("Chỗ ngồi đã được đặt bởi vé khác trong cùng lịch trình.");
-                    }
+                if (count > 0) {
+                    tx.rollback();
+                    throw new RemoteException("Chỗ ngồi đã được đặt bởi vé khác");
                 }
             }
 
-            // Cập nhật thông tin cơ bản
+            // Cập nhật thông tin vé
             existingVe.setTenKhachHang(veTau.getTenKhachHang());
             existingVe.setGiayTo(veTau.getGiayTo());
             existingVe.setNgayDi(veTau.getNgayDi());
@@ -159,14 +135,15 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
             existingVe.setTrangThai(veTau.getTrangThai());
             existingVe.setGiaVe(veTau.getGiaVe());
 
-            // Xóa bỏ liên kết với chỗ ngồi hiện tại
-            existingVe.setChoNgoi(null);
-            em.flush(); // Đẩy thay đổi xuống DB
-
-            // Cập nhật lịch trình và khuyến mãi
+            // Cập nhật lịch trình và chỗ ngồi
             if (veTau.getLichTrinhTau() != null) {
                 LichTrinhTau lichTrinhTau = em.find(LichTrinhTau.class, veTau.getLichTrinhTau().getMaLich());
                 existingVe.setLichTrinhTau(lichTrinhTau);
+            }
+
+            if (veTau.getChoNgoi() != null) {
+                ChoNgoi choNgoi = em.find(ChoNgoi.class, veTau.getChoNgoi().getMaCho());
+                existingVe.setChoNgoi(choNgoi);
             }
 
             if (veTau.getKhuyenMai() != null) {
@@ -174,12 +151,6 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
                 existingVe.setKhuyenMai(khuyenMai);
             } else {
                 existingVe.setKhuyenMai(null);
-            }
-
-            // Cập nhật chỗ ngồi mới
-            if (veTau.getChoNgoi() != null) {
-                ChoNgoi choNgoi = em.find(ChoNgoi.class, veTau.getChoNgoi().getMaCho());
-                existingVe.setChoNgoi(choNgoi);
             }
 
             em.merge(existingVe);
@@ -190,8 +161,6 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
             if (tx != null && tx.isActive()) {
                 tx.rollback();
             }
-            System.err.println("Lỗi khi đổi vé: " + e.getMessage());
-            e.printStackTrace();
             throw new RemoteException("Lỗi khi đổi vé: " + e.getMessage(), e);
         } finally {
             if (em != null && em.isOpen()) {
@@ -199,7 +168,6 @@ public class DoiVeDAOImpl extends UnicastRemoteObject implements DoiVeDAO {
             }
         }
     }
-
     @Override
     public List<VeTau> getVeTauByTrangThai(TrangThaiVeTau trangThai) throws RemoteException {
         EntityManager em = JPAUtil.getEntityManager();
