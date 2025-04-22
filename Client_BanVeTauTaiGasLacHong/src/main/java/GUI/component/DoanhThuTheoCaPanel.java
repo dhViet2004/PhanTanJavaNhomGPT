@@ -33,6 +33,11 @@ import java.util.List;
 import java.util.Map;
 
 public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
+    // RMI Server
+    private static final String RMI_SERVER_IP = "localhost";
+    private static final int RMI_SERVER_PORT = 9090;
+
+
     private Color primaryColor = new Color(41, 128, 185); // Màu xanh dương
     private Color successColor = new Color(46, 204, 113); // Màu xanh lá
     private Color warningColor = new Color(243, 156, 18); // Màu vàng cam
@@ -61,9 +66,7 @@ public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
     private JRadioButton ca3;
     private JButton btnLoc;
 
-    // RMI Server
-    private static final String RMI_SERVER_IP = "localhost";
-    private static final int RMI_SERVER_PORT = 9090;
+
     public DoanhThuTheoCaPanel() throws RemoteException {
             setLayout(new BorderLayout());
             setBackground(Color.WHITE);

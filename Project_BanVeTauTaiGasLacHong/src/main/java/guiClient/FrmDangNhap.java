@@ -28,6 +28,8 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 public class FrmDangNhap extends JFrame implements ActionListener {
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     private JPanel mainPanel;
     private JLabel backgroundLabel;
     private JTextField txtMaNhanVien;
@@ -39,8 +41,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
     private TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
     private NhanVien nv;
     private LichLamViecDAO llv_dao = new LichLamViecDAOImpl();
-    private static final String RMI_SERVER_IP = "127.0.0.1";
-    private static final int RMI_SERVER_PORT = 9090;
+
     private NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
     private boolean isConnected = false;
 
