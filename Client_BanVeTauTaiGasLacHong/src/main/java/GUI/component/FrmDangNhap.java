@@ -1,5 +1,6 @@
 package GUI.component;
 
+import GUI.ui.main.Main;
 import dao.LichLamViecDAO;
 import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
@@ -256,12 +257,12 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                             "Đăng nhập thành công!",
                             "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                     if (nv.getChucVu().trim().equalsIgnoreCase("Nhân viên")) {
-                        MainGUI a = new MainGUI(nv);
+                        Main a = new Main();
                         a.setVisible(true);
                         this.dispose();
                         JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò Nhân viên");
                     } else if (nv.getChucVu().trim().equalsIgnoreCase("Quan ly")) {
-                        MainGUI b = new MainGUI(nv);
+                        Main b = new Main();
                         b.setVisible(true);
                         this.dispose();
                         JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò quản lý");
