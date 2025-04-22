@@ -30,12 +30,12 @@ public class FrmDangNhap extends JFrame implements ActionListener {
     private JButton btnQuenMatKhau;
     private JButton btnDangNhap;
     private JCheckBox showPasswordCheckBox;
-    private TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
+    private TaiKhoanDAO taiKhoanDAO;
     private NhanVien nv;
     private LichLamViecDAO llv_dao = new LichLamViecDAOImpl();
     private static final String RMI_SERVER_IP = "127.0.0.1";
     private static final int RMI_SERVER_PORT = 9090;
-    private NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
+    private NhanVienDAO nhanVienDAO;
     private boolean isConnected = false;
 
     public FrmDangNhap() throws RemoteException {
@@ -177,29 +177,37 @@ public class FrmDangNhap extends JFrame implements ActionListener {
         // Sự kiện
         btnDangNhap.addActionListener(this);
         btnQuenMatKhau.addActionListener(this);
+
     }
     private void connectToServer() {
         try {
+            // Tạo registry kết nối đến RMI server
             Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
-            nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");
-            // Thông báo kết nối thành công sau khi lookup thành công
-//            JOptionPane.showMessageDialog(this,
-//                    "Kết nối đến server RMI thành công!",
-//                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            isConnected = true;
+
+            // Lookup đối tượng dao
+            taiKhoanDAO = (TaiKhoanDAO) registry.lookup("taiKhoanDAO");
+
+            // Thông báo kết nối thành công
+            JOptionPane.showMessageDialog(this,
+                    "Kết nối đến server RMI thành công!",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            isConnected = true; // Đánh dấu kết nối thành công
 
         } catch (RemoteException | NotBoundException e) {
-            // Không hiển thị thông báo lỗi kết nối ở đây
+            // Cập nhật thông báo lỗi khi không thể kết nối đến server hoặc lookup không thành công
             JOptionPane.showMessageDialog(this,
                     "Không thể kết nối đến server RMI: " + e.getMessage(),
                     "Lỗi Kết Nối", JOptionPane.ERROR_MESSAGE);
-
             e.printStackTrace();
         }
     }
+
     @Override
     public void actionPerformed(ActionEvent e) {
+
         if (e.getSource() == btnDangNhap) {
+            connectToServer();
+
             // Kiểm tra tên đăng nhập
             String user = txtMaNhanVien.getText();
             if (user == null || user.trim().isEmpty()) {
@@ -215,7 +223,6 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                 txtMatKhau.requestFocus();
                 return;
             }
-            connectToServer();
             try {
                 // Kiểm tra đăng nhập
                 nv = taiKhoanDAO.checkLogin(user, password);
@@ -224,30 +231,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                     return;
                 }
 
-                // ----- PHẦN NÀY ĐÃ ĐƯỢC COMMENT LẠI, KHÔNG ẢNH HƯỞNG LOGIN -----
-            /*
-            LocalDateTime now = LocalDateTime.now();
-            LocalDate today = now.toLocalDate();
-            System.out.println("today:" + today);
 
-            List<LichLamViec> lichLamViecs = llv_dao.getCaLamViecForDate(nv.getMaNV(), today);
-
-            if (lichLamViecs == null || lichLamViecs.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Không có ca làm việc nào cho ngày hôm nay", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            } else {
-                for (LichLamViec llv : lichLamViecs) {
-                    LocalDateTime gioBatDau = llv.getGioBatDau();
-                    if (now.isAfter(gioBatDau)) {
-                        llv.setTrangThai("Tre");
-                    } else {
-                        llv.setTrangThai("Dung gio");
-                    }
-                    llv_dao.updateTrangThai(llv.getMaLichLamViec(), llv.getTrangThai());
-                }
-            }
-            */
-                // ----- KẾT THÚC PHẦN COMMENT -----
 
                 // Tiến hành mở form và thông báo đăng nhập thành công
                 if(isConnected){
