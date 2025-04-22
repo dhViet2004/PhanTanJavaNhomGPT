@@ -35,8 +35,6 @@ public class Main extends javax.swing.JFrame {
                     showForm(new HomeForm());
                 }
                 else if (index == 2 && subIndex == 1) {
-                    NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
-                    NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
                     showForm(new DoiVePanel(nhanVien));
                 }
                 else if (index == 3){

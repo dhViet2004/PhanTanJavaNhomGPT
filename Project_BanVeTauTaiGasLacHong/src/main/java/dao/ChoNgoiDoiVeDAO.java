@@ -2,10 +2,12 @@ package dao;
 
 import model.ChoNgoi;
 import model.ToaTau;
+import model.TrangThaiVeTau;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Map;
 
 public interface ChoNgoiDoiVeDAO extends Remote {
     // Lấy danh sách chỗ ngồi theo toa tàu
@@ -34,4 +36,11 @@ public interface ChoNgoiDoiVeDAO extends Remote {
 
     // Hủy đăng ký client
     void huyDangKyClientChoThongBao(ChoNgoiCallback callback) throws RemoteException;
+    boolean kiemTraChoNgoiDaDatTrenHeTHong(String maCho, String maVeLoaiTru) throws RemoteException;
+    List<String> layDanhSachLichTrinhDaDatCho(String maCho) throws RemoteException;
+
+    // Get status of all seats for a specific schedule
+    Map<String, TrangThaiVeTau> getTrangThaiChoNgoiTheoLichTrinh(String maLichTrinh) throws RemoteException;
+    boolean isChoNgoiAvailable(String maCho, String maVeHienTai) throws RemoteException;
+    boolean kiemTraChoNgoiThuocVe(String maCho, String maVe) throws RemoteException;
 }
