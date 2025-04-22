@@ -22,6 +22,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class TraCuuTuyenPanel extends JPanel implements ActionListener {
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     // Màu sắc chính
     private Color primaryColor = new Color(41, 128, 185); // Màu xanh dương
     private Color successColor = new Color(46, 204, 113); // Màu xanh lá
@@ -58,8 +60,7 @@ public class TraCuuTuyenPanel extends JPanel implements ActionListener {
     //dao
     TuyenTauDAO tuyenTauDAO;
     //
-    private static final String RMI_SERVER_IP = "127.0.0.1";
-    private static final int RMI_SERVER_PORT = 9090;
+
 
     public TraCuuTuyenPanel() throws RemoteException {
         tuyenTauDAO = new TuyenTauDAOImpl();
