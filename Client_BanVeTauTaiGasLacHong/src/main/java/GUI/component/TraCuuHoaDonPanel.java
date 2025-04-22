@@ -51,6 +51,8 @@ import java.util.concurrent.ExecutionException;
  */
 
 public class TraCuuHoaDonPanel extends JPanel {
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
 
     // Thành phần giao diện
     private JTextField txtMaHoaDon;
@@ -108,7 +110,8 @@ public class TraCuuHoaDonPanel extends JPanel {
 
     private void initializeDAO() {
         try {
-            Registry registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+//            Registry registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             hoaDonDAO = (HoaDonDAO) registry.lookup("hoaDonDAO");
             khachHangDAO = (KhachHangDAO) registry.lookup("khachHangDAO");
             nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");

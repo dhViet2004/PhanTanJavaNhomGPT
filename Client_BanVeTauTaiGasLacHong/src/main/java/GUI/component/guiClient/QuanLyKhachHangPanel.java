@@ -26,6 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class QuanLyKhachHangPanel extends JPanel {
+    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final int RMI_SERVER_PORT = 9090;
     private static final Logger LOGGER = Logger.getLogger(QuanLyKhachHangPanel.class.getName());
     private final JButton deleteButton, updateButton;
     private final JButton addButton;
@@ -49,7 +51,8 @@ public class QuanLyKhachHangPanel extends JPanel {
     private void connectToRMIServer() {
         try {
             // Get the registry
-            Registry registry = LocateRegistry.getRegistry("localhost", 9090);
+//            Registry registry = LocateRegistry.getRegistry("localhost", 9090);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
 
             // Look up the remote objects
             khachHangDAO = (KhachHangDAO) registry.lookup("khachHangDAO");
