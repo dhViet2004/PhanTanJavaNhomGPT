@@ -50,16 +50,26 @@ public class Main extends javax.swing.JFrame {
                     NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
                     NhanVien nhanVien = nhanVienDAO.getnhanvienById("NV0003");
                     showForm(new DoiVePanel(nhanVien));
-                }
-                else if (index == 3){
+                } else if (index==2 && subIndex==2) {
+                    // trả vé
+                    showForm(new TraVePanel(nhanVien));
+
+                } else if (index == 3){
                     showForm(new LichTrinhTauPanel());
                 } else if (index == 4 && subIndex == 1) {
                     showForm(new TraCuuVePanel());
                 } else if (index == 4 && subIndex == 2) {
                     showForm(new TraCuuTuyenPanel());
+                } else if (index==4 && subIndex == 3) {
+                    // tra cứu hóa đơn
+                    showForm(new TraCuuHoaDonPanel());
                 } else if (index == 5 && subIndex == 1) {
                     showForm(new ThongKeVePanel());
-                } else if (index == 6) {
+                } else if (index == 5 && subIndex == 2) {
+                    // doanh thu bán vé
+                    showForm(new ThongKeDoanhThuPanel());
+                }
+                else if (index == 6) {
                     if (!menu1.getComponent(index).isEnabled()) {
                         JOptionPane.showMessageDialog(Main.this, "Chức năng này chỉ dành cho quản lý.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                         return; // Ngăn không cho thực hiện hành động tiếp theo
@@ -67,8 +77,11 @@ public class Main extends javax.swing.JFrame {
                         showForm(new QuanLyNhanVienPanel());
                     }
                 } else if (index == 7) {
-                    showForm(new DoanhThuTheoCaPanel());
+                    // quản lý khách hàng
+                        showForm(new QuanLyKhachHangPanel());
                 } else if (index == 8) {
+                    showForm(new DoanhThuTheoCaPanel());
+                } else if (index == 9) {
                     int confirm = JOptionPane.showConfirmDialog(
                             Main.this,
                             "Bạn có chắc chắn muốn đăng xuất?",
