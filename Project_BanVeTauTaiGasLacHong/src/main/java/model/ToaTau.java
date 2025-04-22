@@ -33,7 +33,7 @@ public class ToaTau implements Serializable {
     @ToString.Exclude
     private Set<ChoNgoi> danhSachChoNgoi;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ma_loai_toa", nullable = false)
     @ToString.Exclude
     private LoaiToa loaiToa;

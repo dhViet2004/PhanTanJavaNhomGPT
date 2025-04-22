@@ -2,6 +2,7 @@ package dao;
 
 import model.LichTrinhTau;
 import model.TrangThai;
+import model.TrangThaiVeTau;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -29,4 +30,12 @@ public interface LichTrinhTauDAO extends Remote {
     List<LichTrinhTau> getListLichTrinhTauByTrangThai(TrangThai... trangThai) throws RemoteException;
     List<LichTrinhTau> getListLichTrinhTauByMaTauAndNgayDi(String maTau, LocalDate ngayDi) throws RemoteException;
     long getAvailableSeatsBySchedule(String maLich) throws RemoteException;
+    long getReservedSeatsBySchedule(String maLich) throws RemoteException;
+    long getReservedSeatsByScheduleAndCar(String maLich, String maToa) throws RemoteException;
+    long getTotalSeatsBySchedule(String maLich) throws RemoteException;
+    long getTotalSeatsByScheduleAndCar(String maLich, String maToa) throws RemoteException;
+    double getReservationPercentageBySchedule(String maLich) throws RemoteException;
+    double getReservationPercentageByScheduleAndCar(String maLich, String maToa) throws RemoteException;
+    boolean updateTicketStatusBySchedule(String maLich, TrangThaiVeTau trangThai) throws RemoteException;
+    boolean updateTicketStatusByScheduleAndCar(String maLich, String maToa, TrangThaiVeTau trangThai) throws RemoteException;
 }

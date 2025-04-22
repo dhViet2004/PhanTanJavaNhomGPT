@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class DoanhThuTheoCaPanel extends JPanel implements ActionListener {
     // RMI Server
-    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final String RMI_SERVER_IP = "192.168.2.21";
     private static final int RMI_SERVER_PORT = 9090;
 
 

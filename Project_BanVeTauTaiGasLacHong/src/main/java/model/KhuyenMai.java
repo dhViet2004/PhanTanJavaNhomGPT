@@ -2,6 +2,8 @@ package model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -10,6 +12,7 @@ import java.util.Set;
 
 @Data
 @Entity
+@ToString
 @Table(name = "khuyenmai")
 public class KhuyenMai implements Serializable {
     @Id
@@ -26,12 +29,27 @@ public class KhuyenMai implements Serializable {
     @Column(name = "chiet_khau", columnDefinition = "double", nullable = false)
     private double chietKhau;
     @Column(name = "doi_tuong_ap_dung", columnDefinition = "NVARCHAR(255)", nullable = false)
-    private String doiTuongApDung;
+    private DoiTuongApDung doiTuongApDung;
     @Column(name = "trang_thai", columnDefinition = "NVARCHAR(50)", nullable = false)
-    private String trangThai;
+    private TrangThaiKM trangThai;
 
     @OneToMany(mappedBy = "khuyenMai")
+    @ToString.Exclude
     private Set<VeTau> ve_taus;
 
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        KhuyenMai khuyenMai = (KhuyenMai) o;
+        return getMaKM() != null && Objects.equals(getMaKM(), khuyenMai.getMaKM());
+    }
 
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
 }

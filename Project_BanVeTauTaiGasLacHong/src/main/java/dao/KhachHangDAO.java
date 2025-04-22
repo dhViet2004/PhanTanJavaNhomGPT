@@ -38,6 +38,9 @@ public interface KhachHangDAO extends Remote {
 
     boolean add(KhachHang newCustomer) throws RemoteException;
 
+    // Find customer by ID card and phone number
+    KhachHang findByIdCardAndPhone(String idCard, String phone) throws RemoteException;
+
 
 //    KhachHang getById(String id);
 }
