@@ -51,6 +51,9 @@ import java.util.concurrent.ExecutionException;
  */
 
 public class TraCuuHoaDonPanel extends JPanel {
+    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final int RMI_SERVER_PORT = 9090;
+
 
     // Thành phần giao diện
     private JTextField txtMaHoaDon;
@@ -72,8 +75,8 @@ public class TraCuuHoaDonPanel extends JPanel {
     private NhanVienDAO nhanVienDAO;
 
     // Constants
-    private static final String RMI_HOST = "localhost";
-    private static final int RMI_PORT = 9090;
+//    private static final String RMI_HOST = "localhost";
+//    private static final int RMI_PORT = 9090;
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
     private static final Color ACCENT_COLOR = new Color(39, 174, 96);
@@ -108,7 +111,8 @@ public class TraCuuHoaDonPanel extends JPanel {
 
     private void initializeDAO() {
         try {
-            Registry registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+//            Registry registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+            Registry registry = LocateRegistry.getRegistry(RMI_SERVER_IP, RMI_SERVER_PORT);
             hoaDonDAO = (HoaDonDAO) registry.lookup("hoaDonDAO");
             khachHangDAO = (KhachHangDAO) registry.lookup("khachHangDAO");
             nhanVienDAO = (NhanVienDAO) registry.lookup("nhanVienDAO");

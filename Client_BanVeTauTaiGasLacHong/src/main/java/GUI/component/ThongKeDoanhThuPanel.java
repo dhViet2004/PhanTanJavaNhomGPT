@@ -63,6 +63,9 @@ import java.util.stream.Collectors;
  * Class quản lý giao diện thống kê doanh thu bán vé
  */
 public class ThongKeDoanhThuPanel extends JPanel {
+    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final int RMI_SERVER_PORT = 9090;
+
 
     // Màu sắc và theme
     private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
@@ -70,9 +73,6 @@ public class ThongKeDoanhThuPanel extends JPanel {
     private static final Color SECONDARY_COLOR = new Color(39, 174, 96);
     private static final Color ACCENT_COLOR = new Color(243, 156, 18);
 
-    // RMI Server
-    private static final String RMI_SERVER_IP = "localhost";
-    private static final int RMI_SERVER_PORT = 9090;
 
     // Các tùy chọn cho combobox
     private static final String[] TIME_RANGES = {"Ngày", "Tháng", "Quý", "Năm"};
