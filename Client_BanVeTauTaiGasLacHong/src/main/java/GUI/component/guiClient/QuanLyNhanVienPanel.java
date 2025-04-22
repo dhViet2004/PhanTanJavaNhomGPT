@@ -53,7 +53,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     private Color grayColor = new Color(108, 117, 125);   // Màu xám
     private Color darkTextColor = new Color(52, 73, 94);  // Màu chữ tối
     private Color lightBackground = new Color(240, 240, 240); // Màu nền nhạt
-    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final String RMI_SERVER_IP = "192.168.1.39";
     private static final int RMI_SERVER_PORT = 9090;
     public QuanLyNhanVienPanel() throws RemoteException {
         setLayout(new BorderLayout());

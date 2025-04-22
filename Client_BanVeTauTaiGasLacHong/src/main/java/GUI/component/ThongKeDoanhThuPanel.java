@@ -71,7 +71,7 @@ public class ThongKeDoanhThuPanel extends JPanel {
     private static final Color ACCENT_COLOR = new Color(243, 156, 18);
 
     // RMI Server
-    private static final String RMI_SERVER_IP = "localhost";
+    private static final String RMI_SERVER_IP = "192.168.1.39";
     private static final int RMI_SERVER_PORT = 9090;
 
     // Các tùy chọn cho combobox

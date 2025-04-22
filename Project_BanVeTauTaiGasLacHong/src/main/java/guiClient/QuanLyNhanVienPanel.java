@@ -26,7 +26,7 @@ import java.util.List;
 import static guiClient.IconFactory.createExchangeIcon;
 
 public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
-    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final String RMI_SERVER_IP = "192.168.1.39";
     private static final int RMI_SERVER_PORT = 9090;
     private ArrayList<NhanVien> danhSachNhanVien = new ArrayList<>();
     private JTextField txtMaNV, txtTenNV, txtSoDT, txtCCCD, txtDiaChi;
