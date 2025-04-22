@@ -942,7 +942,7 @@ public class QuanLyNhanVienPanel extends JPanel implements ActionListener {
     }
 
     private JComboBox<String> taoComboBox(Font font) {
-        JComboBox<String> cb = new JComboBox<>(new String[]{"Nhân viên", "Quản lý", "Trưởng phòng"});
+        JComboBox<String> cb = new JComboBox<>(new String[]{"Nhân viên", "Quản lý"});
         cb.setFont(font);
         cb.setPreferredSize(new Dimension(200, 30));
         return cb;

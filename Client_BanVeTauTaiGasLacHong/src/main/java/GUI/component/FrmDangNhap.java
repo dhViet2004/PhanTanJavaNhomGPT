@@ -259,7 +259,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
                         a.setVisible(true);
                         this.dispose();
                         JOptionPane.showMessageDialog(this, "Đăng nhập thành công với vai trò Nhân viên");
-                    } else if (nv.getChucVu().trim().equalsIgnoreCase("Quan ly")) {
+                    } else if (nv.getChucVu().trim().equalsIgnoreCase("Quản lý")) {
                         Main b = new Main(nv);
                         b.setVisible(true);
                         this.dispose();

@@ -19,7 +19,7 @@ public class Main extends javax.swing.JFrame {
     /**
      * Creates new form Main
      */
-    private NhanVien nhanVien = new NhanVien();
+    private NhanVien nhanVien;
     public Main(NhanVien nv) throws RemoteException {
         nhanVien = nv;
         initComponents();
@@ -27,6 +27,14 @@ public class Main extends javax.swing.JFrame {
 
         // Thiết lập giao diện phẳng
         setupFlatDesign();
+
+        // Kiểm tra vai trò của nhân viên và điều chỉnh menu
+        if (nhanVien != null && nhanVien.getChucVu().equals("Quản lý")) {
+            menu1.enableMenuItem(6, true); // Kích hoạt "Quản lý nhân viên" cho quản lý
+        } else {
+            menu1.enableMenuItem(6, false); // Vô hiệu hóa "Quản lý nhân viên" cho nhân viên
+            menu1.enableMenuItem(3, false); // Vô hiệu hóa "Quản lý nhân viên" cho nhân viên
+        }
 
         menu1.setEvent(new MenuEvent() {
             @Override
@@ -45,12 +53,31 @@ public class Main extends javax.swing.JFrame {
                     showForm(new TraCuuVePanel());
                 } else if (index == 4 && subIndex == 2) {
                     showForm(new TraCuuTuyenPanel());
-                }else if (index == 5 && subIndex == 1) {
-                    showForm(new DoanhThuTheoCaPanel());
-                } else if (index == 5 && subIndex == 2) {
+                } else if (index == 5 && subIndex == 1) {
                     showForm(new ThongKeVePanel());
                 } else if (index == 6) {
-                    showForm(new QuanLyNhanVienPanel());
+                    if (!menu1.getComponent(index).isEnabled()) {
+                        JOptionPane.showMessageDialog(Main.this, "Chức năng này chỉ dành cho quản lý.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                        return; // Ngăn không cho thực hiện hành động tiếp theo
+                    } else {
+                        showForm(new QuanLyNhanVienPanel());
+                    }
+                } else if (index == 7) {
+                    showForm(new DoanhThuTheoCaPanel());
+                } else if (index == 8) {
+                    int confirm = JOptionPane.showConfirmDialog(
+                            Main.this,
+                            "Bạn có chắc chắn muốn đăng xuất?",
+                            "Xác nhận đăng xuất",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE
+                    );
+
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        FrmDangNhap dn = new FrmDangNhap();
+                        dn.setVisible(true);
+                        Main.this.dispose();
+                    }
                 }
             }
         });
@@ -188,7 +215,6 @@ public class Main extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-
 //                new Main().setVisible(true);
                 Loading loading  = new Loading();
                 loading.setVisible(true);

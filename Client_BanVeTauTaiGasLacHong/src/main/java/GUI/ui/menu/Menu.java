@@ -28,16 +28,32 @@ public class Menu extends JComponent {
             {"Quản lý vé", "Đổi vé", "Trả vé"},
             {"Quản lý lịch trình tàu"},
             {"Tra cứu", "Tra cứu vé", "Tra cứu theo tuyến", "Tra cứu hóa đơn", "Tra cứu theo chuyến"},
-            {"Thống kê", "Doanh thu theo ca", "Lượng vé theo thời gian", "Doanh thu bán vé"},
-            {"Quản lý nhân viên"}
+            {"Thống kê", "Lượng vé theo thời gian", "Doanh thu bán vé"},
+            {"Quản lý nhân viên"},
+            {"Doanh thu theo ca"},
+            {"Đăng xuất"}
     };
 
     public Menu() {
         init();
     }
 
+    public void enableMenuItem(int index, boolean enabled) {
+        if (index >= 0 && index < getComponentCount()) {
+            Component comp = getComponent(index);
+            if (comp instanceof MenuItem) {
+                ((MenuItem) comp).setEnabled(enabled);
+                if (!enabled) {
+                    ((MenuItem) comp).setToolTipText("Chức năng này chỉ dành cho quản lý"); // Thêm tooltip
+                } else {
+                    ((MenuItem) comp).setToolTipText(null); // Xóa tooltip nếu được kích hoạt lại
+                }
+            }
+        }
+    }
+
     private void init() {
-        layout = new MigLayout("wrap 1, fillx, gapy 0, inset 2", "fill");  // Giảm gapy
+        layout = new MigLayout("wrap 1, fillx, gapy 0, inset 2", "fill"); // Giảm gapy
 
         setLayout(layout);
         setOpaque(true);
@@ -82,17 +98,28 @@ public class Menu extends JComponent {
                         item.setSelected(false);
                     }
                 } else {
-                    if (event != null) {
-                        try {
-                            event.selected(index, 0);
-                        } catch (RemoteException e) {
-                            throw new RuntimeException(e);
+                    if (item.isEnabled()) { // Kiểm tra xem menu item có được enable không
+                        if (event != null) {
+                            try {
+                                event.selected(index, 0);
+                            } catch (RemoteException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
+                    } else {
+                        // Hiển thị thông báo nếu bị vô hiệu hóa
+                        JOptionPane.showMessageDialog(Menu.this, "Chức năng này chỉ dành cho quản lý.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                     }
                 }
             }
         });
         add(item, "h 50!");
+
+        // Vô hiệu hóa mục "Quản lý nhân viên" ban đầu (index là 6)
+        if (index == 6) {
+            item.setEnabled(false);
+            item.setToolTipText("Chức năng này chỉ dành cho quản lý");
+        }
     }
 
     private void addSubMenu(MenuItem item, int index, int length, int indexZorder) {
