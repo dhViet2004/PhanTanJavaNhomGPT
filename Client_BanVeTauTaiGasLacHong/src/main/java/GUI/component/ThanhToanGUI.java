@@ -1351,8 +1351,9 @@ public class ThanhToanGUI extends JFrame {
             return;
         }
 
+        double amountPaid = 0.0;
         try {
-            double amountPaid = Double.parseDouble(amountPaidField.getText().trim().replace(",", ""));
+            amountPaid = Double.parseDouble(amountPaidField.getText().trim().replace(",", ""));
             if (amountPaid < totalAmount) {
                 JOptionPane.showMessageDialog(
                         this,
@@ -1651,13 +1652,9 @@ public class ThanhToanGUI extends JFrame {
                 }
 
                 // Calculate change for cash payment
-                String changeMessage = "";
+                double change = 0;
                 if (choice == 0) { // Cash payment
-                    double amountPaid = Double.parseDouble(amountPaidField.getText().trim().replace(",", ""));
-                    double change = amountPaid - totalAmount;
-                    if (change > 0) {
-                        changeMessage = "\nTiền thối lại: " + formatCurrency(change);
-                    }
+                    change = amountPaid - totalAmount;
                 }
 
                 createdTickets = tickets;
@@ -1665,19 +1662,8 @@ public class ThanhToanGUI extends JFrame {
                 // Enable the print button
                 printButton.setEnabled(true);
 
-                // Calculate change for cash payment
-
-
-                // Show success message
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Thanh toán thành công! Vé của bạn đã được đặt." + changeMessage +
-                                "\nBạn có thể in vé bằng cách nhấn nút 'In vé'.",
-                        "Thành công",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-                // Close checkout window
-                dispose();
+                // Show success dialog instead of message
+                showSuccessDialog(invoice, tickets, change);
 
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(
@@ -2016,6 +2002,397 @@ public class ThanhToanGUI extends JFrame {
             // Current date with login information
             g2d.setFont(smallFont);
             g2d.drawString("Printed: 2025-04-22 23:15:44 by lethihien1424", leftMargin, y);
+
+            return PAGE_EXISTS;
+        }
+    }
+
+    /**
+     * Hiển thị dialog thông báo thành công khi thanh toán và cho phép in vé hoặc in hóa đơn
+     * @param hoaDon Hóa đơn đã được tạo
+     * @param tickets Danh sách vé đã được tạo
+     * @param changeAmount Số tiền thối lại (nếu có)
+     */
+    private void showSuccessDialog(HoaDon hoaDon, List<VeTau> tickets, double changeAmount) {
+        // Tạo dialog
+        JDialog successDialog = new JDialog(this, "Thanh toán thành công", true);
+        successDialog.setSize(700, 500);
+        successDialog.setLocationRelativeTo(this);
+        successDialog.setLayout(new BorderLayout(10, 10));
+
+        // Panel tiêu đề
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBackground(primaryColor);
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        JLabel titleLabel = new JLabel("THANH TOÁN THÀNH CÔNG", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setForeground(Color.WHITE);
+        titlePanel.add(titleLabel);
+        successDialog.add(titlePanel, BorderLayout.NORTH);
+
+        // Panel chứa thông tin
+        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        // Thông tin hóa đơn
+        JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
+        infoPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                "Thông tin hóa đơn",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                primaryColor));
+
+        // Thêm thông tin hóa đơn
+        addLabelPair(infoPanel, "Mã hóa đơn:", hoaDon.getMaHD());
+        addLabelPair(infoPanel, "Ngày thanh toán:", hoaDon.getNgayLap().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        addLabelPair(infoPanel, "Khách hàng:", hoaDon.getKhachHang().getTenKhachHang());
+        addLabelPair(infoPanel, "Số điện thoại:", hoaDon.getKhachHang().getSoDienThoai());
+        addLabelPair(infoPanel, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
+
+        if (changeAmount > 0) {
+            addLabelPair(infoPanel, "Tiền thối lại:", formatCurrency(changeAmount));
+        }
+
+        // Thông tin vé
+        JPanel ticketsPanel = new JPanel(new BorderLayout());
+        ticketsPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                "Thông tin vé",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                primaryColor));
+
+        // Tạo bảng vé
+        String[] columns = {"Mã vé", "Họ tên", "Ghế", "Toa", "Tàu", "Tuyến", "Ngày đi"};
+        DefaultTableModel ticketTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        // Thêm dữ liệu vào bảng
+        for (VeTau veTau : tickets) {
+            String maVe = veTau.getMaVe();
+            String tenKH = veTau.getTenKhachHang();
+            String ghe = veTau.getChoNgoi().getTenCho() != null ? veTau.getChoNgoi().getTenCho() : veTau.getChoNgoi().getMaCho();
+            String toa = veTau.getChoNgoi().getToaTau().getTenToa();
+            String tau = veTau.getLichTrinhTau().getTau().getTenTau();
+
+            String gaDi = veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDi();
+            String gaDen = veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDen();
+            String tuyen = gaDi + " → " + gaDen;
+
+            String ngayDi = veTau.getNgayDi().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            String gioDi = veTau.getLichTrinhTau().getGioDi().format(DateTimeFormatter.ofPattern("HH:mm"));
+            String ngayGioDi = ngayDi + " " + gioDi;
+
+            ticketTableModel.addRow(new Object[]{maVe, tenKH, ghe, toa, tau, tuyen, ngayGioDi});
+        }
+
+        JTable ticketsTable = new JTable(ticketTableModel);
+        ticketsTable.setRowHeight(25);
+        JScrollPane scrollPane = new JScrollPane(ticketsTable);
+        scrollPane.setPreferredSize(new Dimension(600, 150));
+        ticketsPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Thêm các panel vào content panel
+        contentPanel.add(infoPanel, BorderLayout.NORTH);
+        contentPanel.add(ticketsPanel, BorderLayout.CENTER);
+
+        // Panel nút
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+
+        // Nút in vé
+        JButton printTicketsButton = new JButton("In vé");
+        printTicketsButton.setIcon(createPrintIcon());
+        printTicketsButton.addActionListener(e -> {
+            printTickets();
+            // Không đóng dialog để người dùng có thể in hóa đơn nếu cần
+        });
+
+        // Nút in hóa đơn
+        JButton printInvoiceButton = new JButton("In hóa đơn");
+        printInvoiceButton.setIcon(createPrintIcon());
+        printInvoiceButton.addActionListener(e -> {
+            printInvoice(hoaDon, tickets);
+        });
+
+        // Nút đóng
+        JButton closeButton = new JButton("Đóng");
+        closeButton.addActionListener(e -> {
+            successDialog.dispose();
+            dispose(); // Đóng cửa sổ thanh toán
+        });
+
+        buttonPanel.add(printTicketsButton);
+        buttonPanel.add(printInvoiceButton);
+        buttonPanel.add(closeButton);
+
+        // Thêm nội dung và nút vào dialog
+        successDialog.add(contentPanel, BorderLayout.CENTER);
+        successDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Hiển thị dialog
+        successDialog.setVisible(true);
+    }
+
+    /**
+     * Thêm cặp nhãn và giá trị vào panel
+     */
+    private void addLabelPair(JPanel panel, String labelText, String value) {
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(label);
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        panel.add(valueLabel);
+    }
+
+    /**
+     * In hóa đơn
+     */
+    private void printInvoice(HoaDon hoaDon, List<VeTau> tickets) {
+        try {
+            // Tạo print job
+            PrinterJob job = PrinterJob.getPrinterJob();
+            job.setJobName("In hóa đơn");
+
+            // Set printable content
+            job.setPrintable(new InvoicePrintable(hoaDon, tickets, nhanVien));
+
+            // Hiển thị dialog in và nếu người dùng xác nhận, tiến hành in
+            if (job.printDialog()) {
+                // Hiển thị trạng thái in
+                JDialog printingDialog = new JDialog(this, "Đang in hóa đơn...", true);
+                printingDialog.setLayout(new FlowLayout());
+                printingDialog.add(new JLabel("Đang gửi dữ liệu đến máy in..."));
+                printingDialog.setSize(300, 100);
+                printingDialog.setLocationRelativeTo(this);
+
+                // Hiển thị dialog trong thread riêng
+                SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        // In tài liệu
+                        job.print();
+                        return null;
+                    }
+
+                    @Override
+                    protected void done() {
+                        // Đóng dialog khi in xong
+                        printingDialog.dispose();
+                        try {
+                            get(); // Sẽ throw exception nếu in lỗi
+                            JOptionPane.showMessageDialog(
+                                    ThanhToanGUI.this,
+                                    "In hóa đơn thành công!",
+                                    "Thông báo",
+                                    JOptionPane.INFORMATION_MESSAGE
+                            );
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(
+                                    ThanhToanGUI.this,
+                                    "Lỗi khi in hóa đơn: " + ex.getMessage(),
+                                    "Lỗi",
+                                    JOptionPane.ERROR_MESSAGE
+                            );
+                        }
+                    }
+                };
+
+                worker.execute();
+                printingDialog.setVisible(true); // Sẽ block cho đến khi dialog bị dispose
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi khi in hóa đơn: " + e.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Class để in hóa đơn
+     */
+    private class InvoicePrintable implements Printable {
+        private HoaDon hoaDon;
+        private List<VeTau> tickets;
+        private NhanVien nhanVien;
+        private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+
+        public InvoicePrintable(HoaDon hoaDon, List<VeTau> tickets, NhanVien nhanVien) {
+            this.hoaDon = hoaDon;
+            this.tickets = tickets;
+            this.nhanVien = nhanVien;
+        }
+
+        @Override
+        public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
+            // Chỉ in trang đầu tiên
+            if (pageIndex > 0) {
+                return NO_SUCH_PAGE;
+            }
+
+            // Lấy vùng in được
+            Graphics2D g2d = (Graphics2D) graphics;
+            g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+            double width = pageFormat.getImageableWidth();
+            double height = pageFormat.getImageableHeight();
+
+            // Thiết lập font
+            Font titleFont = new Font("Arial", Font.BOLD, 16);
+            Font headerFont = new Font("Arial", Font.BOLD, 12);
+            Font normalFont = new Font("Arial", Font.PLAIN, 10);
+            Font smallFont = new Font("Arial", Font.PLAIN, 8);
+
+            // Tính toán vị trí
+            int y = 20;
+            int leftMargin = 50;
+            int rightCol = (int) (width / 2) + 20;
+
+            // Vẽ tiêu đề công ty
+            g2d.setFont(titleFont);
+            g2d.drawString("CÔNG TY ĐƯỜNG SẮT VIỆT NAM", leftMargin, y);
+            y += 25;
+
+            // Vẽ tiêu đề hóa đơn
+            g2d.setFont(headerFont);
+            String title = "HÓA ĐƠN THANH TOÁN VÉ TÀU";
+            int titleWidth = g2d.getFontMetrics().stringWidth(title);
+            g2d.drawString(title, (int)(width - titleWidth) / 2, y);
+            y += 20;
+
+            // Vẽ mã hóa đơn và ngày
+            g2d.setFont(normalFont);
+            g2d.drawString("Mã HĐ: " + hoaDon.getMaHD(), leftMargin, y);
+
+            // Lấy ngày giờ hiện tại
+            Calendar now = Calendar.getInstance();
+            String currentDateTime = "Ngày: " + dateFormat.format(now.getTime()) +
+                    " " + timeFormat.format(now.getTime());
+            g2d.drawString(currentDateTime, rightCol, y);
+            y += 20;
+
+            // Vẽ đường kẻ ngang
+            g2d.drawLine(leftMargin, y, (int)(width - leftMargin), y);
+            y += 20;
+
+            // Thông tin khách hàng
+            g2d.setFont(headerFont);
+            g2d.drawString("THÔNG TIN KHÁCH HÀNG", leftMargin, y);
+            y += 15;
+
+            g2d.setFont(normalFont);
+            g2d.drawString("Họ và tên: " + hoaDon.getKhachHang().getTenKhachHang(), leftMargin, y);
+            y += 15;
+
+            g2d.drawString("Số điện thoại: " + hoaDon.getKhachHang().getSoDienThoai(), leftMargin, y);
+            g2d.drawString("Giấy tờ: " + hoaDon.getKhachHang().getGiayTo(), rightCol, y);
+            y += 20;
+
+            // Thông tin vé
+            g2d.setFont(headerFont);
+            g2d.drawString("THÔNG TIN CÁC VÉ", leftMargin, y);
+            y += 15;
+
+            // Tạo header cho bảng vé
+            g2d.setFont(normalFont);
+            g2d.drawString("STT", leftMargin, y);
+            g2d.drawString("Mã vé", leftMargin + 30, y);
+            g2d.drawString("Hành khách", leftMargin + 100, y);
+            g2d.drawString("Ghế/Toa", leftMargin + 220, y);
+            g2d.drawString("Tuyến", leftMargin + 280, y);
+            g2d.drawString("Giá vé", (int)width - 70, y);
+            y += 15;
+
+            // Vẽ đường kẻ dưới header
+            g2d.drawLine(leftMargin, y - 5, (int)(width - leftMargin), y - 5);
+
+            // Liệt kê các vé
+            double tongTien = 0;
+            for (int i = 0; i < tickets.size(); i++) {
+                VeTau veTau = tickets.get(i);
+
+                g2d.drawString(String.valueOf(i+1), leftMargin, y);
+                g2d.drawString(veTau.getMaVe(), leftMargin + 30, y);
+                g2d.drawString(veTau.getTenKhachHang(), leftMargin + 100, y);
+
+                String ghe = veTau.getChoNgoi().getTenCho() != null ? veTau.getChoNgoi().getTenCho() : veTau.getChoNgoi().getMaCho();
+                String toa = veTau.getChoNgoi().getToaTau().getTenToa();
+                g2d.drawString(ghe + "/" + toa, leftMargin + 220, y);
+
+                String gaDi = veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDi();
+                String gaDen = veTau.getLichTrinhTau().getTau().getTuyenTau().getGaDen();
+                g2d.drawString(gaDi + "->" + gaDen, leftMargin + 280, y);
+
+                double giaVe = veTau.getGiaVe();
+                tongTien += giaVe;
+                g2d.drawString(formatCurrency(giaVe), (int)width - 70, y);
+
+                y += 15;
+
+                // Kiểm tra nếu còn nhiều vé, có thể phải thêm logic phân trang ở đây
+                if (y > height - 100) {
+                    g2d.drawString("(còn nữa)", (int)(width / 2), y);
+                    break;
+                }
+            }
+
+            // Vẽ đường kẻ dưới danh sách vé
+            g2d.drawLine(leftMargin, y, (int)(width - leftMargin), y);
+            y += 20;
+
+            // Thông tin tổng tiền
+            g2d.setFont(headerFont);
+            g2d.drawString("Tổng tiền:", (int)width - 150, y);
+            g2d.drawString(formatCurrency(hoaDon.getTongTien()), (int)width - 70, y);
+            y += 15;
+
+            // Tiền giảm giá nếu có
+            if (hoaDon.getTienGiam() > 0) {
+                g2d.drawString("Tiền giảm:", (int)width - 150, y);
+                g2d.drawString("-" + formatCurrency(hoaDon.getTienGiam()), (int)width - 70, y);
+                y += 15;
+            }
+
+            // Đường kẻ trước tổng thanh toán
+            g2d.drawLine((int)width - 150, y, (int)width - 20, y);
+            y += 15;
+
+            // Tổng thanh toán
+            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            g2d.drawString("Thành tiền:", (int)width - 150, y);
+            g2d.drawString(formatCurrency(hoaDon.getTongTien()), (int)width - 70, y);
+            y += 30;
+
+            // Chữ ký
+            g2d.setFont(normalFont);
+            g2d.drawString("Khách hàng", leftMargin + 50, y);
+            g2d.drawString("Nhân viên bán vé", (int)width - 100, y);
+            y += 15;
+            g2d.drawString("(Ký, ghi rõ họ tên)", leftMargin + 40, y);
+            g2d.drawString("(Ký, ghi rõ họ tên)", (int)width - 110, y);
+            y += 50;
+
+            // Tên nhân viên
+            g2d.drawString(nhanVien.getTenNV(), (int)width - 110, y);
+
+            // Chân trang
+            y = (int)height - 20;
+            g2d.setFont(smallFont);
+            String footerText = "Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!";
+            int footerWidth = g2d.getFontMetrics().stringWidth(footerText);
+            g2d.drawString(footerText, (int)(width - footerWidth) / 2, y);
 
             return PAGE_EXISTS;
         }
