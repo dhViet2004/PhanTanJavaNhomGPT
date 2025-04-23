@@ -15,7 +15,7 @@ public class RMIServer {
             System.out.println("Khởi động RMI Server...");
 
             System.setProperty("java.rmi.server.hostname", "192.168.1.164");
-//            System.setProperty("java.rmi.server.hostname", "192.168.1.113");
+//            System.setProperty("java.rmi.server.hostname", "192.168.2.21");
             // Tạo đối tượng DAO
             LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
             TauDAO tauDAO = new TauDAOImpl();
@@ -35,11 +35,7 @@ public class RMIServer {
             TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
             TraCuuVeDAO traCuuVeDAO = new TraCuuVeDAOImpl();
             ThongKeDAO thongKeDAO = new ThongKeDAOImpl();
-
             ToaTauDAO ToaTauDAO = new ToaTauDAOImpl();
-
-
-
             // Tạo registry
             Registry registry = LocateRegistry.createRegistry(9090);
 

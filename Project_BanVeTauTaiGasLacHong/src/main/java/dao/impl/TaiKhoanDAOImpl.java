@@ -9,6 +9,10 @@ import model.NhanVien;
 import model.TaiKhoan;
 import util.JPAUtil;
 
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+
 /**
  * @Dự án: Project_BanVeTauTaiGasLacHong
  * @Class: TaiKhoanDAO
@@ -16,19 +20,19 @@ import util.JPAUtil;
  * @Tác giả: Nguyen Huu Sang
  */
 
-@AllArgsConstructor
-public class TaiKhoanDAOImpl implements TaiKhoanDAO {
+//@AllArgsConstructor
+public class TaiKhoanDAOImpl extends UnicastRemoteObject implements TaiKhoanDAO, Serializable {
     private EntityManager em;
-    public TaiKhoanDAOImpl() {
+    public TaiKhoanDAOImpl() throws RemoteException {
         this.em = JPAUtil.getEntityManager();;
     }
     @Override
-    public TaiKhoan getTaiKhoanById(String id) {
+    public TaiKhoan getTaiKhoanById(String id) throws RemoteException {
         return em.find(TaiKhoan.class, id);
     }
 
     @Override
-    public boolean save(TaiKhoan tk) {
+    public boolean save(TaiKhoan tk) throws RemoteException{
         EntityTransaction tr =  em.getTransaction();
         try {
             tr.begin();
@@ -43,7 +47,7 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
     }
     // update password với maNV
     @Override
-    public boolean updatePassword(String maNV, String passWord) {
+    public boolean updatePassword(String maNV, String passWord) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -62,7 +66,7 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
     }
 
     @Override
-    public boolean delete(String id) {
+    public boolean delete(String id) throws RemoteException{
         EntityTransaction tr = em.getTransaction();
         try {
             tr.begin();
@@ -77,7 +81,7 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
         return false;
     }
 
-    public String getPasswordByPhone(String phone) {
+    public String getPasswordByPhone(String phone) throws RemoteException{
         String jpql = "SELECT tk.passWord FROM TaiKhoan tk " +
                 "JOIN tk.nhanVien nv WHERE nv.soDT = :phone";
 
@@ -90,7 +94,7 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
         }
     }
 
-    public String getPasswordByEmail(String email) {
+    public String getPasswordByEmail(String email) throws RemoteException{
         String jpql = "SELECT tk.passWord FROM TaiKhoan tk WHERE tk.nhanVien.diaChi = :email";
         try {
             return em.createQuery(jpql, String.class)
@@ -105,7 +109,7 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
     }
 
 
-    public NhanVien checkLogin(String maNhanVien, String password) {
+    public NhanVien checkLogin(String maNhanVien, String password) throws RemoteException{
         System.out.println(maNhanVien + ": "+password);
         String jpql = "SELECT nv FROM TaiKhoan tk " +
                 "JOIN tk.nhanVien nv " + // Sửa JOIN thành với nhanVien
@@ -121,21 +125,20 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
             return null;
         }
     }
-    public boolean insert(TaiKhoan nd) {
+    public boolean insert(TaiKhoan nd) throws RemoteException {
+        EntityTransaction tr = em.getTransaction();
         try {
-            em.persist(nd); // Thêm vào context
+            tr.begin();
+            em.persist(nd);
+            tr.commit();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            tr.rollback();
             return false;
         }
     }
 
 
-    public static void main(String[] args) {
-        TaiKhoanDAOImpl dao = new TaiKhoanDAOImpl();
-        NhanVien vv = dao.checkLogin("NV0003","Abc123.");
-        System.out.println(vv.toString());
-    }
 
 }

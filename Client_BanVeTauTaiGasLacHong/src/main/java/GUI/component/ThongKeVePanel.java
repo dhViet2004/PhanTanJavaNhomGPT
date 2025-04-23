@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * Giao diện đã được cải tiến với bố cục rõ ràng, dễ nhìn
  */
 public class ThongKeVePanel extends JPanel {
-    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final String RMI_SERVER_IP = "127.0.0.1";
     private static final int RMI_SERVER_PORT = 9090;
     private ThongKeDAO thongKeDAO;
     private JPanel chartPanel;

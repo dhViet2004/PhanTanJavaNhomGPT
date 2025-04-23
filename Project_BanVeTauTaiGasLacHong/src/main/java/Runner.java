@@ -1,4 +1,3 @@
-import datafaker.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Persistence;
 import model.ChoNgoi;
@@ -15,25 +14,25 @@ public class Runner {
         EntityManager em = Persistence.createEntityManagerFactory("mariadb")
                 .createEntityManager();
 
-        LoaiToaDF.generateSampleData(em);
-        TuyenTauDF.generateSampleData(em);
-        TauDF.generateSampleData(em);
-        ToaTauDF.generateSampleData(em);
-        LoaiChoDF.generateSampleData(em);
-
-        KhachHangDF khachHangDF = new KhachHangDF();
-        khachHangDF.generateAndPrintSampleData();
-
-        LoaiHoaDonDF faker = new LoaiHoaDonDF();
-        faker.generateAndSaveLoaiHoaDons(em);
-
-        HoaDonDF hoaDonFaker = new HoaDonDF(em);
-        hoaDonFaker.generateHoaDonData(50); // Tạo 20 hóa đơn
-
-        ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
-        chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
-        em.close();
-
+//        LoaiToaDF.generateSampleData(em);
+//        TuyenTauDF.generateSampleData(em);
+//        TauDF.generateSampleData(em);
+//        ToaTauDF.generateSampleData(em);
+//        LoaiChoDF.generateSampleData(em);
+//
+//        KhachHangDF khachHangDF = new KhachHangDF();
+//        khachHangDF.generateAndPrintSampleData();
+//
+//        LoaiHoaDonDF faker = new LoaiHoaDonDF();
+//        faker.generateAndSaveLoaiHoaDons(em);
+//
+//        HoaDonDF hoaDonFaker = new HoaDonDF(em);
+//        hoaDonFaker.generateHoaDonData(50); // Tạo 20 hóa đơn
+//
+//        ChiTietHoaDonDF chiTietFaker = new ChiTietHoaDonDF(em);
+//        chiTietFaker.generateChiTietHoaDonData(100); // Tạo 50 chi tiết hóa đơn
+//        em.close();
+//
 
 //        LocalDate day = LocalDate.of(2024,5,1);
 //        LocalDate day1 = LocalDate.of(2023,4,2);
