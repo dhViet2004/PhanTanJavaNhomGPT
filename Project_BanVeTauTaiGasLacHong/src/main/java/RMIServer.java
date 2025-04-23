@@ -15,7 +15,7 @@ public class RMIServer {
             System.out.println("Khởi động RMI Server...");
 
 //            System.setProperty("java.rmi.server.hostname", "127.0.0.1");
-            System.setProperty("java.rmi.server.hostname", "192.168.2.21");
+            System.setProperty("java.rmi.server.hostname", "192.168.113.105");
             // Tạo đối tượng DAO
             LichTrinhTauDAO lichTrinhTauDAO = new LichTrinhTauDAOImpl();
             TauDAO tauDAO = new TauDAOImpl();

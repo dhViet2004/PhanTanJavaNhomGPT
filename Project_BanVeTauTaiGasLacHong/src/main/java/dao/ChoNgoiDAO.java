@@ -13,4 +13,8 @@ public interface ChoNgoiDAO extends Remote {
     ChoNgoi getById(String id) throws RemoteException;
 
     public List<ChoNgoi> getListByToa(String maToa) throws RemoteException;
+
+
+
+    long unAvailableSeats(String maLich) throws RemoteException;
 }

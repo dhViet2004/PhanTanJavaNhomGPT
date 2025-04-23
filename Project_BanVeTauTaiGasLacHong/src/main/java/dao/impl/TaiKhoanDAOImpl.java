@@ -125,21 +125,20 @@ public class TaiKhoanDAOImpl extends UnicastRemoteObject implements TaiKhoanDAO,
             return null;
         }
     }
-    public boolean insert(TaiKhoan nd) throws RemoteException{
+    public boolean insert(TaiKhoan nd) throws RemoteException {
+        EntityTransaction tr = em.getTransaction();
         try {
-            em.persist(nd); // Thêm vào context
+            tr.begin();
+            em.persist(nd);
+            tr.commit();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            tr.rollback();
             return false;
         }
     }
 
 
-    public static void main(String[] args) throws RemoteException {
-        TaiKhoanDAO dao = new TaiKhoanDAOImpl();
-        NhanVien vv = dao.checkLogin("NV0003","Abc123.");
-        System.out.println(vv.toString());
-    }
 
 }
