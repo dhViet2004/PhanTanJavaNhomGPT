@@ -188,9 +188,9 @@ public class FrmDangNhap extends JFrame implements ActionListener {
             taiKhoanDAO = (TaiKhoanDAO) registry.lookup("taiKhoanDAO");
 
             // Thông báo kết nối thành công
-            JOptionPane.showMessageDialog(this,
-                    "Kết nối đến server RMI thành công!",
-                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+//            JOptionPane.showMessageDialog(this,
+//                    "Kết nối đến server RMI thành công!",
+//                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             isConnected = true; // Đánh dấu kết nối thành công
 
         } catch (RemoteException | NotBoundException e) {
@@ -259,6 +259,9 @@ public class FrmDangNhap extends JFrame implements ActionListener {
 
         }
         else if (e.getSource() == btnQuenMatKhau) {
+            if(!isConnected){
+                connectToServer();
+            }
             // Kiểm tra người dùng đã nhập tên đăng nhập chưa
             String user = txtMaNhanVien.getText();
             if (user == null || user.trim().isEmpty()) {
