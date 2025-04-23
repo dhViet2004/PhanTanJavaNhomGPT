@@ -33,7 +33,7 @@ public class FrmDangNhap extends JFrame implements ActionListener {
     private TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAOImpl();
     private NhanVien nv;
     private LichLamViecDAO llv_dao = new LichLamViecDAOImpl();
-    private static final String RMI_SERVER_IP = "192.168.1.39";
+    private static final String RMI_SERVER_IP = "192.168.1.164";
     private static final int RMI_SERVER_PORT = 9090;
     private NhanVienDAO nhanVienDAO = new NhanVienDAOImpl();
     private boolean isConnected = false;
@@ -97,6 +97,9 @@ public class FrmDangNhap extends JFrame implements ActionListener {
         gbc.gridy++;
         gbc.insets = new Insets(0, 10, 15, 10);
         txtMaNhanVien = new JTextField(15);
+        //setText
+        txtMaNhanVien.setText("NV0003");
+
         txtMaNhanVien.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         loginPanel.add(txtMaNhanVien, gbc);
 
@@ -112,6 +115,9 @@ public class FrmDangNhap extends JFrame implements ActionListener {
 
         // Mật khẩu hiển thị
         txtMatKhau = new JPasswordField(15);
+        //setText
+        txtMatKhau.setText("Abc123.");
+
         txtMatKhau.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         loginPanel.add(txtMatKhau, gbc);
 

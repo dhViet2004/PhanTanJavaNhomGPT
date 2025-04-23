@@ -31,6 +31,7 @@ public class Menu extends JComponent {
             {"Thống kê", "Lượng vé theo thời gian", "Doanh thu bán vé"},
             {"Quản lý nhân viên"},
             {"Quản lý khách hàng"},
+            {"Quản lý khuyến mãi"},
             {"Doanh thu theo ca"},
             {"Đăng xuất"}
     };

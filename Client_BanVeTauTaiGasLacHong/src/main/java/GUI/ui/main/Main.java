@@ -45,6 +45,8 @@ public class Main extends javax.swing.JFrame {
             public void selected(int index, int subIndex) throws RemoteException {
                 if (index == 0) {
                     showForm(new HomeForm());
+                }else if (index == 1) {
+                    showForm(new TrainTicketBookingSystem(nhanVien));
                 }
                 else if (index == 2 && subIndex == 1) {
                     showForm(new DoiVePanel(nhanVien));
@@ -78,8 +80,12 @@ public class Main extends javax.swing.JFrame {
                     // quản lý khách hàng
                         showForm(new QuanLyKhachHangPanel());
                 } else if (index == 8) {
+                        showForm(new KhuyenMaiPanel());
+                }
+
+                else if (index == 9) {
                     showForm(new DoanhThuTheoCaPanel());
-                } else if (index == 9) {
+                } else if (index == 10) {
                     int confirm = JOptionPane.showConfirmDialog(
                             Main.this,
                             "Bạn có chắc chắn muốn đăng xuất?",
