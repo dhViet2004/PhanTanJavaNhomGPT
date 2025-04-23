@@ -34,7 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public class TraVePanel extends JPanel {
-    private static final String RMI_SERVER_IP = "127.0.0.1";
+    private static final String RMI_SERVER_IP = "192.168.2.21";
     private static final int RMI_SERVER_PORT = 9090;
 
 
