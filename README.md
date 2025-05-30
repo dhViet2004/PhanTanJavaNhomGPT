@@ -15,7 +15,7 @@
 
 - Java 100%
 - Maven (cấu hình thông qua file `pom.xml`)
-- Kiến trúc client-server, socket hoặc RMI (bổ sung chi tiết nếu có)
+- Kiến trúc client-server, socket hoặc RMI
 - IDE đề xuất: IntelliJ IDEA
 
 ## Hướng dẫn chạy thử
